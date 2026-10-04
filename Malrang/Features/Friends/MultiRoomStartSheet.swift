@@ -45,7 +45,7 @@ struct MultiRoomStartSheet: View {
                 Text("FaceTime 통화 중이면 바로 시작할 수 있어요")
                     .font(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
-                ShareLink(item: activity, preview: SharePreview("말랑 멀티 룸")) {
+                ShareLink(item: activity, preview: SharePreview("Fluff 멀티 룸")) {
                     Label("친구에게 초대 보내기", systemImage: "shareplay")
                 }
                 .buttonStyle(.primary)

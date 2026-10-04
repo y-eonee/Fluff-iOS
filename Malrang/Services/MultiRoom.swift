@@ -10,7 +10,7 @@ nonisolated struct MultiRoomActivity: GroupActivity, Transferable {
 
     var metadata: GroupActivityMetadata {
         var metadata = GroupActivityMetadata()
-        metadata.title = "말랑 멀티 룸"
+        metadata.title = "Fluff 멀티 룸"
         metadata.subtitle = "같은 방에서 인형을 함께 구경해요"
         metadata.type = .generic
         return metadata
