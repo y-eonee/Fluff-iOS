@@ -6,6 +6,7 @@ struct FriendRoomView: View {
     @Environment(FriendStore.self) private var store
     @State private var phase = Phase.loading
     @State private var selectedDoll: DollState?
+    @State private var isShowingGuestbook = false
 
     enum Phase {
         case loading, failed, loaded(FriendRoom)
@@ -28,7 +29,8 @@ struct FriendRoomView: View {
                 } else {
                     RoomSceneView(items: room.items, dolls: room.dolls, mode: .view, onTapDoll: { id in
                         selectedDoll = room.dolls.first { $0.id == id }
-                    })
+                    }, onTapBoard: { isShowingGuestbook = true })
+                    .renderedOnlyWhileVisible()
                     .overlay(alignment: .top) {
                         Text("인형을 탭해 만져 보세요")
                             .font(.footnote)
@@ -43,6 +45,9 @@ struct FriendRoomView: View {
         .background(Color.app.background)
         .navigationTitle("\(friend.name)의 방")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $isShowingGuestbook) {
+            GuestbookView(ownerID: friend.id, title: "\(friend.name)의 방명록", canWrite: true)
+        }
         .sheet(item: $selectedDoll) { doll in
             NavigationStack {
                 SquishyView(doll: doll)
@@ -61,8 +66,8 @@ struct FriendRoomView: View {
             }
             .buttonStyle(.secondary)
             .sensoryFeedback(.impact(weight: .light), trigger: isLiked)
-            NavigationLink {
-                GuestbookView(ownerID: friend.id, title: "\(friend.name)의 방명록", canWrite: true)
+            Button {
+                isShowingGuestbook = true
             } label: {
                 Label("방명록", systemImage: "book")
             }
