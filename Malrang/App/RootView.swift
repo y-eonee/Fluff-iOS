@@ -3,13 +3,16 @@ import SwiftUI
 
 struct RootView: View {
     @AppStorage("isSignedIn") private var isSignedIn = false
+    @AppStorage("nickname") private var nickname = ""
     @Environment(\.modelContext) private var modelContext
     @Environment(MultiRoom.self) private var multiRoom
     @Query private var items: [RoomItem]
     @State private var appState = AppState()
 
     var body: some View {
-        if isSignedIn {
+        if isSignedIn && nickname.isEmpty {
+            NavigationStack { ProfileEditView(isCreating: true) }
+        } else if isSignedIn {
             TabView(selection: $appState.tab) {
                 Tab("인형 목록", systemImage: "teddybear", value: .dolls) {
                     DollListView()
