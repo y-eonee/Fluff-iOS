@@ -55,6 +55,8 @@ struct NotificationsView: View {
                     Task { try? await store.accept(notification) }
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Color.app.accent)
+                .foregroundStyle(Color.app.ink)
             case .guestbook:
                 NavigationLink("보기") {
                     GuestbookView(ownerID: "me", title: "내 방명록", canWrite: false)

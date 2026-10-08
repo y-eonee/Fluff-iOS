@@ -33,10 +33,62 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
 }
 
+/// 편집을 끝낼 때 어디서나 같은 모양으로 쓰는 취소(보조) + 완료(주요) 쌍
+struct CancelConfirmButtons: View {
+    var confirmTitle = "완료"
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    var body: some View {
+        HStack(spacing: Spacing.s) {
+            Button("취소", action: onCancel)
+                .buttonStyle(.secondary)
+            Button(confirmTitle, action: onConfirm)
+                .buttonStyle(.primary)
+        }
+    }
+}
+
+/// 추가하기 버튼. 메뉴가 열리면 X로 바뀐다.
+struct FloatingAddButton: View {
+    let label: String
+    var isOpen = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.title2.bold())
+                .foregroundStyle(Color.app.ink)
+                .rotationEffect(.degrees(isOpen ? 45 : 0))
+                .frame(width: 56, height: 56)
+                .background(Color.app.accent, in: Circle())
+        }
+        .accessibilityLabel(isOpen ? "닫기" : label)
+        .animation(.spring, value: isOpen)
+    }
+}
+
+/// 화면 위에 잠깐 띄우는 어두운 안내 말풍선
+struct HintCapsule: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.footnote.bold())
+            .foregroundStyle(Color.app.surface)
+            .padding(.horizontal, Spacing.m)
+            .frame(minHeight: 32)
+            .background(Color.app.ink, in: Capsule())
+    }
+}
+
 /// 선택 상태를 색과 체크 아이콘으로 함께 보여주는 칩
 struct Chip: View {
     let title: String
     let isSelected: Bool
+    /// 여러 칩을 한 줄에 같은 너비로 놓을 때 쓴다.
+    var isCompact = false
     let action: () -> Void
 
     var body: some View {
@@ -44,13 +96,16 @@ struct Chip: View {
             HStack(spacing: Spacing.xxs) {
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.footnote.bold())
+                        .font(.caption.bold())
                 }
                 Text(title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .font(.body)
+            .font(isCompact ? .footnote : .body)
             .foregroundStyle(Color.app.ink)
-            .padding(.horizontal, Spacing.s)
+            .frame(maxWidth: isCompact ? .infinity : nil)
+            .padding(.horizontal, isCompact ? Spacing.xxs : Spacing.s)
             .frame(minHeight: 44)
             .background(isSelected ? Color.app.accent : Color.app.surface,
                         in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
