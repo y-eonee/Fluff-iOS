@@ -28,6 +28,12 @@ struct FriendsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.app.background)
             .navigationTitle("친구")
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button("친구 추가", systemImage: "person.badge.plus") { isAdding = true }
+                    NotificationsButton()
+                }
+            }
             .navigationDestination(for: Friend.self) { friend in
                 FriendRoomView(friend: friend)
             }
@@ -39,47 +45,45 @@ struct FriendsView: View {
     }
 
     private var grid: some View {
-        ScrollView {
+        Group {
             if store.friends.isEmpty {
-                Text("아직 친구가 없어요. 친구를 추가해 서로의 방에 놀러 가 보세요")
-                    .font(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
-                    .padding(.top, Spacing.m)
-            }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: Spacing.s), GridItem(.flexible())], spacing: Spacing.s) {
-                ForEach(store.friends) { friend in
-                    NavigationLink(value: friend) {
-                        card(title: "\(friend.name)의 방", symbol: "house.fill")
+                NoticeCard(symbol: "person.2", title: "아직 친구가 없어요",
+                           message: "연락처에서 친구를 찾아 서로의 방에 놀러 가 보세요",
+                           actionTitle: "친구 추가") { isAdding = true }
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: Spacing.xs) {
+                        ForEach(store.friends) { friend in
+                            NavigationLink(value: friend) {
+                                row(friend)
+                            }
+                        }
                     }
-                }
-                Button {
-                    isAdding = true
-                } label: {
-                    card(title: "친구 추가", symbol: "person.badge.plus", note: "아이디로 찾기")
+                    .buttonStyle(.plain)
+                    .padding(Spacing.m)
                 }
             }
-            .buttonStyle(.plain)
-            .padding(Spacing.m)
         }
     }
 
-    private func card(title: String, symbol: String, note: String? = nil) -> some View {
-        VStack(spacing: Spacing.xs) {
-            Image(systemName: symbol)
-                .font(.largeTitle)
-                .frame(width: 72, height: 72)
-                .background(Color.app.pastelSky, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
-            Text(title)
+    private func row(_ friend: Friend) -> some View {
+        HStack(spacing: Spacing.s) {
+            Image(systemName: "house.fill")
+                .font(.title3)
+                .frame(width: 48, height: 48)
+                .background(Color.app.pastelSky, in: Circle())
+            Text("\(friend.name)의 방")
                 .font(.headline)
-            if let note {
-                Text(note)
-                    .font(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
-            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.footnote)
+                .foregroundStyle(Color.app.inkSecondary)
         }
         .foregroundStyle(Color.app.ink)
-        .frame(maxWidth: .infinity, minHeight: 180)
-        .cardStyle()
+        .padding(Spacing.s)
+        .frame(minHeight: 64)
+        .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     private func load() async {
