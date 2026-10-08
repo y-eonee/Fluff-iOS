@@ -33,6 +33,8 @@ nonisolated enum MultiRoomMessage: Codable, Sendable {
         var photoScale: Float
         var photoFlipped: Bool
         var photoTurns: Int
+        var photoAngle: Float
+        var yaw: Float
     }
 
     struct Doll: Codable, Sendable {
@@ -142,7 +144,8 @@ final class MultiRoom {
         let items = items.map { item in
             MultiRoomMessage.Item(id: item.id, kind: item.kind.rawValue, x: item.x, z: item.z, colorName: item.colorName,
                                   photo: item.photoData.flatMap { Self.shrink($0, maxSide: 256, keepAlpha: false) },
-                                  photoScale: item.photoScale, photoFlipped: item.photoFlipped, photoTurns: item.photoTurns)
+                                  photoScale: item.photoScale, photoFlipped: item.photoFlipped, photoTurns: item.photoTurns,
+                                  photoAngle: item.photoAngle, yaw: item.yaw)
         }
         let dolls = dolls.map { doll in
             MultiRoomMessage.Doll(id: doll.id, name: doll.name, image: Self.shrink(doll.imageData, maxSide: 256, keepAlpha: true) ?? Data(),
@@ -164,7 +167,8 @@ final class MultiRoom {
             items = payload.compactMap { item in
                 guard let kind = FurnitureKind(rawValue: item.kind) else { return nil }
                 return RoomItemState(id: item.id, kind: kind, x: item.x, z: item.z, colorName: item.colorName, photoData: item.photo,
-                                     photoScale: item.photoScale, photoFlipped: item.photoFlipped, photoTurns: item.photoTurns)
+                                     photoScale: item.photoScale, photoFlipped: item.photoFlipped, photoTurns: item.photoTurns,
+                                     photoAngle: item.photoAngle, yaw: item.yaw)
             }
         case .doll(let payload):
             let doll = DollState(id: payload.id, name: payload.name, imageData: payload.image,

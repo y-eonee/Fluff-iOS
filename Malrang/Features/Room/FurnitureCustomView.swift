@@ -12,6 +12,7 @@ struct FurnitureCustomView: View {
     @State private var style: Style
     @State private var pickerItem: PhotosPickerItem?
     @State private var photoScale: Double
+    private let original: RoomItemState
 
     enum Style: String, CaseIterable {
         case basic = "기본"
@@ -19,15 +20,24 @@ struct FurnitureCustomView: View {
         case photo = "사진"
     }
 
+    private var isEditingPhoto: Bool { style == .photo && item.photoData != nil }
+
     init(item: RoomItem) {
         self.item = item
         _style = State(initialValue: item.photoData != nil ? .photo : (item.colorName != nil ? .color : .basic))
         _photoScale = State(initialValue: item.photoScale)
+        original = item.state
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            RoomSceneView(items: [item.state], focusItem: item.state)
+            RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch,
+                          onTilt: { item.photoAngle += Double($0) }, onOrbitEnd: { item.yaw = Double($0) })
+                .renderedOnlyWhileVisible()
+                .overlay(alignment: .top) {
+                    HintCapsule(text: isEditingPhoto ? "두 손가락으로 크기와 기울기를 조절해 보세요" : "드래그해서 이리저리 돌려 보세요")
+                        .padding(.top, Spacing.xs)
+                }
             VStack(spacing: Spacing.m) {
                 Picker("꾸미기 방식", selection: $style) {
                     ForEach(Style.allCases, id: \.self) { Text($0.rawValue) }
@@ -47,8 +57,13 @@ struct FurnitureCustomView: View {
                     }
                 }
                 .frame(height: 220)
-                Button("적용하기") { dismiss() }
-                    .buttonStyle(.primary)
+                CancelConfirmButtons(
+                    onCancel: {
+                        item.restore(original)
+                        dismiss()
+                    },
+                    onConfirm: { dismiss() }
+                )
             }
             .padding(Spacing.m)
             .background(Color.app.surface, in: UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous))
@@ -177,11 +192,17 @@ struct FurnitureCustomView: View {
             .clipShape(RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
     }
 
+    private func pinch(_ scale: CGFloat) {
+        photoScale = min(3, max(0.5, photoScale * scale))
+        item.photoScale = photoScale
+    }
+
     private func apply(_ data: Data) {
         item.photoData = data
         item.photoScale = 1
         item.photoFlipped = false
         item.photoTurns = 0
+        item.photoAngle = 0
         photoScale = 1
     }
 

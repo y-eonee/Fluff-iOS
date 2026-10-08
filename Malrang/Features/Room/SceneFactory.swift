@@ -21,6 +21,7 @@ enum SceneFactory {
         }
         entity.name = "item|\(item.id)"
         entity.position = [item.x, 0, item.z]
+        entity.orientation = simd_quatf(angle: item.yaw, axis: [0, 1, 0])
         entity.generateCollisionShapes(recursive: true)
         return entity
     }
@@ -110,12 +111,50 @@ enum SceneFactory {
             duration = 0.8
         case .nod:
             to.rotation = base * simd_quatf(angle: 0.3, axis: [1, 0, 0])
+        case .squish:
+            from.scale = entity.scale * [1.1, 0.9, 1.1]
+            to.scale = entity.scale * [0.92, 1.08, 0.92]
         }
         let animation = FromToByAnimation(from: from, to: to, duration: duration, timing: .easeInOut,
                                           bindTarget: .transform, repeatMode: .autoReverse)
         if let resource = try? AnimationResource.generate(with: animation) {
             entity.playAnimation(resource)
         }
+    }
+
+    /// 왼쪽 벽에 걸린 방명록 메모보드. 탭하면 방명록이 열린다.
+    static func memoBoard() -> Entity {
+        let board = Entity()
+        board.name = "board"
+
+        func part(_ size: SIMD3<Float>, _ position: SIMD3<Float>, color: String, angle: Float = 0) {
+            var material = PhysicallyBasedMaterial()
+            material.roughness = 0.9
+            material.metallic = 0.0
+            material.baseColor = .init(tint: UIColor(named: color) ?? .white)
+            let entity = ModelEntity(mesh: .generateBox(size: size, cornerRadius: 0.004), materials: [material])
+            entity.position = position
+            entity.orientation = simd_quatf(angle: angle, axis: [1, 0, 0])
+            board.addChild(entity)
+        }
+
+        part([0.03, 0.42, 0.66], [-0.985, 1.0, -0.45], color: "surface")
+        part([0.012, 0.12, 0.12], [-0.962, 1.08, -0.62], color: "pastelYellow", angle: 0.12)
+        part([0.012, 0.12, 0.12], [-0.962, 1.1, -0.45], color: "brandAccent", angle: -0.1)
+        part([0.012, 0.12, 0.12], [-0.962, 1.06, -0.28], color: "pastelMint", angle: 0.08)
+        part([0.012, 0.12, 0.12], [-0.962, 0.92, -0.55], color: "pastelSky", angle: -0.06)
+        part([0.012, 0.12, 0.12], [-0.962, 0.92, -0.35], color: "pastelYellow", angle: 0.1)
+        board.generateCollisionShapes(recursive: true)
+        return board
+    }
+
+    /// 들고 있는 인형의 발밑에 까는 원. 인형이 떠 있는 높이만큼 내려서 바닥(자리)에 붙인다.
+    static func heldRing(below lift: Float) -> Entity {
+        var material = UnlitMaterial(color: UIColor(named: "brandAccent") ?? .systemPink)
+        material.blending = .transparent(opacity: 0.8)
+        let ring = ModelEntity(mesh: .generateCylinder(height: 0.004, radius: 0.16), materials: [material])
+        ring.position.y = -lift + 0.008
+        return ring
     }
 
     /// 인형을 끌 때 올려둘 수 있는 자리를 표시하는 판
@@ -125,6 +164,7 @@ enum SceneFactory {
         let size = item.kind.size
         let entity = ModelEntity(mesh: .generateBox(size: [size.x * 0.95, 0.004, size.z * 0.95]), materials: [material])
         entity.position = [item.x, (item.kind.seatHeight ?? 0) + 0.006, item.z]
+        entity.orientation = simd_quatf(angle: item.yaw, axis: [0, 1, 0])
         return entity
     }
 
@@ -137,7 +177,7 @@ enum SceneFactory {
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
             material.baseColor = .init(tint: .white, texture: .init(texture))
             let scale = SIMD2<Float>(item.photoFlipped ? -1 : 1, 1) / item.photoScale
-            material.textureCoordinateTransform = .init(offset: .zero, scale: scale, rotation: Float(item.photoTurns) * .pi / 2)
+            material.textureCoordinateTransform = .init(offset: .zero, scale: scale, rotation: Float(item.photoTurns) * .pi / 2 + item.photoAngle)
         }
         return material
     }

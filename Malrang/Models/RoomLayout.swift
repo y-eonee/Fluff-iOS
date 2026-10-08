@@ -7,7 +7,10 @@ enum RoomLayout {
     static let grid: Float = 0.1
 
     static func footprint(_ item: RoomItemState) -> (min: SIMD2<Float>, max: SIMD2<Float>) {
-        let size = SIMD2(item.kind.size.x, item.kind.size.z) / 2
+        let half = SIMD2(item.kind.size.x, item.kind.size.z) / 2
+        // 돌려 놓은 가구는 돌린 모양을 감싸는 네모로 본다.
+        let size = SIMD2(abs(cos(item.yaw)) * half.x + abs(sin(item.yaw)) * half.y,
+                         abs(sin(item.yaw)) * half.x + abs(cos(item.yaw)) * half.y)
         let center = SIMD2(item.x, item.z)
         return (center - size, center + size)
     }
@@ -57,9 +60,20 @@ enum RoomLayout {
         return nil
     }
 
-    /// 새 인형을 둘 기본 위치: 앞쪽 바닥의 빈 곳
-    static func dollSpot(index: Int) -> SIMD3<Float> {
-        let x = -0.5 + Float(index % 5) * 0.25
-        return [x, 0, 0.75]
+    /// 새 인형을 둘 기본 위치: 가구와 다른 인형에서 떨어진 앞쪽 바닥의 빈 곳
+    static func dollSpot(avoiding items: [RoomItemState], dolls: [SIMD3<Float>]) -> SIMD3<Float> {
+        for z in stride(from: Float(0.75), through: -0.5, by: -0.25) {
+            for x in stride(from: Float(-0.5), through: 0.5, by: 0.25) {
+                let point = SIMD2(x, z)
+                let isBlocked = items.contains { item in
+                    guard item.kind.blocksFloor else { return false }
+                    let box = footprint(item)
+                    return point.x > box.min.x - 0.1 && point.x < box.max.x + 0.1 && point.y > box.min.y - 0.1 && point.y < box.max.y + 0.1
+                }
+                let isCrowded = dolls.contains { simd_distance(SIMD2($0.x, $0.z), point) < 0.25 }
+                if !isBlocked && !isCrowded { return [x, 0, z] }
+            }
+        }
+        return [0, 0, 0.75]
     }
 }

@@ -9,11 +9,15 @@ struct DecorateView: View {
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @State private var category = FurnitureCategory.furniture
     @State private var original: [RoomItemState]?
+    @State private var originalDolls: [UUID: SIMD3<Float>] = [:]
+    @State private var hold: RoomSceneView.Hold?
     @State private var editingItem: RoomItem?
     @State private var isConfirmingDiscard = false
     @State private var isFull = false
 
-    private var hasChanges: Bool { original != nil && original != items.map(\.state) }
+    private var hasChanges: Bool {
+        original != nil && (original != items.map(\.state) || dolls.contains { originalDolls[$0.id] != $0.position })
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,11 +25,15 @@ struct DecorateView: View {
                 items: items.map(\.state),
                 dolls: dolls.filter(\.isPlaced).map(\.state),
                 mode: .decorate,
+                onHoldDoll: { hold = $0 },
+                onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
                 onMoveItem: move,
                 onDoubleTapItem: { id in editingItem = items.first { $0.id == id } }
             )
+            .renderedOnlyWhileVisible()
+            .overlay { holdTooltip }
             .overlay(alignment: .top) {
-                Text(isFull ? "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요" : "길게 눌러 옮기고, 두 번 탭해 꾸며요")
+                Text(isFull ? "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요" : "가구와 인형은 길게 눌러 옮기고, 가구는 두 번 탭해 꾸며요")
                     .font(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
                     .padding(.top, Spacing.xs)
@@ -54,11 +62,26 @@ struct DecorateView: View {
             FurnitureCustomView(item: item)
         }
         .onAppear {
-            if original == nil { original = items.map(\.state) }
+            if original == nil {
+                original = items.map(\.state)
+                originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
+            }
         }
         .task(id: isFull) {
             try? await Task.sleep(for: .seconds(3))
             isFull = false
+        }
+    }
+
+    /// 인형을 든 동안 머리 위를 따라다니며 어디에 놓일지 알려준다.
+    @ViewBuilder
+    private var holdTooltip: some View {
+        if let hold {
+            let seat = RoomLayout.seat(at: [hold.position.x, hold.position.z], in: items.map(\.state)).item
+            HintCapsule(text: "옮기는 중 · \(seat?.kind.label ?? "바닥")")
+                .fixedSize()
+                .position(x: hold.screen.x, y: hold.screen.y)
+                .allowsHitTesting(false)
         }
     }
 
@@ -99,11 +122,13 @@ struct DecorateView: View {
                 }
             }
             .frame(height: 220)
-            Button("적용하기") {
-                try? modelContext.save()
-                dismiss()
-            }
-            .buttonStyle(.primary)
+            CancelConfirmButtons(
+                onCancel: { if hasChanges { isConfirmingDiscard = true } else { dismiss() } },
+                onConfirm: {
+                    try? modelContext.save()
+                    dismiss()
+                }
+            )
         }
         .padding(Spacing.m)
         .background(Color.app.surface, in: UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous))
@@ -170,6 +195,9 @@ struct DecorateView: View {
 
     private func restoreOriginal() {
         guard let original else { return }
+        for doll in dolls {
+            if let position = originalDolls[doll.id] { doll.position = position }
+        }
         for item in items where !original.contains(where: { $0.id == item.id }) {
             modelContext.delete(item)
         }
