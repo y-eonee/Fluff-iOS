@@ -17,14 +17,14 @@ struct DollCustomizeStep: View {
                     }
                 }
                 section("속재료", note: "만졌을 때 느낌이 달라져요") {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: Spacing.xs)], alignment: .leading, spacing: Spacing.xs) {
+                    HStack(spacing: Spacing.xs) {
                         ForEach(Filling.allCases, id: \.self) { filling in
-                            Chip(title: filling.label, isSelected: draft.filling == filling) { draft.filling = filling }
+                            Chip(title: filling.label, isSelected: draft.filling == filling, isCompact: true) { draft.filling = filling }
                         }
                     }
                 }
                 section("인형 이름") {
-                    TextField("귀염둥이", text: $draft.name)
+                    TextField("", text: $draft.name, prompt: Text("귀염둥이").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
                         .font(.body)
                         .padding(Spacing.s)
                         .frame(minHeight: 44)
@@ -46,7 +46,7 @@ struct DollCustomizeStep: View {
     private var preview: some View {
         HStack {
             Button("이전 모양", systemImage: "chevron.left") { cycleShape(by: -1) }
-            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()))
+            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()), filling: draft.filling)
                 .frame(maxWidth: .infinity, maxHeight: 260)
                 .animation(.spring, value: draft.shape)
             Button("다음 모양", systemImage: "chevron.right") { cycleShape(by: 1) }

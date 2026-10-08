@@ -4,6 +4,7 @@ import SwiftUI
 struct DollArtwork: View {
     let shape: DollShape
     let cutout: Image
+    var filling = Filling.fluffy
 
     var body: some View {
         switch shape {
@@ -20,13 +21,8 @@ struct DollArtwork: View {
             // 귀 끝(-0.57w)부터 몸통 끝(+0.77w)까지 높이가 약 1.35w다.
             let w = min(proxy.size.width, proxy.size.height / 1.35)
             ZStack {
-                Circle().fill(fabric).frame(width: w * 0.3).offset(x: -w * 0.28, y: -w * 0.42)
-                Circle().fill(fabric).frame(width: w * 0.3).offset(x: w * 0.28, y: -w * 0.42)
-                RoundedRectangle(cornerRadius: w * 0.3, style: .continuous)
-                    .fill(fabric)
-                    .frame(width: w * 0.8, height: w * 0.7)
-                    .offset(y: w * 0.42)
-                Circle().fill(fabric).frame(width: w * 0.86).offset(y: -w * 0.12)
+                bearFabric(w, color: fabric)
+                    .overlay { FillingTexture(filling: filling).mask { bearFabric(w, color: .black) } }
                 cutout
                     .resizable()
                     .scaledToFill()
@@ -40,9 +36,24 @@ struct DollArtwork: View {
         .aspectRatio(0.74, contentMode: .fit)
     }
 
+    private func bearFabric(_ w: CGFloat, color: Color) -> some View {
+        ZStack {
+            Circle().fill(color).frame(width: w * 0.3).offset(x: -w * 0.28, y: -w * 0.42)
+            Circle().fill(color).frame(width: w * 0.3).offset(x: w * 0.28, y: -w * 0.42)
+            RoundedRectangle(cornerRadius: w * 0.3, style: .continuous)
+                .fill(color)
+                .frame(width: w * 0.8, height: w * 0.7)
+                .offset(y: w * 0.42)
+            Circle().fill(color).frame(width: w * 0.86).offset(y: -w * 0.12)
+        }
+        // 무늬가 귀부터 몸통 끝까지 덮도록 천 전체를 담는 크기로 잡는다.
+        .frame(width: w, height: w * 1.6)
+    }
+
     private var star: some View {
         ZStack {
             StarShape().fill(Color.app.pastelYellow)
+                .overlay { FillingTexture(filling: filling).mask { StarShape() } }
             StarShape().stroke(Color.white, style: StrokeStyle(lineWidth: 6, dash: [8, 6]))
                 .padding(10)
             cutout
@@ -69,6 +80,7 @@ struct DollArtwork: View {
             cutout
                 .resizable()
                 .scaledToFit()
+                .overlay { FillingTexture(filling: filling).mask { cutout.resizable().scaledToFit() } }
         }
         .padding(16)
         .aspectRatio(0.8, contentMode: .fit)

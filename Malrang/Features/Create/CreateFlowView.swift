@@ -5,15 +5,28 @@ import SwiftUI
 @Observable
 final class DollDraft {
     var photo: UIImage?
-    /// 자동 누끼 결과
+    /// 자동 투명화 결과
     var cutout: UIImage?
     /// 지우기·복원으로 다듬은 결과
     var editedCutout: UIImage?
     var shape = DollShape.bear
     var filling = Filling.fluffy
-    var name = "귀염둥이"
+    /// 비워 두면 플레이스홀더인 "귀염둥이"가 이름이 된다.
+    var name = ""
+    /// 확대해서 보여준 부분(사진 크기를 1로 본 비율). 인형에는 이 부분만 크게 들어간다.
+    var cropRect: CGRect?
 
-    var finalCutout: UIImage? { editedCutout ?? cutout }
+    /// 편집 화면에서 다듬는 이미지
+    var editable: UIImage? { editedCutout ?? cutout }
+
+    var finalCutout: UIImage? {
+        guard let image = editable else { return nil }
+        guard let cropRect, let cgImage = image.cgImage else { return image }
+        let width = CGFloat(cgImage.width), height = CGFloat(cgImage.height)
+        let rect = CGRect(x: cropRect.minX * width, y: cropRect.minY * height,
+                          width: cropRect.width * width, height: cropRect.height * height).integral
+        return cgImage.cropping(to: rect).map { UIImage(cgImage: $0) } ?? image
+    }
     var displayName: String { name.isEmpty ? "귀염둥이" : name }
 }
 
@@ -21,7 +34,7 @@ enum CreateStep: Hashable {
     case cutout, ready, customize, making, done
 }
 
-/// 사진 선택 → 누끼 편집 → 확인 → 모양·속재료 → 꿰매기 → 완성
+/// 사진 선택 → 이미지 편집 → 확인 → 모양·속재료 → 꿰매기 → 완성
 struct CreateFlowView: View {
     let onPlace: (Doll) -> Void
     @Environment(\.dismiss) private var dismiss
