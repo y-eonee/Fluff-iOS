@@ -25,19 +25,16 @@ struct DollListView: View {
             .overlay {
                 if dolls.isEmpty {
                     NoticeCard(symbol: "teddybear", title: "아직 인형이 없어요",
-                               message: "갤러리 속 사진으로 첫 인형을 만들어 보세요",
-                               actionTitle: "인형 만들기") { isCreating = true }
+                               message: "아래 + 버튼으로 갤러리 속 사진을 인형으로 만들어 보세요")
                 }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                FloatingAddButton(label: "인형 만들기") { isCreating = true }
+                    .padding(Spacing.m)
             }
             .background(Color.app.background)
             .navigationTitle("인형 목록")
-            .toolbar {
-                Button {
-                    isCreating = true
-                } label: {
-                    Label("인형 만들기", systemImage: "plus")
-                }
-            }
+            .toolbar { NotificationsButton() }
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)
             }
@@ -70,5 +67,6 @@ struct DollListView: View {
 #Preview {
     DollListView()
         .environment(AppState())
+        .environment(FriendStore(api: MockFriendAPI()))
         .modelContainer(.preview)
 }

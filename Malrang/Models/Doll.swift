@@ -117,7 +117,7 @@ enum Filling: String, CaseIterable {
 }
 
 enum DanceMove: String, CaseIterable {
-    case bounce, sway, spin, nod, jump
+    case bounce, sway, spin, nod, jump, squish
 
     var label: String {
         switch self {
@@ -126,6 +126,7 @@ enum DanceMove: String, CaseIterable {
         case .spin: "빙글빙글"
         case .nod: "까딱까딱"
         case .jump: "폴짝"
+        case .squish: "말랑말랑"
         }
     }
 
@@ -136,6 +137,7 @@ enum DanceMove: String, CaseIterable {
         case .spin: "arrow.trianglehead.2.clockwise.rotate.90"
         case .nod: "arrow.uturn.down"
         case .jump: "figure.jumprope"
+        case .squish: "arrow.down.right.and.arrow.up.left"
         }
     }
 }
