@@ -15,6 +15,8 @@ struct GuestbookView: View {
     @State private var heldID: UUID?
     @State private var heldCenter = CGPoint.zero
     @State private var grabOffset: CGPoint?
+    @State private var boardSize = CGSize.zero
+    @FocusState private var isWriting: Bool
 
     private let noteSize: CGFloat = 112
     private let trashSize: CGFloat = 64
@@ -53,8 +55,8 @@ struct GuestbookView: View {
         } else if let entries {
             GeometryReader { proxy in
                 ZStack {
-                    ForEach(entries) { entry in
-                        note(entry, boardSize: proxy.size)
+                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                        note(entry, rank: entries.count - index, boardSize: proxy.size)
                     }
                     if heldID != nil {
                         trash(boardSize: proxy.size)
@@ -68,6 +70,8 @@ struct GuestbookView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
             }
             .coordinateSpace(name: "board")
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { boardSize = $0 }
+            .onTapGesture { isWriting = false }
             .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: 4)
         } else {
@@ -76,7 +80,7 @@ struct GuestbookView: View {
         }
     }
 
-    private func note(_ entry: GuestbookEntry, boardSize: CGSize) -> some View {
+    private func note(_ entry: GuestbookEntry, rank: Int, boardSize: CGSize) -> some View {
         let isHeld = heldID == entry.id
         let center = isHeld ? heldCenter : center(of: entry, in: boardSize)
         return VStack(alignment: .leading, spacing: Spacing.xxs) {
@@ -95,7 +99,7 @@ struct GuestbookView: View {
         .rotationEffect(.degrees(isHeld ? 0 : Double(entry.id.uuid.0 % 7) - 3))
         .scaleEffect(isHeld ? 1.08 : 1)
         .position(center)
-        .zIndex(isHeld ? 1 : 0)
+        .zIndex(isHeld ? Double(rank) + 1000 : Double(rank))
         .gesture(canEdit(entry) ? hold(entry, boardSize: boardSize) : nil)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.author)의 메모, \(entry.message)")
@@ -125,6 +129,9 @@ struct GuestbookView: View {
     private var composer: some View {
         HStack(spacing: Spacing.xs) {
             TextField("방명록을 남겨 보세요", text: $draft)
+                .focused($isWriting)
+                .submitLabel(.done)
+                .onSubmit { isWriting = false }
                 .padding(.horizontal, Spacing.s)
                 .frame(minHeight: 44)
                 .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
@@ -193,6 +200,28 @@ struct GuestbookView: View {
             }
     }
 
+    /// 겹치지 않는 첫 빈자리. 빈자리가 없으면 가장 덜 겹치는 곳.
+    private func freeSpot(among entries: [GuestbookEntry]) -> CGPoint {
+        let size = boardSize
+        guard size.width > noteSize, size.height > noteSize else { return CGPoint(x: 0.5, y: 0.1) }
+        let columns = max(1, Int(size.width / (noteSize + Spacing.xs)))
+        let rows = max(1, Int(size.height / (noteSize + Spacing.xs)))
+        let others = entries.map { center(of: $0, in: size) }
+        var best = CGPoint(x: 0, y: 0)
+        var bestGap = -CGFloat.infinity
+        for row in 0..<rows {
+            for column in 0..<columns {
+                let candidate = CGPoint(x: columns > 1 ? Double(column) / Double(columns - 1) : 0.5,
+                                        y: rows > 1 ? Double(row) / Double(rows - 1) : 0.5)
+                let point = center(of: GuestbookEntry(author: "", message: "", colorName: "", x: candidate.x, y: candidate.y), in: size)
+                let gap = others.map { hypot($0.x - point.x, $0.y - point.y) }.min() ?? .infinity
+                if gap >= noteSize { return candidate }
+                if gap > bestGap { (best, bestGap) = (candidate, gap) }
+            }
+        }
+        return best
+    }
+
     private func drop(_ entry: GuestbookEntry, at point: CGPoint, in size: CGSize) {
         let x = min(1, max(0, (point.x - noteSize / 2) / max(1, size.width - noteSize)))
         let y = min(1, max(0, (point.y - noteSize / 2) / max(1, size.height - noteSize)))
@@ -219,9 +248,14 @@ struct GuestbookView: View {
 
     private func post() async {
         let message = draft.trimmingCharacters(in: .whitespaces)
-        guard let entry = try? await store.api.writeGuestbook(message, to: ownerID) else { return }
+        guard var entry = try? await store.api.writeGuestbook(message, to: ownerID) else { return }
+        // 새 메모지는 다른 메모지와 안 겹치는 빈 곳에 놓고, 가장 위에 보이게 한다.
+        let spot = freeSpot(among: entries ?? [])
+        (entry.x, entry.y) = (spot.x, spot.y)
+        Task { try? await store.api.moveGuestbookEntry(entry.id, to: spot, of: ownerID) }
         withAnimation(.spring) { entries?.insert(entry, at: 0) }
         draft = ""
+        isWriting = false
         postCount += 1
     }
 }
