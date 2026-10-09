@@ -34,10 +34,14 @@ struct RoomSceneView: UIViewRepresentable {
     /// 가구 하나를 보여줄 때 한 손가락으로 돌려 볼 수 있다. 사진을 꾸밀 때는 두 손가락으로 크기와 기울기도 바꾼다.
     var isPhotoEditing = false
     var onPinch: (CGFloat) -> Void = { _ in }
-    /// 두 손가락을 위아래로 쓸 때마다 사진이 기울어질 양(라디안)을 알린다.
-    var onTilt: (Float) -> Void = { _ in }
-    /// 한 손가락 회전을 마치면 돌린 각도(라디안)를 알린다.
-    var onOrbitEnd: (Float) -> Void = { _ in }
+    /// 두 손가락으로 쓸 때마다 사진을 옮길 양(화면 너비를 1로 본 비율)을 알린다.
+    var onPan: (CGSize) -> Void = { _ in }
+    /// 꾸미기 화면에서 고른 가구. 테두리로 표시한다.
+    var selectedItemID: UUID?
+    /// 가구를 한 번 탭하면 그 가구의 id, 빈 곳을 탭하면 nil
+    var onTapItem: (UUID?) -> Void = { _ in }
+    /// 가구나 인형을 집거나 놓을 때 불린다. 화면이 이걸로 햅틱을 울린다.
+    var onFeel: () -> Void = {}
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -56,7 +60,7 @@ struct RoomSceneView: UIViewRepresentable {
 
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.render(SceneState(items: items, dolls: dolls, focusItem: focusItem))
+        context.coordinator.render(SceneState(items: items, dolls: dolls, focusItem: focusItem, selectedItemID: selectedItemID))
         context.coordinator.play(touch)
     }
 
@@ -64,6 +68,7 @@ struct RoomSceneView: UIViewRepresentable {
         var items: [RoomItemState]
         var dolls: [DollState]
         var focusItem: RoomItemState?
+        var selectedItemID: UUID?
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
@@ -118,12 +123,12 @@ struct RoomSceneView: UIViewRepresentable {
             if parent.focusItem != nil {
                 let orbit = UIPanGestureRecognizer(target: self, action: #selector(handleOrbit))
                 orbit.maximumNumberOfTouches = 1
-                let tiltPan = UIPanGestureRecognizer(target: self, action: #selector(handleTilt))
-                tiltPan.minimumNumberOfTouches = 2
-                tiltPan.delegate = self
+                let movePan = UIPanGestureRecognizer(target: self, action: #selector(handlePan))
+                movePan.minimumNumberOfTouches = 2
+                movePan.delegate = self
                 let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch))
                 pinch.delegate = self
-                [orbit, tiltPan, pinch].forEach(view.addGestureRecognizer)
+                [orbit, movePan, pinch].forEach(view.addGestureRecognizer)
             }
             if parent.mode != .view {
                 let press = UILongPressGestureRecognizer(target: self, action: #selector(handlePress))
@@ -144,7 +149,7 @@ struct RoomSceneView: UIViewRepresentable {
             let content = Entity()
             if var item = state.focusItem {
                 (item.x, item.z, item.yaw) = (0, 0, 0)
-                content.addChild(await SceneFactory.furniture(item))
+                content.addChild(await SceneFactory.furniture(item, onFloor: true))
                 let size = item.kind.size
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
@@ -157,6 +162,9 @@ struct RoomSceneView: UIViewRepresentable {
                     content.addChild(await SceneFactory.doll(doll))
                 }
                 content.addChild(SceneFactory.memoBoard())
+                if let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
+                    content.addChild(SceneFactory.selectionBox(selected))
+                }
                 aimCamera(at: [0, 0.45, 0], fitting: 3.3, height: 3.1)
             }
             guard !Task.isCancelled else { return }
@@ -205,15 +213,13 @@ struct RoomSceneView: UIViewRepresentable {
             orbitYaw += Float(gesture.translation(in: view).x) * 0.01
             gesture.setTranslation(.zero, in: view)
             root.children.first?.orientation = simd_quatf(angle: orbitYaw, axis: [0, 1, 0])
-            if gesture.state == .ended, parent.focusItem?.kind.isMovable == true {
-                parent.onOrbitEnd(orbitYaw)
-            }
         }
 
-        /// 두 손가락을 위아래로 쓸면 사진이 그 방향으로 기울어진다.
-        @objc private func handleTilt(_ gesture: UIPanGestureRecognizer) {
+        /// 두 손가락으로 쓸면 사진이 그 방향으로 옮겨진다.
+        @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
             guard let view, parent.isPhotoEditing else { return }
-            parent.onTilt(Float(gesture.translation(in: view).y) * 0.01)
+            let move = gesture.translation(in: view)
+            parent.onPan(CGSize(width: move.x / view.bounds.width, height: move.y / view.bounds.width))
             gesture.setTranslation(.zero, in: view)
         }
 
@@ -224,8 +230,12 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let view, parent.mode != .decorate else { return }
+            guard let view else { return }
             let point = gesture.location(in: view)
+            if parent.mode == .decorate {
+                if let hit = target(at: point), !hit.isDoll { parent.onTapItem(hit.id) } else { parent.onTapItem(nil) }
+                return
+            }
             if isBoard(view.entity(at: point)) {
                 parent.onTapBoard()
             } else if let hit = target(at: point), hit.isDoll {
@@ -254,6 +264,7 @@ struct RoomSceneView: UIViewRepresentable {
             case .began:
                 guard let hit = target(at: point), canDrag(hit) else { return }
                 hit.entity.stopAllAnimations()
+                parent.onFeel()
                 drag = Drag(entity: hit.entity, id: hit.id, isDoll: hit.isDoll, start: hit.entity.position)
                 if hit.isDoll {
                     hit.entity.position.y += lift
@@ -269,13 +280,21 @@ struct RoomSceneView: UIViewRepresentable {
                         drag.entity.position = spot + [0, lift, 0]
                         report(drag.entity)
                     }
-                } else if let kind = item(drag.id)?.kind, let floor = floorPoint(at: point) {
-                    let snapped = RoomLayout.snapped(floor, for: kind)
-                    drag.entity.position = [snapped.x, 0, snapped.y]
+                } else if let moving = item(drag.id), let floor = floorPoint(at: point) {
+                    let snapped = RoomLayout.snapped(floor, for: moving.kind, yaw: moving.yaw)
+                    if moving.kind.hangsOnWall {
+                        var hung = moving
+                        (hung.x, hung.z) = (snapped.x, snapped.y)
+                        drag.entity.position = [snapped.x, FurnitureKind.hangHeight, snapped.y]
+                        drag.entity.orientation = simd_quatf(angle: RoomLayout.wall(of: hung).yaw, axis: [0, 1, 0])
+                    } else {
+                        drag.entity.position = [snapped.x, 0, snapped.y]
+                    }
                 }
             case .ended, .cancelled, .failed:
                 guard let drag else { return }
                 self.drag = nil
+                parent.onFeel()
                 highlights.forEach { $0.removeFromParent() }
                 highlights = []
                 if drag.isDoll {
@@ -297,6 +316,7 @@ struct RoomSceneView: UIViewRepresentable {
             }
         }
 
+        /// 집거나 놓을 때 짧게 진동한다. 마이페이지에서 햅틱을 껐으면 울리지 않는다.
         private func canDrag(_ hit: (entity: Entity, id: UUID, isDoll: Bool)) -> Bool {
             switch parent.mode {
             case .home: hit.isDoll && parent.canMoveDolls

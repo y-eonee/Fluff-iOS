@@ -11,9 +11,14 @@ struct DecorateView: View {
     @State private var original: [RoomItemState]?
     @State private var originalDolls: [UUID: SIMD3<Float>] = [:]
     @State private var hold: RoomSceneView.Hold?
+    @AppStorage("hapticOn") private var hapticOn = true
+    @State private var feelCount = 0
+    @State private var selectedID: UUID?
+    @State private var rotationFailCount = 0
     @State private var editingItem: RoomItem?
     @State private var isConfirmingDiscard = false
     @State private var isFull = false
+    @State private var isBlocked = false
 
     private var hasChanges: Bool {
         original != nil && (original != items.map(\.state) || dolls.contains { originalDolls[$0.id] != $0.position })
@@ -28,12 +33,16 @@ struct DecorateView: View {
                 onHoldDoll: { hold = $0 },
                 onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
                 onMoveItem: move,
-                onDoubleTapItem: { id in editingItem = items.first { $0.id == id } }
+                onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
+                selectedItemID: selectedID,
+                onTapItem: { selectedID = $0 },
+                onFeel: { feelCount += 1 }
             )
             .renderedOnlyWhileVisible()
             .overlay { holdTooltip }
+            .overlay(alignment: .bottom) { selectionToolbar }
             .overlay(alignment: .top) {
-                Text(isFull ? "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요" : "가구와 인형은 길게 눌러 옮기고, 가구는 두 번 탭해 꾸며요")
+                Text(isBlocked ? "돌릴 자리가 없어요. 주변 가구를 옮겨 주세요" : isFull ? "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요" : "가구는 탭해서 고르고, 길게 눌러 옮겨요. 인형도 옮길 수 있어요")
                     .font(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
                     .padding(.top, Spacing.xs)
@@ -41,6 +50,7 @@ struct DecorateView: View {
             panel
         }
         .background(Color.app.background)
+        .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         .navigationTitle("마이 홈")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
@@ -67,6 +77,10 @@ struct DecorateView: View {
                 originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
             }
         }
+        .task(id: isBlocked) {
+            try? await Task.sleep(for: .seconds(3))
+            isBlocked = false
+        }
         .task(id: isFull) {
             try? await Task.sleep(for: .seconds(3))
             isFull = false
@@ -83,6 +97,69 @@ struct DecorateView: View {
                 .position(x: hold.screen.x, y: hold.screen.y)
                 .allowsHitTesting(false)
         }
+    }
+
+    private var selectedItem: RoomItem? { items.first { $0.id == selectedID } }
+
+    /// 가구를 한 번 탭하면 나오는 도구 막대: 꾸미기, 회전, 삭제, 완료
+    @ViewBuilder
+    private var selectionToolbar: some View {
+        if let item = selectedItem {
+            HStack(spacing: Spacing.xxs) {
+                toolButton("꾸미기", symbol: "paintbrush") { editingItem = item }
+                if item.kind.isMovable && !item.kind.hangsOnWall {
+                    toolButton("회전", symbol: "rotate.right") { rotate(item) }
+                }
+                if item.kind.isMovable {
+                    toolButton("삭제", symbol: "trash", tint: Color.app.danger) { remove(item) }
+                }
+                toolButton("완료", symbol: "checkmark", isProminent: true) { selectedID = nil }
+            }
+            .padding(Spacing.xxs)
+            .background(Color.app.surface, in: Capsule())
+            .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: 4)
+            .padding(.bottom, Spacing.s)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .sensoryFeedback(.warning, trigger: rotationFailCount)
+        }
+    }
+
+    private func toolButton(_ title: String, symbol: String, tint: Color = Color.app.ink, isProminent: Bool = false,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: Spacing.xxs) {
+                Image(systemName: symbol).font(.body)
+                Text(title).font(.caption)
+            }
+            .foregroundStyle(tint)
+            .frame(minWidth: 56, minHeight: 48)
+            .padding(.horizontal, Spacing.xxs)
+            .background(isProminent ? Color.app.accent : .clear, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 90도씩 돌린다. 돌린 자리가 다른 가구와 겹치면 돌리지 않는다.
+    private func rotate(_ item: RoomItem) {
+        var rotated = item.state
+        rotated.yaw = (rotated.yaw + .pi / 2).truncatingRemainder(dividingBy: 2 * .pi)
+        let spot = RoomLayout.snapped([rotated.x, rotated.z], for: rotated.kind, yaw: rotated.yaw)
+        (rotated.x, rotated.z) = (spot.x, spot.y)
+        guard !RoomLayout.overlaps(rotated, in: items.map(\.state)) else {
+            rotationFailCount += 1
+            isBlocked = true
+            return
+        }
+        withAnimation(.spring) {
+            item.yaw = Double(rotated.yaw)
+            item.x = Double(spot.x)
+            item.z = Double(spot.y)
+        }
+    }
+
+    private func remove(_ item: RoomItem) {
+        selectedID = nil
+        modelContext.delete(item)
     }
 
     private var panel: some View {

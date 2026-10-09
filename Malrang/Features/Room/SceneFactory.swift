@@ -9,7 +9,8 @@ enum SceneFactory {
     /// 불러온 USDZ 모델(없으면 nil). 장면을 다시 그릴 때마다 파일을 찾지 않도록 기억해 둔다.
     private static var models: [FurnitureKind: Entity?] = [:]
 
-    static func furniture(_ item: RoomItemState) async -> Entity {
+    /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
+    static func furniture(_ item: RoomItemState, onFloor: Bool = false) async -> Entity {
         if models[item.kind] == nil {
             models[item.kind] = .some(try? await Entity(named: item.kind.assetName))
         }
@@ -20,8 +21,9 @@ enum SceneFactory {
             entity = await placeholder(item)
         }
         entity.name = "item|\(item.id)"
-        entity.position = [item.x, 0, item.z]
-        entity.orientation = simd_quatf(angle: item.yaw, axis: [0, 1, 0])
+        let hangs = item.kind.hangsOnWall && !onFloor
+        entity.position = [item.x, hangs ? FurnitureKind.hangHeight : 0, item.z]
+        entity.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : item.yaw, axis: [0, 1, 0])
         entity.generateCollisionShapes(recursive: true)
         return entity
     }
@@ -168,6 +170,18 @@ enum SceneFactory {
         return entity
     }
 
+    /// 꾸미기 화면에서 고른 가구를 감싸는 반투명 테두리 상자
+    static func selectionBox(_ item: RoomItemState) -> Entity {
+        var material = UnlitMaterial(color: UIColor(named: "brandAccent") ?? .systemPink)
+        material.blending = .transparent(opacity: 0.35)
+        let size = item.kind.size
+        let box = ModelEntity(mesh: .generateBox(size: [size.x + 0.04, max(size.y, 0.04) + 0.04, size.z + 0.04], cornerRadius: 0.01), materials: [material])
+        let hangs = item.kind.hangsOnWall
+        box.position = [item.x, (hangs ? FurnitureKind.hangHeight : 0) + size.y / 2, item.z]
+        box.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : item.yaw, axis: [0, 1, 0])
+        return box
+    }
+
     private static func material(_ item: RoomItemState, withPhoto: Bool = true) async -> RealityKit.Material {
         var material = PhysicallyBasedMaterial()
         material.roughness = 0.9
@@ -177,7 +191,7 @@ enum SceneFactory {
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
             material.baseColor = .init(tint: .white, texture: .init(texture))
             let scale = SIMD2<Float>(item.photoFlipped ? -1 : 1, 1) / item.photoScale
-            material.textureCoordinateTransform = .init(offset: .zero, scale: scale, rotation: Float(item.photoTurns) * .pi / 2 + item.photoAngle)
+            material.textureCoordinateTransform = .init(offset: [item.photoOffsetX, item.photoOffsetY], scale: scale, rotation: Float(item.photoTurns) * .pi / 2)
         }
         return material
     }

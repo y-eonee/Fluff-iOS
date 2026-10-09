@@ -110,6 +110,12 @@ enum FurnitureKind: String, CaseIterable {
 
     var isMovable: Bool { self != .wall && self != .floor }
 
+    /// 벽에 걸리는 가구(액자). 바닥이 아니라 벽면을 따라 옮긴다.
+    var hangsOnWall: Bool { self == .frame }
+
+    /// 벽에 걸릴 때 아래쪽 끝의 높이
+    static let hangHeight: Float = 0.7
+
     /// 러그는 다른 가구와 겹쳐 놓을 수 있다.
-    var blocksFloor: Bool { isMovable && category != .rug }
+    var blocksFloor: Bool { isMovable && category != .rug && !hangsOnWall }
 }

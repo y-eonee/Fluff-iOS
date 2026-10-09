@@ -16,6 +16,8 @@ struct HomeView: View {
     /// 배치 모드일 때 시작 위치. 취소하면 여기로 되돌린다. nil이면 배치 모드가 아니다.
     @State private var placementStart: [UUID: SIMD3<Float>]?
     @State private var lastMovedID: UUID?
+    @AppStorage("hapticOn") private var hapticOn = true
+    @State private var feelCount = 0
     @State private var hold: RoomSceneView.Hold?
     @State private var toast: Toast?
 
@@ -48,7 +50,8 @@ struct HomeView: View {
                                 dolls.first { $0.id == id }?.position = position
                                 lastMovedID = id
                             },
-                            onTapBoard: { if placementStart == nil { isShowingGuestbook = true } }
+                            onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
+                            onFeel: { feelCount += 1 }
                         )
                         .renderedOnlyWhileVisible()
                     }
@@ -90,6 +93,7 @@ struct HomeView: View {
                 toast = nil
             }
             .sensoryFeedback(.success, trigger: toast?.message)
+            .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         }
     }
 
