@@ -5,6 +5,7 @@ struct FriendsView: View {
     @Environment(FriendStore.self) private var store
     @State private var phase = Phase.loading
     @State private var isAdding = false
+    @State private var rooms: [String: FriendRoom] = [:]
 
     enum Phase {
         case loading, failed, loaded
@@ -68,10 +69,10 @@ struct FriendsView: View {
 
     private func row(_ friend: Friend) -> some View {
         HStack(spacing: Spacing.s) {
-            Image(systemName: "house.fill")
-                .font(.title3)
-                .frame(width: 48, height: 48)
-                .background(Color.app.pastelSky, in: Circle())
+            thumbnail(of: friend)
+                .frame(width: 104, height: 84)
+                .background(Color.app.pastelSky.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
             Text("\(friend.name)의 방")
                 .font(.headline)
             Spacer()
@@ -81,9 +82,22 @@ struct FriendsView: View {
         }
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.s)
-        .frame(minHeight: 64)
         .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func thumbnail(of friend: Friend) -> some View {
+        switch rooms[friend.id] {
+        case .some(let room) where !room.items.isEmpty:
+            RoomThumbnail(room: room)
+        case .some:
+            Image(systemName: "house")
+                .font(.title2)
+                .foregroundStyle(Color.app.inkSecondary)
+        case .none:
+            ProgressView()
+        }
     }
 
     private func load() async {
@@ -91,6 +105,10 @@ struct FriendsView: View {
         do {
             try await store.loadFriends()
             phase = .loaded
+            // 방은 하나씩 불러오는 대로 썸네일이 채워진다. 못 불러온 방은 빈 방으로 보여준다.
+            for friend in store.friends where rooms[friend.id] == nil {
+                rooms[friend.id] = (try? await store.api.room(of: friend)) ?? FriendRoom(items: [], dolls: [])
+            }
         } catch {
             phase = .failed
         }
