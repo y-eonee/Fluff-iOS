@@ -12,8 +12,9 @@ final class RoomItem {
     var photoScale = 1.0
     var photoFlipped = false
     var photoTurns = 0
-    /// 사진을 비스듬히 기울인 각도(라디안)
-    var photoAngle = 0.0
+    /// 사진을 옮긴 위치(텍스처 좌표)
+    var photoOffsetX = 0.0
+    var photoOffsetY = 0.0
     /// 가구를 돌려 놓은 각도(라디안)
     var yaw = 0.0
     var createdAt = Date()
@@ -29,7 +30,7 @@ final class RoomItem {
     var state: RoomItemState {
         RoomItemState(id: id, kind: kind, x: Float(x), z: Float(z), colorName: colorName,
                       photoData: photoData, photoScale: Float(photoScale), photoFlipped: photoFlipped, photoTurns: photoTurns,
-                      photoAngle: Float(photoAngle), yaw: Float(yaw))
+                      photoOffsetX: Float(photoOffsetX), photoOffsetY: Float(photoOffsetY), yaw: Float(yaw))
     }
 
     func restore(_ state: RoomItemState) {
@@ -40,7 +41,8 @@ final class RoomItem {
         photoScale = Double(state.photoScale)
         photoFlipped = state.photoFlipped
         photoTurns = state.photoTurns
-        photoAngle = Double(state.photoAngle)
+        photoOffsetX = Double(state.photoOffsetX)
+        photoOffsetY = Double(state.photoOffsetY)
         yaw = Double(state.yaw)
     }
 
@@ -68,7 +70,8 @@ struct RoomItemState: Identifiable, Equatable {
     var photoScale: Float = 1
     var photoFlipped = false
     var photoTurns = 0
-    var photoAngle: Float = 0
+    var photoOffsetX: Float = 0
+    var photoOffsetY: Float = 0
     var yaw: Float = 0
 }
 

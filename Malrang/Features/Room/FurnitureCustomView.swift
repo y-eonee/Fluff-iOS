@@ -13,6 +13,18 @@ struct FurnitureCustomView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var photoScale: Double
     private let original: RoomItemState
+    @State private var undoStack: [PhotoEdit] = []
+    @State private var lastRemembered = Date.distantPast
+
+    /// 사진 탭에서 되돌릴 수 있는 한 단계
+    private struct PhotoEdit {
+        var data: Data?
+        var scale: Double
+        var isFlipped: Bool
+        var turns: Int
+        var offsetX: Double
+        var offsetY: Double
+    }
 
     enum Style: String, CaseIterable {
         case basic = "기본"
@@ -31,12 +43,25 @@ struct FurnitureCustomView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch,
-                          onTilt: { item.photoAngle += Double($0) }, onOrbitEnd: { item.yaw = Double($0) })
+            RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan)
                 .renderedOnlyWhileVisible()
                 .overlay(alignment: .top) {
-                    HintCapsule(text: isEditingPhoto ? "두 손가락으로 크기와 기울기를 조절해 보세요" : "드래그해서 이리저리 돌려 보세요")
+                    HintCapsule(text: isEditingPhoto ? "두 손가락으로 크기와 위치를 조절해 보세요" : "드래그해서 이리저리 돌려 보세요")
                         .padding(.top, Spacing.xs)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if style == .photo {
+                        Button(action: undo) {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.title3)
+                                .frame(width: 44, height: 44)
+                                .background(Color.app.surface, in: Circle())
+                        }
+                        .foregroundStyle(Color.app.ink)
+                        .disabled(undoStack.isEmpty)
+                        .accessibilityLabel("되돌리기")
+                        .padding(Spacing.s)
+                    }
                 }
             VStack(spacing: Spacing.m) {
                 Picker("꾸미기 방식", selection: $style) {
@@ -149,7 +174,10 @@ struct FurnitureCustomView: View {
             thumbnail(item.photoData ?? Data())
                 .frame(width: 120)
                 .overlay(alignment: .topTrailing) {
-                    Button("사진 빼기", systemImage: "xmark.circle.fill") { item.photoData = nil }
+                    Button("사진 빼기", systemImage: "xmark.circle.fill") {
+                        remember()
+                        item.photoData = nil
+                    }
                         .labelStyle(.iconOnly)
                         .font(.title3)
                         .foregroundStyle(Color.app.ink, Color.app.surface)
@@ -160,16 +188,18 @@ struct FurnitureCustomView: View {
                     Text("크기 조절")
                         .font(.headline)
                     Slider(value: $photoScale, in: 0.5...3) { isEditing in
-                        if !isEditing { item.photoScale = photoScale }
+                        if isEditing { remember() } else { item.photoScale = photoScale }
                     }
                 }
                 HStack(spacing: Spacing.s) {
                     Button {
+                        remember()
                         item.photoFlipped.toggle()
                     } label: {
                         Label("좌우 반전", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
                     }
                     Button {
+                        remember()
                         item.photoTurns = (item.photoTurns + 1) % 4
                     } label: {
                         Label("회전", systemImage: "rotate.right")
@@ -192,17 +222,51 @@ struct FurnitureCustomView: View {
             .clipShape(RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
     }
 
+    /// 되돌리기용으로 지금 사진 상태를 저장한다.
+    private func remember() {
+        undoStack.append(PhotoEdit(data: item.photoData, scale: item.photoScale, isFlipped: item.photoFlipped,
+                                   turns: item.photoTurns, offsetX: item.photoOffsetX, offsetY: item.photoOffsetY))
+        lastRemembered = .now
+    }
+
+    /// 두 손가락으로 계속 움직이는 동안에는 시작할 때 한 번만 저장한다.
+    private func rememberGesture() {
+        if Date.now.timeIntervalSince(lastRemembered) > 0.8 { remember() }
+        lastRemembered = .now
+    }
+
+    private func undo() {
+        guard let last = undoStack.popLast() else { return }
+        item.photoData = last.data
+        item.photoScale = last.scale
+        item.photoFlipped = last.isFlipped
+        item.photoTurns = last.turns
+        item.photoOffsetX = last.offsetX
+        item.photoOffsetY = last.offsetY
+        photoScale = last.scale
+    }
+
+    private func pan(_ move: CGSize) {
+        rememberGesture()
+        let factor = 0.5 / photoScale
+        item.photoOffsetX -= Double(move.width) * factor * (item.photoFlipped ? -1 : 1)
+        item.photoOffsetY -= Double(move.height) * factor
+    }
+
     private func pinch(_ scale: CGFloat) {
+        rememberGesture()
         photoScale = min(3, max(0.5, photoScale * scale))
         item.photoScale = photoScale
     }
 
     private func apply(_ data: Data) {
+        remember()
         item.photoData = data
         item.photoScale = 1
         item.photoFlipped = false
         item.photoTurns = 0
-        item.photoAngle = 0
+        item.photoOffsetX = 0
+        item.photoOffsetY = 0
         photoScale = 1
     }
 
