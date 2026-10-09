@@ -16,7 +16,7 @@ struct DollCustomizeStep: View {
                         }
                     }
                 }
-                section("속재료", note: "만졌을 때 느낌이 달라져요") {
+                section("속재료", note: "만졌을 때 소리가 달라져요") {
                     HStack(spacing: Spacing.xs) {
                         ForEach(Filling.allCases, id: \.self) { filling in
                             Chip(title: filling.label, isSelected: draft.filling == filling, isCompact: true) { draft.filling = filling }
@@ -46,7 +46,7 @@ struct DollCustomizeStep: View {
     private var preview: some View {
         HStack {
             Button("이전 모양", systemImage: "chevron.left") { cycleShape(by: -1) }
-            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()), filling: draft.filling)
+            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()))
                 .frame(maxWidth: .infinity, maxHeight: 260)
                 .animation(.spring, value: draft.shape)
             Button("다음 모양", systemImage: "chevron.right") { cycleShape(by: 1) }

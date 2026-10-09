@@ -48,7 +48,7 @@ struct SquishyDoll: View {
         VStack(spacing: Spacing.xs) {
             hint
             dollImage
-                .scaleEffect(x: 1 + press * doll.filling.pressDepth * 0.6, y: 1 - press * doll.filling.pressDepth, anchor: .bottom)
+                .scaleEffect(x: 1 + press * 0.15, y: 1 - press * 0.25, anchor: .bottom)
                 .rotationEffect(.degrees(stroke.width * (reduceMotion ? 0.02 : 0.08)), anchor: .bottom)
                 .padding(.horizontal, Spacing.l)
                 .contentShape(Rectangle())
@@ -56,9 +56,9 @@ struct SquishyDoll: View {
                 .accessibilityLabel(doll.name)
                 .accessibilityAddTraits(.allowsDirectInteraction)
         }
-        .sensoryFeedback(trigger: pressCount) { _, _ in hapticOn ? doll.filling.haptic : nil }
+        .sensoryFeedback(trigger: pressCount) { _, _ in hapticOn ? .impact(flexibility: .soft, intensity: 0.6) : nil }
         .sensoryFeedback(trigger: strokeCount) { _, _ in hapticOn ? .impact(weight: .light, intensity: 0.5) : nil }
-        .sensoryFeedback(trigger: releaseCount) { _, _ in hapticOn ? doll.filling.haptic : nil }
+        .sensoryFeedback(trigger: releaseCount) { _, _ in hapticOn ? .impact(flexibility: .soft, intensity: 0.6) : nil }
     }
 
     /// 춤을 적용한 인형은 만지는 동안에도 계속 춤춘다.
@@ -110,7 +110,7 @@ struct SquishyDoll: View {
                 isTouching = false
                 releaseCount += 1
                 if soundOn { AudioServicesPlaySystemSound(doll.filling.systemSoundID) }
-                withAnimation(.spring(duration: 0.5, bounce: reduceMotion ? 0 : doll.filling.bounce)) {
+                withAnimation(.spring(duration: 0.5, bounce: reduceMotion ? 0 : 0.3)) {
                     press = 0
                     stroke = .zero
                 }

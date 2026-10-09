@@ -4,7 +4,6 @@ import SwiftUI
 struct DollArtwork: View {
     let shape: DollShape
     let cutout: Image
-    var filling = Filling.fluffy
 
     var body: some View {
         switch shape {
@@ -22,7 +21,6 @@ struct DollArtwork: View {
             let w = min(proxy.size.width, proxy.size.height / 1.35)
             ZStack {
                 bearFabric(w, color: fabric)
-                    .overlay { FillingTexture(filling: filling).mask { bearFabric(w, color: .black) } }
                 cutout
                     .resizable()
                     .scaledToFill()
@@ -53,7 +51,6 @@ struct DollArtwork: View {
     private var star: some View {
         ZStack {
             StarShape().fill(Color.app.pastelYellow)
-                .overlay { FillingTexture(filling: filling).mask { StarShape() } }
             StarShape().stroke(Color.white, style: StrokeStyle(lineWidth: 6, dash: [8, 6]))
                 .padding(10)
             cutout
@@ -80,7 +77,6 @@ struct DollArtwork: View {
             cutout
                 .resizable()
                 .scaledToFit()
-                .overlay { FillingTexture(filling: filling).mask { cutout.resizable().scaledToFit() } }
         }
         .padding(16)
         .aspectRatio(0.8, contentMode: .fit)

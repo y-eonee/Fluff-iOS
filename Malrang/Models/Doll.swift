@@ -65,7 +65,7 @@ enum DollShape: String, CaseIterable {
     }
 }
 
-/// 속재료. 만질 때 눌리는 깊이, 튕김, 햅틱, 소리가 달라진다.
+/// 속재료. 만질 때 나는 소리만 달라진다.
 enum Filling: String, CaseIterable {
     case fluffy, beads, jelly, foam
 
@@ -75,33 +75,6 @@ enum Filling: String, CaseIterable {
         case .beads: "몽글 비즈"
         case .jelly: "쫀득 젤리"
         case .foam: "말랑 폼"
-        }
-    }
-
-    var pressDepth: CGFloat {
-        switch self {
-        case .fluffy: 0.22
-        case .beads: 0.12
-        case .jelly: 0.3
-        case .foam: 0.26
-        }
-    }
-
-    var bounce: Double {
-        switch self {
-        case .fluffy: 0.3
-        case .beads: 0.1
-        case .jelly: 0.7
-        case .foam: 0.15
-        }
-    }
-
-    var haptic: SensoryFeedback {
-        switch self {
-        case .fluffy: .impact(flexibility: .soft, intensity: 0.6)
-        case .beads: .impact(flexibility: .rigid, intensity: 0.8)
-        case .jelly: .impact(flexibility: .solid, intensity: 1)
-        case .foam: .impact(flexibility: .soft, intensity: 0.4)
         }
     }
 
