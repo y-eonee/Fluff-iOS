@@ -13,7 +13,8 @@ struct CutoutEditStep: View {
     @State private var current: Stroke?
     @State private var zoom = 1.0
     @State private var zoomBase = 1.0
-    @State private var zoomAnchor = UnitPoint.center
+    @State private var offset = CGSize.zero
+    @State private var panBase: CGSize?
     @State private var isZooming = false
     @State private var shine: CGFloat = -0.4
     @State private var canvasSize = CGSize.zero
@@ -23,7 +24,7 @@ struct CutoutEditStep: View {
     }
 
     enum Tool {
-        case auto, erase, restore
+        case auto, erase, restore, move
     }
 
     struct Stroke {
@@ -98,31 +99,32 @@ struct CutoutEditStep: View {
                         .background(Color.app.surface, in: Circle())
                 }
                 .accessibilityLabel("모두 지우기")
-                .disabled(strokes.isEmpty && zoom == 1)
+                .disabled(strokes.isEmpty && zoom == 1 && offset == .zero)
                 Spacer()
             }
             .font(.title3)
             .foregroundStyle(Color.app.ink)
-            Text("손가락으로 문질러 테두리를 다듬을 수 있어요")
+            Text(tool == .move || tool == .auto ? "한 손가락으로 끌어 확대한 사진의 위치를 바꿔요" : "손가락으로 문질러 테두리를 다듬을 수 있어요")
                 .font(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
             HStack(spacing: Spacing.xs) {
-                Chip(title: "자동 투명화", isSelected: tool == .auto) {
+                Chip(title: "자동 투명화", isSelected: tool == .auto, isCompact: true) {
                     tool = .auto
                     strokes = []
                     draft.editedCutout = nil
                     Task { await playShine() }
                 }
-                Chip(title: "지우기", isSelected: tool == .erase) { tool = .erase }
-                Chip(title: "복원", isSelected: tool == .restore) { tool = .restore }
+                Chip(title: "지우기", isSelected: tool == .erase, isCompact: true) { tool = .erase }
+                Chip(title: "복원", isSelected: tool == .restore, isCompact: true) { tool = .restore }
+                Chip(title: "이동", isSelected: tool == .move, isCompact: true) { tool = .move }
             }
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("브러시 크기")
                     .font(.headline)
                 Slider(value: $brushSize, in: 10...80)
             }
-            .disabled(tool == .auto)
-            .opacity(tool == .auto ? 0.4 : 1)
+            .disabled(tool == .auto || tool == .move)
+            .opacity(tool == .auto || tool == .move ? 0.4 : 1)
             HStack(spacing: Spacing.s) {
                 Button("다시 선택", action: onReselect)
                     .buttonStyle(.secondary)
@@ -141,7 +143,8 @@ struct CutoutEditStep: View {
             let scale = min(proxy.size.width / imageSize.width, proxy.size.height / imageSize.height)
             let origin = CGPoint(x: (proxy.size.width - imageSize.width * scale) / 2,
                                  y: (proxy.size.height - imageSize.height * scale) / 2)
-            let anchorPoint = CGPoint(x: zoomAnchor.x * proxy.size.width, y: zoomAnchor.y * proxy.size.height)
+            let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
+            let limit = CGSize(width: (zoom - 1) * proxy.size.width / 2, height: (zoom - 1) * proxy.size.height / 2)
             ZStack {
                 ZStack {
                     cutoutImage
@@ -153,15 +156,24 @@ struct CutoutEditStep: View {
                                 style: StrokeStyle(lineWidth: current.width * scale, lineCap: .round, lineJoin: .round))
                     }
                 }
-                .scaleEffect(zoom, anchor: zoomAnchor)
+                .scaleEffect(zoom)
+                .offset(offset)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .clipped()
             .contentShape(Rectangle())
-            .gesture(tool == .auto ? nil : DragGesture(minimumDistance: 0)
+            .gesture(tool == .auto || tool == .move ? DragGesture()
                 .onChanged { value in
-                    let view = CGPoint(x: anchorPoint.x + (value.location.x - anchorPoint.x) / zoom,
-                                       y: anchorPoint.y + (value.location.y - anchorPoint.y) / zoom)
+                    let base = panBase ?? offset
+                    panBase = base
+                    offset = CGSize(width: min(limit.width, max(-limit.width, base.width + value.translation.width)),
+                                    height: min(limit.height, max(-limit.height, base.height + value.translation.height)))
+                }
+                .onEnded { _ in panBase = nil }
+            : DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    let view = CGPoint(x: center.x + (value.location.x - center.x - offset.width) / zoom,
+                                       y: center.y + (value.location.y - center.y - offset.height) / zoom)
                     let point = CGPoint(x: (view.x - origin.x) / scale, y: (view.y - origin.y) / scale)
                     if current == nil {
                         current = Stroke(points: [point], width: brushSize / (scale * zoom), isErasing: tool == .erase)
@@ -180,9 +192,10 @@ struct CutoutEditStep: View {
                         if !isZooming {
                             isZooming = true
                             zoomBase = zoom
-                            if zoom == 1 { zoomAnchor = value.startAnchor }
                         }
                         zoom = min(4, max(1, zoomBase * value.magnification))
+                        offset = CGSize(width: min(limit.width, max(-limit.width, offset.width)),
+                                        height: min(limit.height, max(-limit.height, offset.height)))
                     }
                     .onEnded { _ in isZooming = false }
             )
@@ -191,7 +204,7 @@ struct CutoutEditStep: View {
         .padding(Spacing.s)
         .background { Checkerboard() }
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .accessibilityLabel("투명화한 사진. 두 손가락으로 확대하고 손가락으로 문질러 다듬어요")
+        .accessibilityLabel("투명화한 사진. 두 손가락으로 확대하고, 이동으로 위치를 바꾸고, 문질러 다듬어요")
     }
 
     /// 투명화가 끝났다는 걸 알리려고 반사판처럼 빛이 한 번 지나간다.
@@ -230,7 +243,10 @@ struct CutoutEditStep: View {
     private func clearAll() {
         strokes = []
         draft.editedCutout = nil
-        withAnimation(.spring) { zoom = 1 }
+        withAnimation(.spring) {
+            zoom = 1
+            offset = .zero
+        }
     }
 
     /// 확대해서 보이는 부분만 인형에 넣는다. 확대하지 않았으면 전체를 쓴다.
@@ -242,9 +258,9 @@ struct CutoutEditStep: View {
         let size = canvasSize
         let scale = min(size.width / photo.size.width, size.height / photo.size.height)
         let origin = CGPoint(x: (size.width - photo.size.width * scale) / 2, y: (size.height - photo.size.height * scale) / 2)
-        let anchor = CGPoint(x: zoomAnchor.x * size.width, y: zoomAnchor.y * size.height)
-        let visible = CGRect(x: ((anchor.x - anchor.x / zoom) - origin.x) / scale,
-                             y: ((anchor.y - anchor.y / zoom) - origin.y) / scale,
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        let visible = CGRect(x: (center.x + (-center.x - offset.width) / zoom - origin.x) / scale,
+                             y: (center.y + (-center.y - offset.height) / zoom - origin.y) / scale,
                              width: size.width / zoom / scale, height: size.height / zoom / scale)
             .intersection(CGRect(origin: .zero, size: photo.size))
         draft.cropRect = visible.isNull || visible.isEmpty ? nil
