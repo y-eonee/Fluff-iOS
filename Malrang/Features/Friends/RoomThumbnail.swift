@@ -19,7 +19,7 @@ struct RoomThumbnail: View {
                 context.fill(path, with: .color(color))
                 if shade > 0 { context.fill(path, with: .color(Color.app.ink.opacity(shade))) }
             }
-            func color(_ item: RoomItemState) -> Color { Color(item.colorName ?? item.kind.defaultColorName) }
+            func color(_ item: RoomItemState) -> Color { Color(uiColor: Palette.uiColor(item.colorName ?? item.kind.defaultColorName)) }
 
             if let floor = room.items.first(where: { $0.kind == .floor }) {
                 polygon([project(-1, 0, -1), project(1, 0, -1), project(1, 0, 1), project(-1, 0, 1)], color(floor))

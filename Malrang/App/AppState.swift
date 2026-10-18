@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppTab {
-    case dolls, home, friends
+    case dolls, home, friends, mypage
 }
 
 /// 탭 사이를 오가는 흐름(인형 목록에서 "방에 두기" → 홈 배치 모드)에 쓰는 앱 상태

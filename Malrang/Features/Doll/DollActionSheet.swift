@@ -73,7 +73,7 @@ struct DollActionSheet: View {
             }
         }
         .fullScreenCover(isPresented: $isShowingAR) {
-            ARCaptureView(dollImage: doll.image)
+            ARCaptureView(doll: doll)
         }
     }
 
@@ -94,7 +94,12 @@ struct DollActionSheet: View {
                     Label("춤추기", systemImage: "music.note")
                 }
                 Button {
-                    isShowingAR = true
+                    // 방의 3D 화면이 먼저 내려가야 AR 카메라가 그려진다.
+                    appState.isShowingAR = true
+                    Task {
+                        await Task.yield()
+                        isShowingAR = true
+                    }
                 } label: {
                     Label("예절샷 찍기", systemImage: "camera.viewfinder")
                 }

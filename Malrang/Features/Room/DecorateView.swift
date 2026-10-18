@@ -162,6 +162,15 @@ struct DecorateView: View {
         modelContext.delete(item)
     }
 
+    /// 벽지·바닥재 탭이면 그 면의 종류
+    private var surfaceKind: FurnitureKind? {
+        switch category {
+        case .wallpaper: .wall
+        case .flooring: .floor
+        default: nil
+        }
+    }
+
     private var panel: some View {
         VStack(spacing: Spacing.m) {
             HStack {
@@ -183,10 +192,14 @@ struct DecorateView: View {
                 }
             }
             ScrollView {
+                if let surface = items.first(where: { $0.kind == surfaceKind }) {
+                    ItemColorPicker(item: surface)
+                        .frame(height: 300)
+                }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
                     switch category {
                     case .wallpaper, .flooring:
-                        surfaceCells(for: category == .wallpaper ? .wall : .floor)
+                        surfaceCells(for: surfaceKind ?? .wall)
                     default:
                         ForEach(FurnitureKind.allCases.filter { $0.category == category }, id: \.self) { kind in
                             cell(kind.label) {
@@ -198,7 +211,7 @@ struct DecorateView: View {
                     }
                 }
             }
-            .frame(height: 220)
+            .frame(height: surfaceKind == nil ? 220 : 360)
             CancelConfirmButtons(
                 onCancel: { if hasChanges { isConfirmingDiscard = true } else { dismiss() } },
                 onConfirm: {
@@ -216,18 +229,6 @@ struct DecorateView: View {
     @ViewBuilder
     private func surfaceCells(for kind: FurnitureKind) -> some View {
         if let surface = items.first(where: { $0.kind == kind }) {
-            ForEach(Palette.names, id: \.self) { name in
-                let isSelected = surface.photoData == nil && (surface.colorName ?? kind.defaultColorName) == name
-                cell(isSelected ? "선택됨" : "색") {
-                    Circle()
-                        .fill(Color(name))
-                        .stroke(Color.app.ink.opacity(isSelected ? 1 : 0.15), lineWidth: isSelected ? 3 : 1)
-                        .frame(width: 44, height: 44)
-                } action: {
-                    surface.colorName = name
-                    surface.photoData = nil
-                }
-            }
             cell("사진으로 꾸미기") {
                 Image(systemName: "photo").font(.title)
             } action: {

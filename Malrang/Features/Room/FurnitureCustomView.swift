@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 
-/// 가구 하나를 기본 / 컬러 / 사진으로 꾸민다. 사진은 크기, 좌우 반전, 회전을 조절할 수 있다.
+/// 가구 하나를 기본 / 컬러 / 사진으로 꾸민다. 사진은 프레임에 맞추기·채우기, 확대, 자르기(위치), 좌우 반전, 회전을 조절할 수 있다.
 struct FurnitureCustomView: View {
     @Bindable var item: RoomItem
     @Environment(\.modelContext) private var modelContext
@@ -20,6 +20,7 @@ struct FurnitureCustomView: View {
     private struct PhotoEdit {
         var data: Data?
         var scale: Double
+        var fit: Int
         var isFlipped: Bool
         var turns: Int
         var offsetX: Double
@@ -46,7 +47,7 @@ struct FurnitureCustomView: View {
             RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan)
                 .renderedOnlyWhileVisible()
                 .overlay(alignment: .top) {
-                    HintCapsule(text: isEditingPhoto ? "두 손가락으로 크기와 위치를 조절해 보세요" : "드래그해서 이리저리 돌려 보세요")
+                    HintCapsule(text: isEditingPhoto ? "두 손가락으로 확대하고, 움직여서 자를 곳을 맞춰요" : "드래그해서 이리저리 돌려 보세요")
                         .padding(.top, Spacing.xs)
                 }
                 .overlay(alignment: .topTrailing) {
@@ -76,12 +77,12 @@ struct FurnitureCustomView: View {
                             .foregroundStyle(Color.app.inkSecondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     case .color:
-                        colors
+                        ItemColorPicker(item: item)
                     case .photo:
                         if item.photoData != nil { photoEditor } else { photoGrid }
                     }
                 }
-                .frame(height: 220)
+                .frame(height: style == .color ? 340 : 220)
                 CancelConfirmButtons(
                     onCancel: {
                         item.restore(original)
@@ -116,27 +117,6 @@ struct FurnitureCustomView: View {
             modelContext.insert(DecorPhoto(data: jpeg))
             apply(jpeg)
             self.pickerItem = nil
-        }
-    }
-
-    private var colors: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: Spacing.s) {
-            ForEach(Palette.names, id: \.self) { name in
-                let isSelected = item.photoData == nil && item.colorName == name
-                Button {
-                    item.colorName = name
-                    item.photoData = nil
-                } label: {
-                    Circle()
-                        .fill(Color(name))
-                        .stroke(Color.app.ink.opacity(isSelected ? 1 : 0.15), lineWidth: isSelected ? 3 : 1)
-                        .frame(width: 56, height: 56)
-                        .overlay {
-                            if isSelected { Image(systemName: "checkmark").font(.headline).foregroundStyle(Color.app.ink) }
-                        }
-                }
-                .accessibilityLabel(isSelected ? "선택된 색" : "색")
-            }
         }
     }
 
@@ -183,11 +163,15 @@ struct FurnitureCustomView: View {
                         .foregroundStyle(Color.app.ink, Color.app.surface)
                         .frame(width: 44, height: 44)
                 }
-            VStack(alignment: .leading, spacing: Spacing.m) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text("크기 조절")
+                    HStack(spacing: Spacing.xs) {
+                        Chip(title: "채우기", isSelected: item.photoFit == 0, isCompact: true) { setFit(0) }
+                        Chip(title: "맞추기", isSelected: item.photoFit == 1, isCompact: true) { setFit(1) }
+                    }
+                    Text("확대")
                         .font(.headline)
-                    Slider(value: $photoScale, in: 0.5...3) { isEditing in
+                    Slider(value: $photoScale, in: 1...3) { isEditing in
                         if isEditing { remember() } else { item.photoScale = photoScale }
                     }
                 }
@@ -224,7 +208,7 @@ struct FurnitureCustomView: View {
 
     /// 되돌리기용으로 지금 사진 상태를 저장한다.
     private func remember() {
-        undoStack.append(PhotoEdit(data: item.photoData, scale: item.photoScale, isFlipped: item.photoFlipped,
+        undoStack.append(PhotoEdit(data: item.photoData, scale: item.photoScale, fit: item.photoFit, isFlipped: item.photoFlipped,
                                    turns: item.photoTurns, offsetX: item.photoOffsetX, offsetY: item.photoOffsetY))
         lastRemembered = .now
     }
@@ -239,11 +223,23 @@ struct FurnitureCustomView: View {
         guard let last = undoStack.popLast() else { return }
         item.photoData = last.data
         item.photoScale = last.scale
+        item.photoFit = last.fit
         item.photoFlipped = last.isFlipped
         item.photoTurns = last.turns
         item.photoOffsetX = last.offsetX
         item.photoOffsetY = last.offsetY
         photoScale = last.scale
+    }
+
+    /// 프레임에 맞추는 방식을 바꾸면 확대와 자른 위치를 처음으로 돌린다.
+    private func setFit(_ fit: Int) {
+        guard item.photoFit != fit else { return }
+        remember()
+        item.photoFit = fit
+        item.photoScale = 1
+        item.photoOffsetX = 0
+        item.photoOffsetY = 0
+        photoScale = 1
     }
 
     private func pan(_ move: CGSize) {
@@ -255,7 +251,7 @@ struct FurnitureCustomView: View {
 
     private func pinch(_ scale: CGFloat) {
         rememberGesture()
-        photoScale = min(3, max(0.5, photoScale * scale))
+        photoScale = min(3, max(1, photoScale * scale))
         item.photoScale = photoScale
     }
 
@@ -263,6 +259,7 @@ struct FurnitureCustomView: View {
         remember()
         item.photoData = data
         item.photoScale = 1
+        item.photoFit = 0
         item.photoFlipped = false
         item.photoTurns = 0
         item.photoOffsetX = 0

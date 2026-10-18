@@ -12,11 +12,9 @@ struct MyPageView: View {
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("soundOn") private var soundOn = true
     @AppStorage("notificationsOn") private var notificationsOn = true
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
     @State private var isChoosingVisibility = false
     @State private var isConfirmingLogout = false
-    @State private var isConfirmingDelete = false
     @State private var didCopy = false
 
     enum Visibility: String {
@@ -56,11 +54,7 @@ struct MyPageView: View {
                             .foregroundStyle(Color.app.inkSecondary)
                     }
                 }
-                HStack(spacing: Spacing.m) {
-                    Button("로그아웃") { isConfirmingLogout = true }
-                    Text("|").foregroundStyle(Color.app.ink.opacity(0.15))
-                    Button("회원탈퇴") { isConfirmingDelete = true }
-                }
+                Button("로그아웃") { isConfirmingLogout = true }
                 .font(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -72,7 +66,6 @@ struct MyPageView: View {
         .background(Color.app.background)
         .navigationTitle("마이페이지")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
         .onAppear {
             if friendCode.isEmpty {
                 friendCode = String("ABCDEFGHJKLMNPQRSTUVWXYZ23456789".shuffled().prefix(7))
@@ -86,11 +79,6 @@ struct MyPageView: View {
             Button("로그아웃", role: .destructive) { isSignedIn = false }
         } message: {
             Text("인형과 방은 그대로 남아 있어요")
-        }
-        .confirmationDialog("정말 탈퇴할까요?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
-            Button("탈퇴하기", role: .destructive, action: deleteAccount)
-        } message: {
-            Text("인형, 방, 프로필이 모두 지워지고 되돌릴 수 없어요")
         }
         .sensoryFeedback(.success, trigger: didCopy)
     }
@@ -115,6 +103,9 @@ struct MyPageView: View {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text("내 친구 코드").font(.footnote).foregroundStyle(Color.app.inkSecondary)
                     Text(friendCode).font(.title2.bold()).tracking(2)
+                    Text("친구를 추가하고 친구의 방을 구경하고 함께 방을 꾸며보세요")
+                        .font(.footnote)
+                        .foregroundStyle(Color.app.inkSecondary)
                 }
                 Spacer()
                 Button(didCopy ? "복사됨" : "복사") {
@@ -148,16 +139,6 @@ struct MyPageView: View {
         }
         .font(.body)
         .frame(minHeight: 52)
-    }
-
-    private func deleteAccount() {
-        try? modelContext.delete(model: Doll.self)
-        try? modelContext.delete(model: RoomItem.self)
-        try? modelContext.delete(model: DecorPhoto.self)
-        nickname = ""
-        avatarData = Data()
-        friendCode = ""
-        isSignedIn = false
     }
 }
 

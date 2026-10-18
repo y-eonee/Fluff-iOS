@@ -18,6 +18,9 @@ struct CutoutEditStep: View {
     @State private var isZooming = false
     @State private var shine: CGFloat = -0.4
     @State private var canvasSize = CGSize.zero
+    @State private var hint: String?
+    @State private var touch: CGPoint?
+    @State private var isAdjustingBrush = false
 
     enum Phase {
         case working, failed, ready
@@ -77,14 +80,13 @@ struct CutoutEditStep: View {
         VStack(spacing: Spacing.m) {
             canvas
                 .overlay(alignment: .top) {
-                    Text(strokes.isEmpty ? "자동으로 영역을 찾았어요" : "영역을 다듬는 중")
-                        .font(.footnote.bold())
-                        .foregroundStyle(Color.app.surface)
-                        .padding(.horizontal, Spacing.s)
-                        .padding(.vertical, Spacing.xxs)
-                        .background(Color.app.ink, in: Capsule())
-                        .padding(Spacing.s)
+                    if let hint {
+                        HintCapsule(text: hint)
+                            .padding(Spacing.s)
+                            .transition(.opacity)
+                    }
                 }
+                .animation(.spring, value: hint)
             HStack(spacing: Spacing.xs) {
                 Button(action: undo) {
                     Image(systemName: "arrow.uturn.backward")
@@ -94,34 +96,42 @@ struct CutoutEditStep: View {
                 .accessibilityLabel("되돌리기")
                 .disabled(strokes.isEmpty)
                 Button(action: clearAll) {
-                    Image(systemName: "trash")
-                        .frame(width: 44, height: 44)
-                        .background(Color.app.surface, in: Circle())
+                    Text("초기화")
+                        .font(.body)
+                        .padding(.horizontal, Spacing.s)
+                        .frame(minHeight: 44)
+                        .background(Color.app.surface, in: Capsule())
                 }
-                .accessibilityLabel("모두 지우기")
                 .disabled(strokes.isEmpty && zoom == 1 && offset == .zero)
                 Spacer()
             }
             .font(.title3)
             .foregroundStyle(Color.app.ink)
-            Text(tool == .move || tool == .auto ? "한 손가락으로 끌어 확대한 사진의 위치를 바꿔요" : "손가락으로 문질러 테두리를 다듬을 수 있어요")
-                .font(.footnote)
-                .foregroundStyle(Color.app.inkSecondary)
             HStack(spacing: Spacing.xs) {
                 Chip(title: "자동 투명화", isSelected: tool == .auto, isCompact: true) {
                     tool = .auto
+                    hint = "자동으로 영역을 찾았어요"
                     strokes = []
                     draft.editedCutout = nil
                     Task { await playShine() }
                 }
-                Chip(title: "지우기", isSelected: tool == .erase, isCompact: true) { tool = .erase }
-                Chip(title: "복원", isSelected: tool == .restore, isCompact: true) { tool = .restore }
-                Chip(title: "이동", isSelected: tool == .move, isCompact: true) { tool = .move }
+                Chip(title: "지우기", isSelected: tool == .erase, isCompact: true) {
+                    tool = .erase
+                    hint = "문질러서 지울 곳을 골라요"
+                }
+                Chip(title: "복원", isSelected: tool == .restore, isCompact: true) {
+                    tool = .restore
+                    hint = "문질러서 되살릴 곳을 골라요"
+                }
+                Chip(title: "이동", isSelected: tool == .move, isCompact: true) {
+                    tool = .move
+                    hint = "두 손가락으로 확대하고, 한 손가락으로 끌어 옮겨요"
+                }
             }
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("브러시 크기")
                     .font(.headline)
-                Slider(value: $brushSize, in: 10...80)
+                Slider(value: $brushSize, in: 10...80) { isAdjustingBrush = $0 }
             }
             .disabled(tool == .auto || tool == .move)
             .opacity(tool == .auto || tool == .move ? 0.4 : 1)
@@ -134,6 +144,12 @@ struct CutoutEditStep: View {
                 }
                     .buttonStyle(.primary)
             }
+        }
+        .onAppear { hint = "자동으로 영역을 찾았어요" }
+        .task(id: hint) {
+            guard hint != nil else { return }
+            try? await Task.sleep(for: .seconds(2))
+            hint = nil
         }
     }
 
@@ -158,6 +174,14 @@ struct CutoutEditStep: View {
                 }
                 .scaleEffect(zoom)
                 .offset(offset)
+                if tool == .erase || tool == .restore, let point = touch ?? (isAdjustingBrush ? center : nil) {
+                    Circle()
+                        .fill(Color.app.ink.opacity(0.15))
+                        .overlay(Circle().stroke(Color.app.ink, lineWidth: 2))
+                        .frame(width: brushSize, height: brushSize)
+                        .position(point)
+                        .allowsHitTesting(false)
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .clipped()
@@ -172,6 +196,7 @@ struct CutoutEditStep: View {
                 .onEnded { _ in panBase = nil }
             : DragGesture(minimumDistance: 0)
                 .onChanged { value in
+                    touch = value.location
                     let view = CGPoint(x: center.x + (value.location.x - center.x - offset.width) / zoom,
                                        y: center.y + (value.location.y - center.y - offset.height) / zoom)
                     let point = CGPoint(x: (view.x - origin.x) / scale, y: (view.y - origin.y) / scale)
@@ -181,6 +206,7 @@ struct CutoutEditStep: View {
                     current?.points.append(point)
                 }
                 .onEnded { _ in
+                    touch = nil
                     if let current { strokes.append(current) }
                     current = nil
                     render()
@@ -204,7 +230,7 @@ struct CutoutEditStep: View {
         .padding(Spacing.s)
         .background { Checkerboard() }
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .accessibilityLabel("투명화한 사진. 두 손가락으로 확대하고, 이동으로 위치를 바꾸고, 문질러 다듬어요")
+        .accessibilityLabel("투명화한 사진. 두 손가락으로 확대하고, 한 손가락으로 끌어 옮기거나 문질러 다듬어요")
     }
 
     /// 투명화가 끝났다는 걸 알리려고 반사판처럼 빛이 한 번 지나간다.

@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftData
 import SwiftUI
 import UIKit
@@ -71,22 +72,32 @@ enum Filling: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .fluffy: "폭신 솜"
-        case .beads: "몽글 비즈"
-        case .jelly: "쫀득 젤리"
-        case .foam: "말랑 폼"
+        case .fluffy: "샤베트"
+        case .beads: "왁스"
+        case .jelly: "슬라임"
+        case .foam: "크런치"
         }
     }
 
-    /// 임시 효과음. 효과음 파일이 준비되면 Resources의 파일로 바꾼다.
-    var systemSoundID: UInt32 {
+    /// Resources의 효과음 파일 이름
+    private var soundName: String {
         switch self {
-        case .fluffy: 1104
-        case .beads: 1103
-        case .jelly: 1105
-        case .foam: 1306
+        case .fluffy: "shabet"
+        case .beads: "wax"
+        case .jelly: "slime"
+        case .foam: "crunch"
         }
     }
+
+    func playSound() {
+        let player = Self.players[self] ?? Bundle.main.url(forResource: soundName, withExtension: "mp3")
+            .flatMap { try? AVAudioPlayer(contentsOf: $0) }
+        Self.players[self] = player
+        player?.currentTime = 0
+        player?.play()
+    }
+
+    private static var players: [Filling: AVAudioPlayer] = [:]
 }
 
 enum DanceMove: String, CaseIterable {

@@ -9,7 +9,6 @@ struct HomeView: View {
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var selectedDoll: Doll?
     @State private var isCreating = false
-    @State private var isMenuOpen = false
     @State private var isDecorating = false
     @State private var isShowingGuestbook = false
     @State private var isStartingMultiRoom = false
@@ -100,16 +99,6 @@ struct HomeView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
-            Button {
-                isStartingMultiRoom = true
-            } label: {
-                Label("멀티 룸", systemImage: "shareplay")
-            }
-            NavigationLink {
-                MyPageView()
-            } label: {
-                Label("마이페이지", systemImage: "person.crop.circle")
-            }
             NotificationsButton()
         }
     }
@@ -155,7 +144,7 @@ struct HomeView: View {
     private var emptyState: some View {
         if dolls.isEmpty {
             NoticeCard(symbol: "teddybear", title: "아직 방이 비어 있어요",
-                       message: "아래 + 버튼으로 갤러리 속 사진을 인형으로 만들어 보세요")
+                       message: "아래 인형 만들기 버튼으로 갤러리 속 사진을 인형으로 만들어 보세요")
         }
     }
 
@@ -165,30 +154,16 @@ struct HomeView: View {
             CancelConfirmButtons(onCancel: cancelPlacement, onConfirm: finishPlacement)
                 .padding(Spacing.m)
         } else {
-            VStack(alignment: .trailing, spacing: Spacing.s) {
-                if isMenuOpen {
-                    menuButton("인형 만들기", symbol: "teddybear") { isCreating = true }
-                    menuButton("방 꾸미기", symbol: "paintbrush") { isDecorating = true }
+            HStack(alignment: .bottom) {
+                FloatingCircleButton(title: "멀티 룸", symbol: "shareplay") { isStartingMultiRoom = true }
+                Spacer()
+                VStack(spacing: Spacing.s) {
+                    FloatingCircleButton(title: "방 꾸미기", symbol: "paintbrush") { isDecorating = true }
+                    FloatingCircleButton(title: "인형 만들기", symbol: "teddybear", isPrimary: true) { isCreating = true }
                 }
-                FloatingAddButton(label: "메뉴 열기", isOpen: isMenuOpen) { isMenuOpen.toggle() }
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(Spacing.m)
-            .animation(.spring, value: isMenuOpen)
         }
-    }
-
-    private func menuButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
-        Button {
-            isMenuOpen = false
-            action()
-        } label: {
-            Label(title, systemImage: symbol)
-                .padding(.horizontal, Spacing.m)
-        }
-        .buttonStyle(.secondary)
-        .fixedSize()
-        .transition(.scale(scale: 0.8, anchor: .bottomTrailing).combined(with: .opacity))
     }
 
     private func beginPlacement() {

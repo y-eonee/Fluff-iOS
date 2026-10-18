@@ -1,4 +1,3 @@
-import AudioToolbox
 import SwiftUI
 
 /// 말랑이 체험 화면
@@ -95,7 +94,7 @@ struct SquishyDoll: View {
                     lastStrokePoint = value.location
                     pressCount += 1
                     onTouch()
-                    if soundOn { AudioServicesPlaySystemSound(doll.filling.systemSoundID) }
+                    if soundOn { doll.filling.playSound() }
                     withAnimation(.spring(duration: 0.12)) { press = 1 }
                     withAnimation(.spring) { hasTouched = true }
                 }
@@ -109,7 +108,7 @@ struct SquishyDoll: View {
             .onEnded { _ in
                 isTouching = false
                 releaseCount += 1
-                if soundOn { AudioServicesPlaySystemSound(doll.filling.systemSoundID) }
+                if soundOn { doll.filling.playSound() }
                 withAnimation(.spring(duration: 0.5, bounce: reduceMotion ? 0 : 0.3)) {
                     press = 0
                     stroke = .zero

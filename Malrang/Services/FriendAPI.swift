@@ -22,7 +22,7 @@ struct GuestbookEntry: Identifiable {
 }
 
 struct AppNotification: Identifiable {
-    enum Kind {
+    enum Kind: CaseIterable {
         case friendRequest, guestbook, like, multiRoomInvite
 
         var tag: String {

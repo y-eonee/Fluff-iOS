@@ -49,23 +49,31 @@ struct CancelConfirmButtons: View {
     }
 }
 
-/// 추가하기 버튼. 메뉴가 열리면 X로 바뀐다.
-struct FloatingAddButton: View {
-    let label: String
-    var isOpen = false
+/// 화면 위에 띄우는 동그란 버튼. 아이콘 아래에 글자를 세로로 둔다. 주요 버튼은 화면에 하나만 쓴다.
+struct FloatingCircleButton: View {
+    let title: String
+    let symbol: String
+    var isPrimary = false
+    var symbolTint = Color.app.ink
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "plus")
-                .font(.title2.bold())
-                .foregroundStyle(Color.app.ink)
-                .rotationEffect(.degrees(isOpen ? 45 : 0))
-                .frame(width: 56, height: 56)
-                .background(Color.app.accent, in: Circle())
+            VStack(spacing: Spacing.xxs) {
+                Image(systemName: symbol)
+                    .font(.title3)
+                    .foregroundStyle(symbolTint)
+                Text(title)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .foregroundStyle(Color.app.ink)
+            .frame(width: 76, height: 76)
+            .background(isPrimary ? Color.app.accent : Color.app.surface, in: Circle())
+            .overlay(Circle().stroke(Color.app.ink.opacity(isPrimary ? 0 : 0.15)))
         }
-        .accessibilityLabel(isOpen ? "닫기" : label)
-        .animation(.spring, value: isOpen)
+        .buttonStyle(.plain)
     }
 }
 

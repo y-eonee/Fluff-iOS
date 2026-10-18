@@ -41,7 +41,7 @@ struct FriendRoomView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaInset(edge: .bottom) { actions }
+        .overlay(alignment: .bottom) { actions }
         .background(Color.app.background)
         .navigationTitle("\(friend.name)의 방")
         .navigationBarTitleDisplayMode(.inline)
@@ -58,20 +58,15 @@ struct FriendRoomView: View {
 
     private var actions: some View {
         let isLiked = store.likedFriendIDs.contains(friend.id)
-        return HStack(spacing: Spacing.s) {
-            Button {
+        return HStack(alignment: .bottom) {
+            FloatingCircleButton(title: "좋아요", symbol: isLiked ? "heart.fill" : "heart",
+                                 symbolTint: isLiked ? Color.app.accent : Color.app.ink) {
                 Task { await store.toggleLike(friend) }
-            } label: {
-                Label(isLiked ? "좋아요 취소" : "좋아요", systemImage: isLiked ? "heart.fill" : "heart")
             }
-            .buttonStyle(.secondary)
+            .accessibilityLabel(isLiked ? "좋아요 취소" : "좋아요")
             .sensoryFeedback(.impact(weight: .light), trigger: isLiked)
-            Button {
-                isShowingGuestbook = true
-            } label: {
-                Label("방명록", systemImage: "book")
-            }
-            .buttonStyle(.primary)
+            Spacer()
+            FloatingCircleButton(title: "방명록", symbol: "book", isPrimary: true) { isShowingGuestbook = true }
         }
         .padding(Spacing.m)
     }

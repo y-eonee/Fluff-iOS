@@ -96,6 +96,15 @@ enum FurnitureKind: String, CaseIterable {
         }
     }
 
+    /// 사진이 붙는 면의 가로 / 세로 비율. 사진을 프레임에 맞출 때 쓴다.
+    var photoAspect: Float {
+        switch self {
+        case .wall: size.z / size.y
+        case .floor, .bed, .desk, .chair, .sofa, .rugRound, .rugSquare: size.x / size.z
+        case .shelf, .plant, .frame, .lamp: size.x / size.y
+        }
+    }
+
     /// 인형을 올려둘 수 있는 윗면 높이. nil이면 올려둘 수 없다.
     var seatHeight: Float? {
         switch self {

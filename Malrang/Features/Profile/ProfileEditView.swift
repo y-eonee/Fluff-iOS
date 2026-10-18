@@ -1,4 +1,5 @@
 import PhotosUI
+import SwiftData
 import SwiftUI
 
 /// 프로필 만들기(첫 가입)와 프로필 편집. 만들 때는 "시작하기", 편집할 때는 취소/완료.
@@ -6,7 +7,11 @@ struct ProfileEditView: View {
     var isCreating = false
     @AppStorage("nickname") private var nickname = ""
     @AppStorage("avatarData") private var avatarData = Data()
+    @AppStorage("friendCode") private var friendCode = ""
+    @AppStorage("isSignedIn") private var isSignedIn = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @State private var isConfirmingDelete = false
     @State private var draftName = ""
     @State private var draftAvatar = Data()
     @State private var pickerItem: PhotosPickerItem?
@@ -48,6 +53,10 @@ struct ProfileEditView: View {
                     .buttonStyle(.primary)
                     .disabled(trimmed.isEmpty)
             } else {
+                Button("회원탈퇴") { isConfirmingDelete = true }
+                    .font(.footnote)
+                    .foregroundStyle(Color.app.inkSecondary)
+                    .frame(minHeight: 44)
                 CancelConfirmButtons(onCancel: { dismiss() }, onConfirm: save)
                     .disabled(trimmed.isEmpty)
             }
@@ -63,6 +72,11 @@ struct ProfileEditView: View {
         .onAppear {
             draftName = nickname
             draftAvatar = avatarData
+        }
+        .confirmationDialog("정말 탈퇴할까요?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+            Button("탈퇴하기", role: .destructive, action: deleteAccount)
+        } message: {
+            Text("인형, 방, 프로필이 모두 지워지고 되돌릴 수 없어요")
         }
         .task(id: pickerItem) {
             guard let pickerItem,
@@ -92,6 +106,16 @@ struct ProfileEditView: View {
                 .font(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
         }
+    }
+
+    private func deleteAccount() {
+        try? modelContext.delete(model: Doll.self)
+        try? modelContext.delete(model: RoomItem.self)
+        try? modelContext.delete(model: DecorPhoto.self)
+        nickname = ""
+        avatarData = Data()
+        friendCode = ""
+        isSignedIn = false
     }
 
     private func save() {

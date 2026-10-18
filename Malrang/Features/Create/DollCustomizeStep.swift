@@ -4,6 +4,7 @@ import SwiftUI
 struct DollCustomizeStep: View {
     @Bindable var draft: DollDraft
     let onNext: () -> Void
+    @AppStorage("soundOn") private var soundOn = true
 
     var body: some View {
         ScrollView {
@@ -16,10 +17,13 @@ struct DollCustomizeStep: View {
                         }
                     }
                 }
-                section("속재료", note: "만졌을 때 소리가 달라져요") {
+                section("속재료", note: "눌러서 소리를 들어봐요") {
                     HStack(spacing: Spacing.xs) {
                         ForEach(Filling.allCases, id: \.self) { filling in
-                            Chip(title: filling.label, isSelected: draft.filling == filling, isCompact: true) { draft.filling = filling }
+                            Chip(title: filling.label, isSelected: draft.filling == filling, isCompact: true) {
+                                draft.filling = filling
+                                if soundOn { filling.playSound() }
+                            }
                         }
                     }
                 }

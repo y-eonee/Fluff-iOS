@@ -87,6 +87,12 @@ struct RoomSceneView: UIViewRepresentable {
         private var fittedSize = CGSize.zero
         private var updateSubscription: (any Cancellable)?
         private var orbitYaw: Float = 0
+        private var fitDistance: Float = 1
+        /// 방을 두 손가락으로 확대한 정도와 옮긴 위치. 방을 잃어버리지 않게 범위를 제한한다.
+        private var zoom: Float = 1
+        private var shift = SIMD3<Float>.zero
+        private weak var shiftPan: UIPanGestureRecognizer?
+        private let cameraDirection = simd_normalize(SIMD3<Float>(1, 0.9, 1))
 
         private struct Drag {
             let entity: Entity
@@ -129,6 +135,15 @@ struct RoomSceneView: UIViewRepresentable {
                 let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch))
                 pinch.delegate = self
                 [orbit, movePan, pinch].forEach(view.addGestureRecognizer)
+            }
+            if parent.focusItem == nil {
+                let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handleZoom))
+                let pan = UIPanGestureRecognizer(target: self, action: #selector(handleShift))
+                shiftPan = pan
+                [pinch, pan].forEach {
+                    $0.delegate = self
+                    view.addGestureRecognizer($0)
+                }
             }
             if parent.mode != .view {
                 let press = UILongPressGestureRecognizer(target: self, action: #selector(handlePress))
@@ -189,8 +204,38 @@ struct RoomSceneView: UIViewRepresentable {
             let aspect = Float(view.bounds.width / view.bounds.height)
             let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
             let distance = max(aim.width / 2 / (tanHalf * aspect), aim.height / 2 / tanHalf)
-            let direction = simd_normalize(SIMD3<Float>(1, 0.9, 1))
-            camera.look(at: aim.target, from: aim.target + direction * distance, relativeTo: nil)
+            fitDistance = distance
+            placeCamera()
+        }
+
+        private func placeCamera() {
+            guard let aim else { return }
+            let target = aim.target + shift
+            camera.look(at: target, from: target + cameraDirection * fitDistance / zoom, relativeTo: nil)
+        }
+
+        @objc private func handleZoom(_ gesture: UIPinchGestureRecognizer) {
+            zoom = min(2.5, max(1, zoom * Float(gesture.scale)))
+            gesture.scale = 1
+            if zoom == 1 { shift = .zero }
+            placeCamera()
+        }
+
+        /// 확대한 상태에서 쓸면 방의 다른 쪽을 볼 수 있다.
+        @objc private func handleShift(_ gesture: UIPanGestureRecognizer) {
+            guard let view, zoom > 1, view.bounds.height > 0 else { return }
+            let move = gesture.translation(in: view)
+            gesture.setTranslation(.zero, in: view)
+            let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
+            let metersPerPoint = 2 * fitDistance / zoom * tanHalf / Float(view.bounds.height)
+            let root2 = Float(0.5).squareRoot()
+            let right = SIMD3<Float>(1, 0, -1) * root2
+            let away = SIMD3<Float>(-1, 0, -1) * root2
+            let dx = Float(move.x) * metersPerPoint
+            let dy = Float(move.y) * metersPerPoint
+            shift += away * dy - right * dx
+            shift = simd_clamp(shift, SIMD3(repeating: -1), SIMD3(repeating: 1))
+            placeCamera()
         }
 
         private var lastTouch: DollTouch?
@@ -203,6 +248,11 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         // MARK: 제스처
+
+        /// 확대했을 때만 한 손가락으로 방을 옮긴다. 인형이나 가구를 집어 든 동안에는 옮기지 않는다.
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            gestureRecognizer !== shiftPan || (zoom > 1 && drag == nil)
+        }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
             true

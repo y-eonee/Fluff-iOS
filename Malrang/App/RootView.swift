@@ -23,6 +23,9 @@ struct RootView: View {
                 Tab("친구", systemImage: "person.2", value: .friends) {
                     FriendsView()
                 }
+                Tab("마이페이지", systemImage: "person.crop.circle", value: .mypage) {
+                    NavigationStack { MyPageView() }
+                }
             }
             .environment(appState)
             .task {

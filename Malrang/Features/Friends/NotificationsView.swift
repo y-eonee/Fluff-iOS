@@ -6,6 +6,11 @@ struct NotificationsView: View {
     @State private var isLoaded = false
     @State private var didFail = false
     @State private var isShowingMultiRoomNotice = false
+    @State private var filter: AppNotification.Kind?
+
+    private var shown: [AppNotification] {
+        store.notifications.filter { filter == nil || $0.kind == filter }
+    }
 
     var body: some View {
         List {
@@ -13,11 +18,11 @@ struct NotificationsView: View {
                 Text("알림을 불러오지 못했어요")
             } else if !isLoaded {
                 ProgressView()
-            } else if store.notifications.isEmpty {
+            } else if shown.isEmpty {
                 Text("새 알림이 없어요")
                     .foregroundStyle(Color.app.inkSecondary)
             } else {
-                ForEach(store.notifications) { notification in
+                ForEach(shown) { notification in
                     row(notification)
                 }
             }
@@ -26,6 +31,17 @@ struct NotificationsView: View {
         .foregroundStyle(Color.app.ink)
         .scrollContentBackground(.hidden)
         .background(Color.app.background)
+        .safeAreaInset(edge: .top) {
+            HStack(spacing: Spacing.xs) {
+                Chip(title: "전체", isSelected: filter == nil, isCompact: true) { filter = nil }
+                ForEach(AppNotification.Kind.allCases, id: \.self) { kind in
+                    Chip(title: kind.tag, isSelected: filter == kind, isCompact: true) { filter = kind }
+                }
+            }
+            .padding(.horizontal, Spacing.m)
+            .padding(.vertical, Spacing.xs)
+            .background(Color.app.background)
+        }
         .navigationTitle("알림함")
         .navigationBarTitleDisplayMode(.inline)
         .alert("멀티 룸은 준비 중이에요", isPresented: $isShowingMultiRoomNotice) {

@@ -14,9 +14,21 @@ extension Color {
     }
 }
 
-/// 가구, 벽지, 바닥재에 칠할 수 있는 색 (Asset Catalog 이름)
+/// 가구, 벽지, 바닥재의 색 이름. Asset Catalog 이름이거나 컬러 피커로 고른 "#RRGGBB"다.
 enum Palette {
-    static let names = ["background", "surface", "pastelYellow", "pastelMint", "pastelSky", "brandAccent"]
+    static func uiColor(_ name: String) -> UIColor {
+        guard name.hasPrefix("#"), let value = UInt32(name.dropFirst(), radix: 16) else {
+            return UIColor(named: name) ?? .white
+        }
+        return UIColor(red: CGFloat((value >> 16) & 0xFF) / 255, green: CGFloat((value >> 8) & 0xFF) / 255,
+                       blue: CGFloat(value & 0xFF) / 255, alpha: 1)
+    }
+
+    static func hex(_ color: Color) -> String {
+        var (red, green, blue, alpha) = (CGFloat(0), CGFloat(0), CGFloat(0), CGFloat(0))
+        UIColor(color).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        return String(format: "#%02X%02X%02X", Int(red * 255 + 0.5), Int(green * 255 + 0.5), Int(blue * 255 + 0.5))
+    }
 }
 
 enum Spacing {

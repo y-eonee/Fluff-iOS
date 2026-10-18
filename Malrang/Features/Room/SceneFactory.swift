@@ -1,3 +1,4 @@
+import Metal
 import RealityKit
 import UIKit
 
@@ -32,6 +33,7 @@ enum SceneFactory {
         let image = UIImage(data: doll.imageData)
         let aspect = Float((image?.size.width ?? 1) / max(image?.size.height ?? 1, 1))
         var material = UnlitMaterial()
+        material.faceCulling = .none
         if let image, let cgImage = image.cgImage,
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)),
            let maskImage = opacityMask(of: image),
@@ -186,12 +188,30 @@ enum SceneFactory {
         var material = PhysicallyBasedMaterial()
         material.roughness = 0.9
         material.metallic = 0.0
-        material.baseColor = .init(tint: UIColor(named: item.colorName ?? item.kind.defaultColorName) ?? .white)
+        material.baseColor = .init(tint: Palette.uiColor(item.colorName ?? item.kind.defaultColorName))
         if withPhoto, let data = item.photoData, let cgImage = UIImage(data: data)?.cgImage,
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
-            material.baseColor = .init(tint: .white, texture: .init(texture))
-            let scale = SIMD2<Float>(item.photoFlipped ? -1 : 1, 1) / item.photoScale
-            material.textureCoordinateTransform = .init(offset: [item.photoOffsetX, item.photoOffsetY], scale: scale, rotation: Float(item.photoTurns) * .pi / 2)
+            // 맞추기에서 사진 밖으로 나가는 부분은 흰 여백으로 보인다.
+            let sampler = MTLSamplerDescriptor()
+            sampler.sAddressMode = .clampToBorderColor
+            sampler.tAddressMode = .clampToBorderColor
+            sampler.borderColor = .opaqueWhite
+            sampler.minFilter = .linear
+            sampler.magFilter = .linear
+            material.baseColor = .init(tint: .white, texture: .init(texture, sampler: .init(sampler)))
+
+            // 면의 가운데를 기준으로, 사진이 보이는 비율을 정한다. 90도로 돌리면 사진의 가로세로가 바뀐다.
+            let turned = item.photoTurns % 2 == 1
+            let ratio = Float(cgImage.width) / Float(cgImage.height) / item.kind.photoAspect
+            let shown = turned ? 1 / ratio : ratio
+            let isFit = item.photoFit == 1
+            var visible: SIMD2<Float> = shown > 1 ? [isFit ? 1 : 1 / shown, isFit ? shown : 1] : [isFit ? 1 / shown : 1, isFit ? 1 : shown]
+            visible /= item.photoScale
+            let scale = SIMD2<Float>(item.photoFlipped ? -visible.x : visible.x, visible.y)
+            let angle = Float(item.photoTurns) * .pi / 2
+            let half = scale * 0.5
+            let rotated = SIMD2<Float>(cos(angle) * half.x - sin(angle) * half.y, sin(angle) * half.x + cos(angle) * half.y)
+            material.textureCoordinateTransform = .init(offset: SIMD2(0.5 + item.photoOffsetX, 0.5 + item.photoOffsetY) - rotated, scale: scale, rotation: angle)
         }
         return material
     }

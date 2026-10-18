@@ -10,6 +10,8 @@ final class RoomItem {
     var colorName: String?
     @Attribute(.externalStorage) var photoData: Data?
     var photoScale = 1.0
+    /// 사진을 프레임에 맞추는 방식. 0은 채우기(넘치는 부분은 잘라냄), 1은 맞추기(전체가 보임)
+    var photoFit = 0
     var photoFlipped = false
     var photoTurns = 0
     /// 사진을 옮긴 위치(텍스처 좌표)
@@ -29,7 +31,7 @@ final class RoomItem {
 
     var state: RoomItemState {
         RoomItemState(id: id, kind: kind, x: Float(x), z: Float(z), colorName: colorName,
-                      photoData: photoData, photoScale: Float(photoScale), photoFlipped: photoFlipped, photoTurns: photoTurns,
+                      photoData: photoData, photoScale: Float(photoScale), photoFit: photoFit, photoFlipped: photoFlipped, photoTurns: photoTurns,
                       photoOffsetX: Float(photoOffsetX), photoOffsetY: Float(photoOffsetY), yaw: Float(yaw))
     }
 
@@ -39,6 +41,7 @@ final class RoomItem {
         colorName = state.colorName
         photoData = state.photoData
         photoScale = Double(state.photoScale)
+        photoFit = state.photoFit
         photoFlipped = state.photoFlipped
         photoTurns = state.photoTurns
         photoOffsetX = Double(state.photoOffsetX)
@@ -68,6 +71,7 @@ struct RoomItemState: Identifiable, Equatable {
     var colorName: String?
     var photoData: Data?
     var photoScale: Float = 1
+    var photoFit = 0
     var photoFlipped = false
     var photoTurns = 0
     var photoOffsetX: Float = 0

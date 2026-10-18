@@ -28,12 +28,13 @@ struct FriendsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.app.background)
+            .overlay(alignment: .bottomTrailing) {
+                FloatingCircleButton(title: "친구 추가", symbol: "person.badge.plus", isPrimary: true) { isAdding = true }
+                .padding(Spacing.m)
+            }
             .navigationTitle("친구")
             .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button("친구 추가", systemImage: "person.badge.plus") { isAdding = true }
-                    NotificationsButton()
-                }
+                NotificationsButton()
             }
             .navigationDestination(for: Friend.self) { friend in
                 FriendRoomView(friend: friend)
@@ -49,8 +50,7 @@ struct FriendsView: View {
         Group {
             if store.friends.isEmpty {
                 NoticeCard(symbol: "person.2", title: "아직 친구가 없어요",
-                           message: "연락처에서 친구를 찾아 서로의 방에 놀러 가 보세요",
-                           actionTitle: "친구 추가") { isAdding = true }
+                           message: "아래 친구 추가 버튼으로 연락처 속 친구를 찾아보세요")
             } else {
                 ScrollView {
                     LazyVStack(spacing: Spacing.xs) {

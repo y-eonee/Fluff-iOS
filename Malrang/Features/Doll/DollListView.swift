@@ -29,7 +29,7 @@ struct DollListView: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                FloatingAddButton(label: "인형 만들기") { isCreating = true }
+                FloatingCircleButton(title: "인형 만들기", symbol: "teddybear", isPrimary: true) { isCreating = true }
                     .padding(Spacing.m)
             }
             .background(Color.app.background)
@@ -52,14 +52,21 @@ struct DollListView: View {
                 .frame(height: 140)
             Text(doll.name)
                 .font(.headline)
-            Label(doll.isPlaced ? "방에 있어요" : "보관 중", systemImage: doll.isPlaced ? "house.fill" : "archivebox")
-                .font(.footnote)
-                .foregroundStyle(Color.app.inkSecondary)
         }
         .foregroundStyle(Color.app.ink)
         .frame(maxWidth: .infinity)
         .padding(Spacing.s)
         .cardStyle()
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: doll.isPlaced ? "house.fill" : "house")
+                .font(.body)
+                .foregroundStyle(Color.app.ink)
+                .frame(width: 36, height: 36)
+                .background(doll.isPlaced ? Color.app.pastelMint : Color.app.background, in: Circle())
+                .overlay(Circle().stroke(Color.app.ink.opacity(doll.isPlaced ? 0.5 : 0.15)))
+                .padding(Spacing.xs)
+                .accessibilityLabel(doll.isPlaced ? "방에 있어요" : "보관 중")
+        }
         .accessibilityElement(children: .combine)
     }
 }
