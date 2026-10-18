@@ -80,14 +80,16 @@ struct FloatingCircleButton: View {
 /// 화면 위에 잠깐 띄우는 어두운 안내 말풍선
 struct HintCapsule: View {
     let text: String
+    /// 카메라 화면처럼 어두운 말풍선이 묻히는 곳에서는 흰 바탕에 어두운 글씨로 쓴다.
+    var isLight = false
 
     var body: some View {
         Text(text)
             .font(.footnote.bold())
-            .foregroundStyle(Color.app.surface)
+            .foregroundStyle(isLight ? Color.app.ink : Color.app.surface)
             .padding(.horizontal, Spacing.m)
             .frame(minHeight: 32)
-            .background(Color.app.ink, in: Capsule())
+            .background(isLight ? Color.app.surface : Color.app.ink, in: Capsule())
     }
 }
 
@@ -109,6 +111,7 @@ struct Chip: View {
                 Text(title)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: !isCompact, vertical: false)
             }
             .font(isCompact ? .footnote : .body)
             .foregroundStyle(Color.app.ink)

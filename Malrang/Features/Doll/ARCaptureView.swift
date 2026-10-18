@@ -82,7 +82,7 @@ struct ARCaptureView: View {
             .ignoresSafeArea(edges: .bottom)
             .overlay(alignment: .top) {
                 if !isRecording {
-                    HintCapsule(text: hasDoll ? "끌어서 옮기고, 두 손가락으로 크기를 바꿔요" : "바닥을 비춘 뒤 원하는 곳을 탭해 인형을 놓으세요")
+                    HintCapsule(text: hasDoll ? "끌어서 옮기고, 두 손가락으로 크기를 바꿔요" : "바닥을 비춘 뒤 원하는 곳을 탭해 인형을 놓으세요", isLight: true)
                         .padding(.top, Spacing.xs)
                 }
             }
