@@ -9,7 +9,7 @@ final class DollDraft {
     var cutout: UIImage?
     /// 지우기·복원으로 다듬은 결과
     var editedCutout: UIImage?
-    var shape = DollShape.bear
+    var shape = DollShape.pillow
     var filling = Filling.fluffy
     /// 비워 두면 플레이스홀더인 "귀염둥이"가 이름이 된다.
     var name = ""
@@ -50,7 +50,7 @@ struct CreateFlowView: View {
                 }
                 .navigationDestination(for: CreateStep.self) { step in
                     destination(step)
-                        .background(Color.app.background)
+                        .background { AppBackground() }
                 }
         }
     }

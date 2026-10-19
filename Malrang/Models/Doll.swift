@@ -54,14 +54,16 @@ struct DollState: Identifiable, Equatable {
     var dance: DanceMove?
 }
 
+/// 인형 모양. 커스텀(pillow)은 사진 누끼 모양 그대로 시접을 두른 인형이다.
 enum DollShape: String, CaseIterable {
-    case bear, star, pillow
+    case pillow, bear, star, cat
 
     var label: String {
         switch self {
+        case .pillow: "커스텀"
         case .bear: "곰인형"
         case .star: "별인형"
-        case .pillow: "솜인형"
+        case .cat: "고양이"
         }
     }
 }
