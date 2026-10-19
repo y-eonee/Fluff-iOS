@@ -86,7 +86,10 @@ enum SceneFactory {
         entity.orientation = simd_quatf(angle: .pi / 4, axis: [0, 1, 0])
         entity.position = doll.position
         entity.name = "doll|\(doll.id)"
-        entity.generateCollisionShapes(recursive: true)
+        // 두께 없는 이미지 면 대신 몸통 전체를 잡을 수 있는 터치 영역을 둔다.
+        let body = ShapeResource.generateBox(size: [dollHeight * aspect, dollHeight, 0.06])
+            .offsetBy(translation: [0, dollHeight / 2, 0])
+        entity.components.set(CollisionComponent(shapes: [body]))
         if let dance = doll.dance {
             play(dance, on: entity)
         }

@@ -165,7 +165,7 @@ struct HomeView: View {
     @ViewBuilder
     private var topMessage: some View {
         if placementStart != nil {
-            HintCapsule(text: "원하는 위치로 끌어다 놓으세요")
+            HintCapsule(text: "인형을 꾹 누른 채 원하는 위치로 옮겨요")
                 .padding(.top, Spacing.xs)
         } else if let toast {
             HStack(spacing: Spacing.s) {
@@ -258,6 +258,7 @@ struct HomeView: View {
     private func finishPlacement() {
         guard let start = placementStart else { return }
         placementStart = nil
+        try? modelContext.save()
         guard let moved = dolls.first(where: { $0.id == lastMovedID }) else { return }
         let seat = RoomLayout.seat(at: [moved.position.x, moved.position.z], in: items.map(\.state)).item
         toast = Toast(message: "\(seat?.kind.label ?? "바닥")에 배치했어요", undo: start)

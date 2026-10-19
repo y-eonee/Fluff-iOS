@@ -276,7 +276,7 @@ struct RoomSceneView: UIViewRepresentable {
 
         /// 확대한 상태에서 쓸면 방의 다른 쪽을 볼 수 있다.
         @objc private func handleShift(_ gesture: UIPanGestureRecognizer) {
-            guard let view, zoom > 1, view.bounds.height > 0 else { return }
+            guard let view, zoom > 1, drag == nil, view.bounds.height > 0 else { return }
             let move = gesture.translation(in: view)
             gesture.setTranslation(.zero, in: view)
             let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
@@ -304,7 +304,12 @@ struct RoomSceneView: UIViewRepresentable {
 
         /// 확대했을 때만 한 손가락으로 방을 옮긴다. 인형이나 가구를 집어 든 동안에는 옮기지 않는다.
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            gestureRecognizer !== shiftPan || (zoom > 1 && drag == nil)
+            guard gestureRecognizer === shiftPan else { return true }
+            guard zoom > 1, drag == nil else { return false }
+            if let view, let hit = target(at: gestureRecognizer.location(in: view)), canDrag(hit) {
+                return false
+            }
+            return true
         }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
@@ -400,7 +405,10 @@ struct RoomSceneView: UIViewRepresentable {
                 parent.onFeel()
                 highlights.forEach { $0.removeFromParent() }
                 highlights = []
-                if drag.isDoll {
+                if gesture.state != .ended {
+                    drag.entity.position = drag.start
+                    if drag.isDoll { parent.onHoldDoll(nil) }
+                } else if drag.isDoll {
                     parent.onHoldDoll(nil)
                     parent.onMoveDoll(drag.id, drag.entity.position - [0, lift, 0])
                 } else if var moved = item(drag.id) {
@@ -434,12 +442,18 @@ struct RoomSceneView: UIViewRepresentable {
 
         /// 화면 좌표에 있는 인형이나 가구 엔티티. 이름이 "doll|UUID" 또는 "item|UUID"인 조상을 찾는다.
         private func target(at point: CGPoint) -> (entity: Entity, id: UUID, isDoll: Bool)? {
-            var entity = view?.entity(at: point)
-            while let current = entity {
-                if let parsed = Self.parse(current.name) {
-                    return (current, parsed.id, parsed.isDoll)
+            for hit in view?.hitTest(point) ?? [] {
+                var entity: Entity? = hit.entity
+                while let current = entity {
+                    if let parsed = Self.parse(current.name) {
+                        // 홈에서는 인형만 고른다. 가구의 충돌 면이 먼저 맞아도 집을 수 있다.
+                        if parent.mode != .home || parsed.isDoll {
+                            return (current, parsed.id, parsed.isDoll)
+                        }
+                        break
+                    }
+                    entity = current.parent
                 }
-                entity = current.parent
             }
             return nil
         }
