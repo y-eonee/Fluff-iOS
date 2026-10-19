@@ -33,6 +33,9 @@ struct DollActionSheet: View {
                             Label("공유", systemImage: "square.and.arrow.up")
                         }
                         Menu("더보기", systemImage: "ellipsis") {
+                            if doll.isPlaced {
+                                Button("방에서 빼기", systemImage: "tray.and.arrow.down") { removeFromRoom() }
+                            }
                             Button("인형 삭제", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
                         }
                     }
@@ -48,6 +51,7 @@ struct DollActionSheet: View {
                 Text("방에서도 사라지고 되돌릴 수 없어요")
             }
         }
+        .environment(\.whiteDollButtons, true)
     }
 
     private var content: some View {
@@ -79,13 +83,6 @@ struct DollActionSheet: View {
 
     private var actions: some View {
         VStack(spacing: Spacing.s) {
-            if !doll.isPlaced {
-                Button("방에 두기") {
-                    appState.place(doll)
-                    dismiss()
-                }
-                .buttonStyle(.primary)
-            }
             HStack(spacing: Spacing.s) {
                 Button {
                     move = doll.dance ?? .bounce
@@ -105,6 +102,23 @@ struct DollActionSheet: View {
                 }
             }
             .buttonStyle(.secondary)
+            HStack(spacing: Spacing.s) {
+                Button(doll.isPlaced ? "위치 옮기기" : "방에 두기") {
+                    appState.place(doll)
+                    dismiss()
+                }
+                .buttonStyle(.primary)
+                if doll.isPlaced {
+                    Button(action: removeFromRoom) {
+                        VStack(spacing: Spacing.xxs) {
+                            Text("방에서 빼기")
+                            Text("인형 목록에 보관").appFont(.caption)
+                        }
+                    }
+                    .buttonStyle(.secondary)
+                    .accessibilityLabel("방에서 빼기, 인형 목록에 보관")
+                }
+            }
         }
         .padding(Spacing.m)
         .background {
@@ -113,6 +127,12 @@ struct DollActionSheet: View {
                 .ignoresSafeArea(edges: .bottom)
         }
         .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: -4)
+    }
+
+    private func removeFromRoom() {
+        doll.isPlaced = false
+        try? modelContext.save()
+        dismiss()
     }
 }
 

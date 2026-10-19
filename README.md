@@ -112,13 +112,32 @@ Malrang/
 - **임시 동작**: 춤은 단순한 움직임으로 흉내 냈고, 효과음은 시스템 소리다.
 - **로그인·친구 서버 없음**: 친구 데이터는 목업이다. 멀티 룸만 실제로 기기 간 통신한다.
 - **SharePlay 한계**: 참여자 이름을 알 수 없어 누가 만졌는지 표시하지 못한다. 가구 꾸미기는 공유되지 않는다.
-- **없는 기능**: 인형 삭제, KPI 측정, 다크 모드.
+- **없는 기능**: KPI 측정, 다크 모드.
 - **배포**: iOS 앱이라 웹 배포 주소 대신 TestFlight 또는 시연 영상으로 제출 예정. <!-- TODO: 링크 추가 -->
 
 ## 손그림 가구 에셋
+
+- 마이페이지의 `디자인 시안`에서 A(손그림) / B(따뜻한 원목 3D)를 전환한다. B안은 [Figma 766:160](https://www.figma.com/design/y50EtliLp7YMR80gHuJRLb?node-id=766-160)의 홈·인형 만들기·방 꾸미기를 구현한다.
+- B안의 원본 아이콘과 곰 참고 이미지, 별·고양이·배경을 투명하게 만든 곰 이미지는 `DesignB` 에셋에 있다. 원본 곰 참고 이미지는 보존하고, 사진 합성·저장에는 투명한 인형 이미지를 사용한다.
+- `FurnitureModelB` / `FurnitureSceneB`가 B안의 실제 입체 가구와 조명을 만든다. A안과 배치·사진·색·회전·좌우반전 저장값, 되돌리기·취소 동작을 공유한다. 가구 10종의 목록 이미지는 같은 B 모델에서 렌더링했다.
+- B 가구 검증: `xcrun swiftc -parse-as-library Malrang/Models/FurnitureKind.swift Malrang/Features/Room/FurnitureModelB.swift scripts/check_furniture_b.swift -o /tmp/check-furniture-b && /tmp/check-furniture-b`. 미리보기 렌더러는 `scripts/render_furniture_b.swift`다.
 
 - `scripts/room-illustration.svg`: Figma 방 일러스트의 원본 벡터.
 - `python3 scripts/prepare_furniture_illustration.py`: 원본 면·색에서 회전 가능한 가구 데이터(`RoomIllustration.json`)를 생성한다. 원본에 없는 소파·사각 러그는 같은 면 색과 윤곽선으로 만든다.
 - `IllustrationMesh`는 원본 비율의 입체 면을 구성하고, `FurnitureIllustration`은 원본 SVG의 질감 필터를 그대로 렌더링한 텍스처와 알파 마스크를 붙인다. 임의의 흔들리는 윤곽선이나 종이 노이즈를 더하지 않는다. 모델은 3D 좌표에서 이동·회전·좌우반전된다.
 - `scripts/render_illustration_textures.cjs`는 원본 `feTurbulence`·`feDisplacementMap` 필터를 그대로 PNG로 렌더링한다. sharp는 개발용 도구이며 iOS 앱에는 외부 라이브러리를 추가하지 않는다.
 - 목록은 원본 가구 그림을 직접 사용한다. `scripts/render_illustration_preview.cjs`는 현재 면·텍스처 데이터를 깊이 버퍼로 렌더링한다. SVG 왼쪽 위 꼭짓점의 UV는 RealityKit에서 `(0, 1)`이다. 미리보기는 같은 UV를 PNG 행 좌표로 변환하지만, 최종 면 연결은 반드시 실행 중인 iOS 앱에서도 확인한다. GPU 렌더링 도구는 `scripts/render_furniture_illustration.swift`에 있다.
+
+## 방과 인형 공통 동작
+
+- A·B 모두 메모보드에서 내 방명록으로 이동한다. 인형 메뉴의 `방에서 빼기`는 인형 목록에 보관하고, `위치 옮기기` / `방에 두기`에서 재배치한다.
+- 배치는 길게 눌러 끌기, 바로 끌기, 고른 인형을 놓을 자리 탭을 지원한다. 만들기 화면이 닫힌 뒤 배치를 시작하고, 새 배치를 취소하면 인형은 목록에 보관한다.
+- 방 카메라는 일러스트 구도를 위해 멀리 놓이므로 터치 raycast 거리를 카메라의 far plane까지 늘린다. 기본 100m 범위로는 홈의 인형과 메모보드를 감지하지 못할 수 있다.
+- 얼굴 크기는 두 시안 모두 슬라이더와 두 손가락 확대·축소로 조절하고 완성 이미지에 반영한다. B 얼굴의 흰 원형 테두리는 제거했다.
+- A안 제목은 기존 NotCliche, B안 제목은 첨부된 Origin Display를 사용하고 본문은 Pretendard로 유지한다. Origin Text도 함께 등록하며 제공된 사용 허가 파일은 `Resources/Origin-License.txt`에 보관한다.
+
+- B안 만들기에서 `사진 얼굴 표시`를 꺼서 곰·별·고양이 프리셋만 완성할 수 있다. 사진 선택 화면의 `사진 없이 프리셋으로 만들기`는 바로 모양·속재료 단계로 이동한다. 얼굴을 껐다 켜도 사진과 확대 비율은 유지된다.
+- B안 버튼과 선택 탭은 `BButtonSurface`의 주황색·흰색 광택을 공유한다. 러그 썸네일은 같은 3D 모델을 크게 렌더링하고 크림색 바탕을 사용한다. `render_furniture_b.swift`의 출력 폴더 뒤에 `rugRound rugSquare`를 주면 러그만 재생성한다.
+
+- B안 조명은 원본 방 이미지의 책상 위 밝은 빛, 벽으로 번지는 따뜻한 빛, 가구 아래 부드러운 접지 그림자를 각각 재현한다. 피그마에는 실제 광원/재질 설정이 포함된 3D 원본이 없어 이미지 기준으로 조정한다.
+- B안에서 춤추기·예절샷 찍기가 있는 인형 상세 영역과 춤 고르기 버튼은 진입한 탭과 관계없이 흰색을 유지한다. 인형 목록의 만들기 버튼은 기존 주황색 광택을 유지한다.

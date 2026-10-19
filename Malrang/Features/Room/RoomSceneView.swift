@@ -24,6 +24,7 @@ struct RoomSceneView: UIViewRepresentable {
     var onTapDoll: (UUID) -> Void = { _ in }
     /// 내 방(home)에서는 새 인형을 배치하는 동안에만 인형을 끌 수 있다.
     var canMoveDolls = true
+    var movingDollID: UUID?
     var onPickDoll: (UUID) -> Void = { _ in }
     /// 인형을 들고 있는 동안 화면 위치와 놓일 자리를 알린다. 놓으면 nil.
     var onHoldDoll: (Hold?) -> Void = { _ in }
@@ -98,12 +99,14 @@ struct RoomSceneView: UIViewRepresentable {
         private var updateSubscription: (any Cancellable)?
         private var orbitYaw: Float = 0
         private var lastDollPoint: CGPoint?
+        private var accessibleEntities: [(Entity, RoomAccessibilityElement)] = []
         private var roomHidden = false
         private var fitDistance: Float = 1
         /// 방을 두 손가락으로 확대한 정도와 옮긴 위치. 방을 잃어버리지 않게 범위를 제한한다.
         private var zoom: Float = 1
         private var shift = SIMD3<Float>.zero
         private weak var shiftPan: UIPanGestureRecognizer?
+        private weak var dollPan: UIPanGestureRecognizer?
         private lazy var cameraDirection = simd_normalize(SIMD3<Float>(1, parent.illustrationTargetY == nil ? 0.9 : 0.85, 1))
 
         private struct Drag {
@@ -143,6 +146,7 @@ struct RoomSceneView: UIViewRepresentable {
                 MainActor.assumeIsolated {
                     self?.fitCamera()
                     self?.reportDollScreen()
+                    self?.updateAccessibilityFrames()
                 }
             }
 
@@ -176,7 +180,15 @@ struct RoomSceneView: UIViewRepresentable {
             if parent.mode != .view {
                 let press = UILongPressGestureRecognizer(target: self, action: #selector(handlePress))
                 press.minimumPressDuration = 0.35
+                press.delegate = self
                 view.addGestureRecognizer(press)
+                let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePress))
+                pan.maximumNumberOfTouches = 1
+                pan.delegate = self
+                dollPan = pan
+                pan.require(toFail: press)
+                // 바로 끌 때는 pan, 잠시 눌렀다가 끌 때는 long press가 같은 이동 처리를 쓴다.
+                view.addGestureRecognizer(pan)
             }
         }
 
@@ -239,6 +251,51 @@ struct RoomSceneView: UIViewRepresentable {
             root.addChild(camera)
             root.addChild(light)
             if DesignVariant.current == .b { root.addChild(fillLight) }
+            configureAccessibility(content)
+        }
+
+        private func configureAccessibility(_ content: Entity) {
+            guard let view else { return }
+            accessibleEntities = content.children.compactMap { entity in
+                let element = RoomAccessibilityElement(accessibilityContainer: view)
+                element.accessibilityTraits = .button
+                if entity.name == "board" {
+                    element.accessibilityLabel = "메모보드, 방명록 열기"
+                    element.activate = { [weak self] in self?.parent.onTapBoard() }
+                } else if let parsed = Self.parse(entity.name), parsed.isDoll,
+                          let doll = latest?.dolls.first(where: { $0.id == parsed.id }) {
+                    element.accessibilityLabel = doll.name
+                    element.activate = { [weak self] in
+                        guard let self else { return }
+                        if self.parent.mode == .home && self.parent.canMoveDolls { self.parent.onPickDoll(parsed.id) }
+                        else { self.parent.onTapDoll(parsed.id) }
+                    }
+                } else { return nil }
+                return (entity, element)
+            }
+            view.isAccessibilityElement = false
+            view.accessibilityElements = accessibleEntities.map(\.1)
+            updateAccessibilityFrames()
+        }
+
+        private func updateAccessibilityFrames() {
+            guard let view else { return }
+            for (entity, element) in accessibleEntities {
+                let bounds = entity.visualBounds(relativeTo: nil)
+                var points: [CGPoint] = []
+                for x: Float in [-1, 1] {
+                    for y: Float in [-1, 1] {
+                        for z: Float in [-1, 1] {
+                            let corner = bounds.center + bounds.extents * SIMD3(x, y, z) / 2
+                            if let point = view.project(corner) { points.append(point) }
+                        }
+                    }
+                }
+                guard let minX = points.map(\.x).min(), let maxX = points.map(\.x).max(),
+                      let minY = points.map(\.y).min(), let maxY = points.map(\.y).max() else { continue }
+                let rect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                element.accessibilityFrameInContainerSpace = rect.insetBy(dx: -8, dy: -8)
+            }
         }
 
         private func aimCamera(at target: SIMD3<Float>, fitting width: Float, height: Float) {
@@ -326,6 +383,12 @@ struct RoomSceneView: UIViewRepresentable {
 
         /// 확대했을 때만 한 손가락으로 방을 옮긴다. 인형이나 가구를 집어 든 동안에는 옮기지 않는다.
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            if gestureRecognizer === dollPan {
+                guard let view, let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
+                let location = pan.location(in: view), delta = pan.translation(in: view)
+                guard let hit = target(at: CGPoint(x: location.x - delta.x, y: location.y - delta.y)) else { return false }
+                return hit.isDoll && canDrag(hit)
+            }
             guard gestureRecognizer === shiftPan else { return true }
             guard zoom > 1, drag == nil else { return false }
             if let view, let hit = target(at: gestureRecognizer.location(in: view)), canDrag(hit) {
@@ -335,7 +398,8 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-            true
+            if gestureRecognizer === dollPan || other === dollPan { return false }
+            return true
         }
 
         @objc private func handleOrbit(_ gesture: UIPanGestureRecognizer) {
@@ -362,13 +426,26 @@ struct RoomSceneView: UIViewRepresentable {
         @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let view else { return }
             let point = gesture.location(in: view)
+            let collisions = hits(at: point)
+            if collisions.contains(where: { isBoard($0.entity) }) {
+                parent.onTapBoard()
+                return
+            }
+            if parent.mode == .home, parent.canMoveDolls {
+                if let hit = target(at: point), hit.isDoll {
+                    parent.onPickDoll(hit.id)
+                } else if let id = parent.movingDollID, let entity = root.findEntity(named: "doll|\(id)"),
+                          let spot = dollSpot(at: point, excluding: entity) {
+                    parent.onMoveDoll(id, spot)
+                    parent.onFeel()
+                }
+                return
+            }
             if parent.mode == .decorate {
                 if let hit = target(at: point), !hit.isDoll { parent.onTapItem(hit.id) } else { parent.onTapItem(nil) }
                 return
             }
-            if isBoard(view.entity(at: point)) {
-                parent.onTapBoard()
-            } else if let hit = target(at: point), hit.isDoll {
+            if let hit = target(at: point), hit.isDoll {
                 parent.onTapDoll(hit.id)
             }
         }
@@ -387,12 +464,17 @@ struct RoomSceneView: UIViewRepresentable {
             parent.onDoubleTapItem(hit.id)
         }
 
-        @objc private func handlePress(_ gesture: UILongPressGestureRecognizer) {
+        @objc private func handlePress(_ gesture: UIGestureRecognizer) {
             guard let view else { return }
             let point = gesture.location(in: view)
             switch gesture.state {
             case .began:
-                guard let hit = target(at: point), canDrag(hit) else { return }
+                let origin: CGPoint
+                if let pan = gesture as? UIPanGestureRecognizer {
+                    let delta = pan.translation(in: view)
+                    origin = CGPoint(x: point.x - delta.x, y: point.y - delta.y)
+                } else { origin = point }
+                guard drag == nil, let hit = target(at: origin), canDrag(hit) else { return }
                 hit.entity.stopAllAnimations()
                 parent.onFeel()
                 drag = Drag(entity: hit.entity, id: hit.id, isDoll: hit.isDoll, start: hit.entity.position)
@@ -464,7 +546,7 @@ struct RoomSceneView: UIViewRepresentable {
 
         /// 화면 좌표에 있는 인형이나 가구 엔티티. 이름이 "doll|UUID" 또는 "item|UUID"인 조상을 찾는다.
         private func target(at point: CGPoint) -> (entity: Entity, id: UUID, isDoll: Bool)? {
-            for hit in view?.hitTest(point) ?? [] {
+            for hit in hits(at: point) {
                 var entity: Entity? = hit.entity
                 while let current = entity {
                     if let parsed = Self.parse(current.name) {
@@ -478,6 +560,14 @@ struct RoomSceneView: UIViewRepresentable {
                 }
             }
             return nil
+        }
+
+        /// 좁은 화각의 방 카메라는 기본 raycast 범위(100m)보다 멀리 놓일 수 있다.
+        private func hits(at point: CGPoint) -> [CollisionCastHit] {
+            guard let view, let ray = view.ray(through: point) else { return [] }
+            return view.scene.raycast(origin: ray.origin, direction: ray.direction,
+                                      length: max(100, camera.camera.far + 1), query: .all)
+                .sorted { $0.distance < $1.distance }
         }
 
         private static func parse(_ name: String) -> (id: UUID, isDoll: Bool)? {
@@ -496,7 +586,7 @@ struct RoomSceneView: UIViewRepresentable {
         private func dollSpot(at point: CGPoint, excluding dragged: Entity) -> SIMD3<Float>? {
             let items = rendered?.items ?? []
             var xz: SIMD2<Float>?
-            for hit in view?.hitTest(point) ?? [] {
+            for hit in hits(at: point) {
                 var entity: Entity? = hit.entity
                 while let current = entity, Self.parse(current.name) == nil { entity = current.parent }
                 guard let entity, entity !== dragged, let parsed = Self.parse(entity.name), !parsed.isDoll,
@@ -529,6 +619,14 @@ struct RoomSceneView: UIViewRepresentable {
             highlights = (rendered?.items ?? []).filter { $0.kind.seatHeight != nil }.map { SceneFactory.seatHighlight($0) }
             highlights.forEach { root.addChild($0) }
         }
+    }
+}
+
+private final class RoomAccessibilityElement: UIAccessibilityElement {
+    var activate: () -> Void = {}
+    override func accessibilityActivate() -> Bool {
+        activate()
+        return true
     }
 }
 

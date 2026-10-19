@@ -9,12 +9,14 @@ struct HomeView: View {
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var selectedDoll: Doll?
     @State private var isCreating = false
+    @State private var pendingDoll: Doll?
     @State private var isDecorating = false
     @State private var isShowingGuestbook = false
     @State private var isStartingMultiRoom = false
     /// 배치 모드일 때 시작 위치. 취소하면 여기로 되돌린다. nil이면 배치 모드가 아니다.
     @State private var placementStart: [UUID: SIMD3<Float>]?
     @State private var lastMovedID: UUID?
+    @State private var placementAddedID: UUID?
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("designVariant") private var variant = DesignVariant.a
     @State private var feelCount = 0
@@ -24,6 +26,7 @@ struct HomeView: View {
     private struct Toast: Equatable {
         let message: String
         let undo: [UUID: SIMD3<Float>]
+        let addedID: UUID?
     }
 
     private var placedDolls: [Doll] { dolls.filter(\.isPlaced) }
@@ -45,6 +48,8 @@ struct HomeView: View {
                                 if placementStart == nil { selectedDoll = dolls.first { $0.id == id } }
                             },
                             canMoveDolls: placementStart != nil,
+                            movingDollID: lastMovedID,
+                            onPickDoll: { lastMovedID = $0 },
                             onHoldDoll: { hold = $0 },
                             onMoveDoll: { id, position in
                                 dolls.first { $0.id == id }?.position = position
@@ -81,8 +86,13 @@ struct HomeView: View {
             .sheet(isPresented: $isStartingMultiRoom) {
                 MultiRoomStartSheet()
             }
-            .fullScreenCover(isPresented: $isCreating) {
-                CreateFlowView { doll in place(doll) }
+            .fullScreenCover(isPresented: $isCreating, onDismiss: {
+                if let doll = pendingDoll {
+                    pendingDoll = nil
+                    place(doll)
+                }
+            }) {
+                CreateFlowView { doll in pendingDoll = doll }
             }
             .task(id: appState.dollToPlace?.id) {
                 if let doll = appState.dollToPlace {
@@ -176,7 +186,7 @@ struct HomeView: View {
     @ViewBuilder
     private var topMessage: some View {
         if placementStart != nil {
-            HintCapsule(text: "인형을 꾹 누른 채 원하는 위치로 옮겨요")
+            HintCapsule(text: "인형을 끌거나 놓을 자리를 눌러요")
                 .padding(.top, Spacing.xs)
         } else if let toast {
             HStack(spacing: Spacing.s) {
@@ -293,18 +303,24 @@ struct HomeView: View {
         try? modelContext.save()
         guard let moved = dolls.first(where: { $0.id == lastMovedID }) else { return }
         let seat = RoomLayout.seat(at: [moved.position.x, moved.position.z], in: items.map(\.state)).item
-        toast = Toast(message: "\(seat?.kind.label ?? "바닥")에 배치했어요", undo: start)
+        toast = Toast(message: "\(seat?.kind.label ?? "바닥")에 배치했어요", undo: start, addedID: placementAddedID)
+        placementAddedID = nil
         lastMovedID = nil
     }
 
     private func cancelPlacement() {
         if let start = placementStart { restore(start) }
+        if let id = placementAddedID { dolls.first { $0.id == id }?.isPlaced = false }
+        placementAddedID = nil
         placementStart = nil
         lastMovedID = nil
+        try? modelContext.save()
     }
 
     private func undo(_ toast: Toast) {
         restore(toast.undo)
+        if let id = toast.addedID { dolls.first { $0.id == id }?.isPlaced = false }
+        try? modelContext.save()
         self.toast = nil
     }
 
@@ -316,12 +332,13 @@ struct HomeView: View {
 
     /// 새로 만들었거나 목록에서 고른 인형을 앞쪽 바닥에 두고 배치 모드를 연다.
     private func place(_ doll: Doll) {
+        beginPlacement()
         if !doll.isPlaced {
+            placementAddedID = doll.id
             doll.position = RoomLayout.dollSpot(avoiding: items.map(\.state), dolls: placedDolls.map(\.position))
             doll.isPlaced = true
         }
         lastMovedID = doll.id
-        beginPlacement()
     }
 }
 

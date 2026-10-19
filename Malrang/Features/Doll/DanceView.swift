@@ -60,7 +60,7 @@ struct DancePanel: View {
                         }
                         .foregroundStyle(Color.app.ink)
                         .frame(maxWidth: .infinity, minHeight: 72)
-                        .background(selected == move ? Color.app.accent : Color.app.background,
+                        .background(DesignVariant.current == .b ? .white : selected == move ? Color.app.accent : Color.app.background,
                                     in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
                             .stroke(selected == move ? Color.app.ink : Color.app.ink.opacity(0.15)))
@@ -90,6 +90,7 @@ struct DancePanel: View {
                 .ignoresSafeArea(edges: .bottom)
         }
         .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: -4)
+        .environment(\.whiteDollButtons, true)
     }
 }
 
