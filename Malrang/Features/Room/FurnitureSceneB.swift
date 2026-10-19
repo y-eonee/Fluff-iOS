@@ -182,6 +182,29 @@ enum FurnitureSceneB {
         let pin = ModelEntity(mesh: .generateSphere(radius: 0.007), materials: [SimpleMaterial(color: Palette.uiColor("#BD8756"), roughness: 0.8, isMetallic: false)])
         pin.position = [0.014, 0.03, 0]
         board.addChild(pin)
+        // 밝은 보드와 구분되는 큰 메모지와 진한 필기선. 조명에 묻히지 않도록 무광으로 그린다.
+        func paper(y: Float, z: Float, color: String, angle: Float) {
+            let note = Entity()
+            note.position = [0.017, y, z]
+            note.orientation = simd_quatf(angle: angle, axis: [1, 0, 0])
+            func tile(_ size: SIMD3<Float>, _ position: SIMD3<Float>, _ color: String) {
+                var ink = UnlitMaterial(applyPostProcessToneMap: false)
+                ink.color = .init(tint: Palette.uiColor(color))
+                let piece = ModelEntity(mesh: .generateBox(size: size, cornerRadius: 0.001), materials: [ink])
+                piece.position = position
+                note.addChild(piece)
+            }
+            tile([0.002, 0.164, 0.175], [0, -0.004, -0.004], "#D9BE91")
+            tile([0.003, 0.16, 0.17], [0.003, 0, 0], color)
+            tile([0.004, 0.025, 0.065], [0.006, 0.074, 0], "#D49B61")
+            for (index, width) in [Float(0.11), 0.095, 0.065].enumerated() {
+                tile([0.004, 0.005, width], [0.006, 0.03 - Float(index) * 0.03, (0.11 - width) / 2], "#91613C")
+            }
+            board.addChild(note)
+        }
+        paper(y: 0.095, z: -0.12, color: "#FFE299", angle: -0.08)
+        paper(y: 0.06, z: 0.105, color: "#FAD4BA", angle: 0.07)
+        paper(y: -0.125, z: -0.005, color: "#FFF0BC", angle: -0.04)
         board.components.set(CollisionComponent(shapes: [.generateBox(size: [0.04, 0.5, 0.55])]))
         return board
     }
