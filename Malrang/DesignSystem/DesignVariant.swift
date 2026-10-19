@@ -1,7 +1,7 @@
 import CoreText
 import SwiftUI
 
-/// 테스터가 마이페이지에서 고르는 디자인 시안. 시안 A는 피그마 1안이고, 시안 B는 준비되기 전까지 기존 디자인을 쓴다.
+/// 테스터가 마이페이지에서 고르는 디자인 시안. 시안 A는 피그마 1안이고, 시안 B는 따뜻한 원목과 부드러운 입체 스타일이다.
 /// 시안이 다른 화면은 내 방, 솜뭉치 만들기(속재료·모양 고르기), 방 꾸미기 세 개다.
 enum DesignVariant: String {
     case a, b
@@ -40,7 +40,7 @@ extension Color {
 }
 
 extension Font {
-    /// Resources의 글꼴 파일(NotCliche, Pretendard)을 등록한다.
+    /// Resources의 Origin과 Pretendard 글꼴을 등록한다.
     static func registerCustomFonts() {
         for url in Bundle.main.urls(forResourcesWithExtension: "otf", subdirectory: nil) ?? [] {
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
@@ -53,14 +53,20 @@ enum Pretendard: String {
 }
 
 extension View {
-    /// 시안 A의 본문 글꼴(Pretendard). 크기와 자간은 피그마 값 그대로 쓴다.
+    /// A·B 공통 본문 글꼴(Pretendard).
     func pretendard(_ weight: Pretendard, _ size: CGFloat, tracking: CGFloat = 0) -> some View {
         font(.custom("Pretendard-\(weight.rawValue)", size: size, relativeTo: .body))
             .tracking(tracking)
             .fontDesign(nil)
     }
 
-    /// 시안 A의 제목 글꼴(NotCliche). 앱 전체에 둥근 글꼴(.fontDesign(.rounded))을 쓰고 있어서, 이 글꼴만 그 설정을 풀어야 보인다.
+    /// 영문 제목은 첨부된 Origin Display를 쓴다.
+    func origin(_ size: CGFloat, relativeTo style: Font.TextStyle) -> some View {
+        font(.custom("Origin-RegularDisplay", size: size, relativeTo: style))
+            .fontDesign(nil)
+    }
+
+    /// A안에서 원래 사용하던 손글씨 제목.
     func notCliche(_ size: CGFloat, relativeTo style: Font.TextStyle) -> some View {
         font(.custom("establishNotClicheOTF", size: size, relativeTo: style))
             .fontDesign(nil)
@@ -179,18 +185,17 @@ struct NotebookTabBar: View {
 }
 
 
-/// 화면 바탕. 시안 A는 모눈종이, 시안 B는 기존 색이다.
+/// 화면 바탕. 시안 A는 모눈종이, 시안 B는 흰색에서 크림색으로 이어지는 바탕이다.
 struct AppBackground: View {
     var body: some View {
-        if DesignVariant.current == .a { GridPaper() } else { Color.app.background.ignoresSafeArea() }
+        if DesignVariant.current == .a { GridPaper() } else { BBackground() }
     }
 }
 
-/// 텍스트 스타일에 맞는 글꼴. 시안 A는 Pretendard, 시안 B는 기존 시스템 글꼴이다.
+/// 두 시안에서 동일한 Pretendard 본문을 쓴다.
 struct AppFont: ViewModifier {
     let style: Font.TextStyle
     var weight: Pretendard?
-    @AppStorage("designVariant") private var variant = DesignVariant.a
 
     private var size: CGFloat {
         switch style {
@@ -211,13 +216,9 @@ struct AppFont: ViewModifier {
     private var defaultWeight: Pretendard { style == .headline ? .bold : .regular }
 
     func body(content: Content) -> some View {
-        if variant == .a {
             content
                 .font(.custom("Pretendard-\((weight ?? defaultWeight).rawValue)", size: size, relativeTo: style))
                 .fontDesign(nil)
-        } else {
-            content.font(.system(style).weight(weight?.systemWeight ?? (style == .headline ? .semibold : .regular)))
-        }
     }
 }
 
@@ -250,10 +251,12 @@ private struct NotebookTabBarModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .toolbar(variant == .a ? .hidden : .automatic, for: .tabBar)
+            .toolbar(.hidden, for: .tabBar)
             .safeAreaInset(edge: .bottom) {
                 if variant == .a {
                     NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
+                } else {
+                    BTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
                 }
             }
     }

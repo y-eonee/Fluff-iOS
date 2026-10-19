@@ -16,7 +16,7 @@ struct MalrangApp: App {
             RootView()
                 .environment(friendStore)
                 .environment(multiRoom)
-                .fontDesign(variant == .a ? nil : .rounded)
+                .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
                 .tint(Color.app.ink)
                 .id(variant)
                 .preferredColorScheme(.light)
