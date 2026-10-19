@@ -4,6 +4,8 @@ import SwiftUI
 struct DollCustomizeStepA: View {
     @Bindable var draft: DollDraft
     let onNext: () -> Void
+    @State private var pinchStart: CGFloat = 1
+    @GestureState private var isPinching = false
     @AppStorage("soundOn") private var soundOn = true
     @Environment(\.dismiss) private var dismiss
     private let maxLength = 10
@@ -17,6 +19,11 @@ struct DollCustomizeStepA: View {
             VStack(alignment: .leading, spacing: Spacing.s) {
                 steps
                 preview
+                    .simultaneousGesture(MagnifyGesture().updating($isPinching) { _, state, _ in state = true }.onChanged { value in
+                        draft.faceScale = min(2, max(0.6, pinchStart * value.magnification))
+                    }.onEnded { _ in pinchStart = draft.faceScale })
+                FaceSizeControl(scale: $draft.faceScale)
+                    .onChange(of: draft.faceScale) { if !isPinching { pinchStart = draft.faceScale } }
                 Text("인형 모양").pretendard(.bold, 17, tracking: -0.51)
                 HStack(spacing: Spacing.xs) {
                     ForEach(DollShape.allCases, id: \.self) { shape in
@@ -112,7 +119,7 @@ struct DollCustomizeStepA: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxHeight: .infinity, alignment: .top)
-            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()))
+            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()), showsPhoto: draft.finalCutout != nil, faceScale: draft.faceScale)
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.m)
                 .padding(.bottom, 56)

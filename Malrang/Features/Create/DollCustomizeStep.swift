@@ -4,94 +4,38 @@ import SwiftUI
 struct DollCustomizeStep: View {
     @Bindable var draft: DollDraft
     let onNext: () -> Void
-    @AppStorage("soundOn") private var soundOn = true
     @AppStorage("designVariant") private var variant = DesignVariant.a
 
     var body: some View {
         if variant == .a {
             DollCustomizeStepA(draft: draft, onNext: onNext)
         } else {
-            classic
+            DollCustomizeStepB(draft: draft, onNext: onNext)
         }
     }
 
-    private var classic: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.l) {
-                preview
-                section("인형 모양") {
-                    HStack(spacing: Spacing.xs) {
-                        ForEach(DollShape.allCases, id: \.self) { shape in
-                            Chip(title: shape.label, isSelected: draft.shape == shape) { draft.shape = shape }
-                        }
-                    }
-                }
-                section("속재료", note: "눌러서 소리를 들어봐요") {
-                    HStack(spacing: Spacing.xs) {
-                        ForEach(Filling.allCases, id: \.self) { filling in
-                            Chip(title: filling.label, isSelected: draft.filling == filling, isCompact: true) {
-                                draft.filling = filling
-                                if soundOn { filling.playSound() }
-                            }
-                        }
-                    }
-                }
-                section("인형 이름") {
-                    TextField("", text: $draft.name, prompt: Text("귀염둥이").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
-                        .appFont(.body)
-                        .padding(Spacing.s)
-                        .frame(minHeight: 44)
-                        .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous).stroke(Color.app.ink.opacity(0.15)))
-                }
-            }
-            .padding(Spacing.m)
-        }
-        .safeAreaInset(edge: .bottom) {
-            Button("완성하기", action: onNext)
-                .buttonStyle(.primary)
-                .padding(Spacing.m)
-        }
-        .navigationTitle("인형 만들기")
-        .navigationBarTitleDisplayMode(.inline)
-    }
+}
 
-    private var preview: some View {
-        HStack {
-            Button("이전 모양", systemImage: "chevron.left") { cycleShape(by: -1) }
-            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()))
-                .frame(maxWidth: .infinity, maxHeight: 260)
-                .animation(.spring, value: draft.shape)
-            Button("다음 모양", systemImage: "chevron.right") { cycleShape(by: 1) }
-        }
-        .labelStyle(.iconOnly)
-        .appFont(.title2)
-        .foregroundStyle(Color.app.ink)
-        .padding(Spacing.m)
-        .cardStyle()
-    }
+struct FaceSizeControl: View {
+    @Binding var scale: CGFloat
 
-    private func section(_ title: String, note: String? = nil, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
             HStack {
-                Text(title)
-                    .appFont(.headline)
+                Text("얼굴 크기").appFont(.footnote, .bold)
                 Spacer()
-                if let note {
-                    Text(note)
-                        .appFont(.footnote)
-                        .foregroundStyle(Color.app.inkSecondary)
-                }
+                Button("원래 크기") { scale = 1 }.appFont(.caption).frame(minHeight: 44)
             }
-            content()
+            Slider(value: $scale, in: 0.6...2) {
+                Text("얼굴 크기")
+            } minimumValueLabel: {
+                Image(systemName: "minus.magnifyingglass")
+            } maximumValueLabel: {
+                Image(systemName: "plus.magnifyingglass")
+            }
+            .accessibilityValue("\(Int(scale * 100))퍼센트")
         }
         .foregroundStyle(Color.app.ink)
-    }
-
-    private func cycleShape(by step: Int) {
-        let shapes = DollShape.allCases
-        let index = shapes.firstIndex(of: draft.shape) ?? 0
-        draft.shape = shapes[(index + step + shapes.count) % shapes.count]
     }
 }
 

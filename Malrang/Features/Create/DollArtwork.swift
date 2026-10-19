@@ -4,13 +4,20 @@ import SwiftUI
 struct DollArtwork: View {
     let shape: DollShape
     let cutout: Image
+    var showsPhoto = true
+    var faceScale: CGFloat = 1
+    @AppStorage("designVariant") private var variant = DesignVariant.a
 
     var body: some View {
+        if variant == .b && shape != .pillow {
+            DollArtworkB(shape: shape, cutout: cutout, showsPhoto: showsPhoto, faceScale: faceScale)
+        } else {
         switch shape {
         case .bear: bear
         case .cat: cat
         case .star: star
         case .pillow: pillow
+        }
         }
     }
 
@@ -26,6 +33,7 @@ struct DollArtwork: View {
                     .resizable()
                     .scaledToFill()
                     .frame(width: w * 0.6, height: w * 0.6)
+                    .scaleEffect(faceScale)
                     .clipShape(Circle())
                     .offset(y: -w * 0.1)
             }
@@ -59,6 +67,7 @@ struct DollArtwork: View {
                     .resizable()
                     .scaledToFill()
                     .frame(width: w * 0.6, height: w * 0.6)
+                    .scaleEffect(faceScale)
                     .clipShape(Circle())
                     .offset(y: -w * 0.1)
             }
@@ -90,6 +99,8 @@ struct DollArtwork: View {
                 .resizable()
                 .scaledToFit()
                 .padding(56)
+                .scaleEffect(faceScale)
+                .clipShape(StarShape())
         }
         .aspectRatio(1, contentMode: .fit)
     }
@@ -113,6 +124,7 @@ struct DollArtwork: View {
         }
         .padding(16)
         .aspectRatio(0.8, contentMode: .fit)
+        .scaleEffect(faceScale)
     }
 }
 

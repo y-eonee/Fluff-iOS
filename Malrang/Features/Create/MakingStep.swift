@@ -12,7 +12,7 @@ struct MakingStep: View {
     @State private var isAskingToLeave = false
 
     private var artwork: some View {
-        DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()))
+        DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()), showsPhoto: draft.showsPhoto, faceScale: draft.faceScale)
     }
 
     var body: some View {

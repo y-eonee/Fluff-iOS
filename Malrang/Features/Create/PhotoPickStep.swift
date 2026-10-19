@@ -4,6 +4,7 @@ import SwiftUI
 /// 앱 안에 끼워 넣은 사진 선택기. 사용자가 고른 사진만 받으므로 앨범 권한을 묻지 않는다.
 struct PhotoPickStep: View {
     let draft: DollDraft
+    var onPreset: (() -> Void)? = nil
     let onNext: () -> Void
     @State private var selection: PhotosPickerItem?
     @State private var isLoading = false
@@ -29,6 +30,10 @@ struct PhotoPickStep: View {
                 }
                 .buttonStyle(.primary)
                 .disabled(draft.photo == nil || isLoading)
+                if DesignVariant.current == .b, let onPreset {
+                    Button("사진 없이 프리셋으로 만들기", action: onPreset)
+                        .buttonStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(Spacing.m)
@@ -42,6 +47,7 @@ struct PhotoPickStep: View {
             defer { isLoading = false }
             if let data = try? await selection.loadTransferable(type: Data.self), let image = UIImage(data: data) {
                 draft.photo = CutoutService.normalized(image)
+                draft.showsFace = true
                 draft.cutout = nil
                 draft.editedCutout = nil
             }
