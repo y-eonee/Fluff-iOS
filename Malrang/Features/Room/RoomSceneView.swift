@@ -118,7 +118,7 @@ struct RoomSceneView: UIViewRepresentable {
 
         func attach(to view: ARView) {
             self.view = view
-            orbitYaw = parent.focusItem.map { $0.kind.isMovable ? $0.yaw : 0 } ?? 0
+            orbitYaw = parent.focusItem.map { $0.kind.isMovable && !$0.kind.hangsOnWall ? $0.yaw : 0 } ?? 0
             view.scene.addAnchor(root)
             camera.camera.fieldOfViewInDegrees = parent.illustrationTargetY == nil ? 30 : 4
             light.light.intensity = 2500
@@ -193,7 +193,8 @@ struct RoomSceneView: UIViewRepresentable {
         private func build(_ state: SceneState) async {
             let content = Entity()
             if var item = state.focusItem {
-                (item.x, item.z, item.yaw) = (0, 0, 0)
+                (item.x, item.z) = (0, 0)
+                if !item.kind.hangsOnWall { item.yaw = 0 }
                 content.addChild(await SceneFactory.furniture(item, onFloor: true))
                 let size = item.kind.size
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
@@ -208,7 +209,7 @@ struct RoomSceneView: UIViewRepresentable {
                     doll.position.y = RoomLayout.seat(at: [doll.position.x, doll.position.z], in: state.items).height
                     content.addChild(await SceneFactory.doll(doll))
                 }
-                let board = SceneFactory.memoBoard()
+                let board = await SceneFactory.memoBoard()
                 if roomHidden { board.components.set(OpacityComponent(opacity: 0)) }
                 content.addChild(board)
                 if let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
@@ -260,7 +261,10 @@ struct RoomSceneView: UIViewRepresentable {
         private func placeCamera() {
             guard let aim else { return }
             let target = aim.target + shift
-            camera.look(at: target, from: target + cameraDirection * fitDistance / zoom, relativeTo: nil)
+            let distance = fitDistance / zoom
+            camera.camera.near = max(0.01, distance - 3)
+            camera.camera.far = distance + 3
+            camera.look(at: target, from: target + cameraDirection * distance, relativeTo: nil)
         }
 
         @objc private func handleZoom(_ gesture: UIPinchGestureRecognizer) {
@@ -384,7 +388,7 @@ struct RoomSceneView: UIViewRepresentable {
                     if moving.kind.hangsOnWall {
                         var hung = moving
                         (hung.x, hung.z) = (snapped.x, snapped.y)
-                        drag.entity.position = [snapped.x, FurnitureKind.hangHeight, snapped.y]
+                        drag.entity.position = [snapped.x, moving.kind.hangingHeight, snapped.y]
                         drag.entity.orientation = simd_quatf(angle: RoomLayout.wall(of: hung).yaw, axis: [0, 1, 0])
                     } else {
                         drag.entity.position = [snapped.x, 0, snapped.y]

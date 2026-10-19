@@ -64,35 +64,39 @@ enum FurnitureKind: String, CaseIterable {
         }
     }
 
-    /// 나중에 넣을 USDZ 파일 이름. Resources에 이 이름의 모델이 있으면 임시 도형 대신 쓴다.
+    /// 나중에 넣을 USDZ 파일 이름. Resources에 이 이름의 모델이 있으면 내장 3D 모델 대신 쓴다.
     var assetName: String { rawValue }
 
     var defaultColorName: String {
         switch self {
-        case .wall: "background"
-        case .floor: "pastelYellow"
-        case .bed, .sofa: "pastelSky"
-        case .desk, .shelf, .chair, .frame: "surface"
-        case .rugRound, .rugSquare: "brandAccent"
-        case .plant: "pastelMint"
-        case .lamp: "pastelYellow"
+        case .wall: "#FFF4F1"
+        case .floor: "#FCDCE2"
+        case .bed: "#F7B9C8"
+        case .sofa: "#F7B9C8"
+        case .desk, .shelf: "#E7C3A2"
+        case .chair: "#F7B9C8"
+        case .frame: "#FFFFFF"
+        case .rugRound, .rugSquare: "#F7B9C8"
+        case .plant: "#A9D49A"
+        case .lamp: "#FFF0B8"
         }
     }
 
     /// 가로(x), 높이(y), 깊이(z). 단위는 m.
     var size: SIMD3<Float> {
         switch self {
-        case .wall, .floor: [2, 1.4, 2]
-        case .bed: [0.7, 0.45, 1.0]
-        case .desk: [0.7, 0.55, 0.45]
-        case .shelf: [0.3, 0.9, 0.6]
-        case .chair: [0.35, 0.7, 0.35]
+        case .wall: [2, 1.55, 2]
+        case .floor: [2, 0.145, 2]
+        case .bed: [0.802, 0.577, 0.922]
+        case .desk: [0.662, 0.705, 0.441]
+        case .shelf: [0.602, 0.217, 0.142]
+        case .chair: [0.362, 0.516, 0.362]
         case .sofa: [0.9, 0.6, 0.4]
-        case .rugRound: [0.9, 0.01, 0.9]
-        case .rugSquare: [0.9, 0.01, 0.6]
-        case .plant: [0.25, 0.5, 0.25]
-        case .frame: [0.3, 0.4, 0.06]
-        case .lamp: [0.25, 0.9, 0.25]
+        case .rugRound: [0.801, 0.01, 0.801]
+        case .rugSquare: [0.9, 0.011, 0.6]
+        case .plant: [0.208, 0.528, 0.208]
+        case .frame: [0.32, 0.351, 0.025]
+        case .lamp: [0.113, 0.268, 0.138]
         }
     }
 
@@ -100,7 +104,9 @@ enum FurnitureKind: String, CaseIterable {
     var photoAspect: Float {
         switch self {
         case .wall: size.z / size.y
-        case .floor, .bed, .desk, .chair, .sofa, .rugRound, .rugSquare: size.x / size.z
+        case .floor, .desk, .sofa, .rugRound, .rugSquare: size.x / size.z
+        case .bed: 0.44 / 0.922
+        case .chair: 1.5
         case .shelf, .plant, .frame, .lamp: size.x / size.y
         }
     }
@@ -108,10 +114,11 @@ enum FurnitureKind: String, CaseIterable {
     /// 인형을 올려둘 수 있는 윗면 높이. nil이면 올려둘 수 없다.
     var seatHeight: Float? {
         switch self {
-        case .bed: 0.3
-        case .desk: 0.55
-        case .shelf: 0.9
-        case .chair, .sofa: 0.32
+        case .bed: 0.299
+        case .desk: 0.437
+        case .shelf: nil
+        case .chair: 0.227
+        case .sofa: 0.32
         case .rugRound, .rugSquare: 0.01
         default: nil
         }
@@ -119,11 +126,11 @@ enum FurnitureKind: String, CaseIterable {
 
     var isMovable: Bool { self != .wall && self != .floor }
 
-    /// 벽에 걸리는 가구(액자). 바닥이 아니라 벽면을 따라 옮긴다.
-    var hangsOnWall: Bool { self == .frame }
+    /// 벽에 걸리는 가구(액자·선반). 바닥이 아니라 벽면을 따라 옮긴다.
+    var hangsOnWall: Bool { self == .frame || self == .shelf }
 
     /// 벽에 걸릴 때 아래쪽 끝의 높이
-    static let hangHeight: Float = 0.7
+    var hangingHeight: Float { self == .shelf ? 1.038 : 0.866 }
 
     /// 러그는 다른 가구와 겹쳐 놓을 수 있다.
     var blocksFloor: Bool { isMovable && category != .rug && !hangsOnWall }

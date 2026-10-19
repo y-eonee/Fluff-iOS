@@ -17,7 +17,6 @@ extension DecorateView {
                 onTapItem: { selectedID = $0 },
                 onFeel: { feelCount += 1 },
                 isTransparent: true,
-                hidesRoom: showsRoomArt,
                 illustrationTargetY: 0.7,
                 onDollScreen: { dollPoint = $0 }
             )
@@ -72,27 +71,6 @@ extension DecorateView {
                 .zIndex(1)
         }
         .fixedSize()
-    }
-
-    /// 시안 A의 방 일러스트. 피그마 좌표(390x844)를 화면 크기에 맞춰 그대로 둔다.
-    var roomArtA: some View {
-        GeometryReader { proxy in
-            ZStack {
-                // 내보낸 그림에 종이 색 배경이 같이 들어 있어서, 모눈이 가려지지 않게 어두운 쪽만 남긴다.
-                Image("a_room_edit")
-                    .blendMode(.darken)
-                    .position(x: 195, y: 422 - 136)
-                Image("a_room_edit_group1")
-                    .position(x: 43 + 304 / 2, y: 134 + 311.6 / 2)
-                Image("a_room_edit_group2")
-                    .blendMode(.darken)
-                    .position(x: 245.2 + 86.6 / 2, y: 277.5 + 86.2 / 2)
-            }
-            .frame(width: 390, height: 844)
-            .scaleEffect(proxy.size.width / 390, anchor: .topLeading)
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
     }
 
     @ToolbarContentBuilder
@@ -220,7 +198,7 @@ extension DecorateView {
             ForEach(FurnitureCategory.allCases, id: \.self) { tab in
                 let isSelected = category == tab
                 Button {
-                    category = tab
+                    selectCategory(tab)
                 } label: {
                     Text(tab.label)
                         .pretendard(.semiBold, 12, tracking: -0.36)
@@ -267,8 +245,9 @@ extension DecorateView {
                     .frame(minHeight: 44)
             }
             HStack(spacing: Spacing.s) {
-                if item.kind.isMovable && !item.kind.hangsOnWall {
+                if item.kind.isMovable {
                     toolCard("회전", asset: "a_tool_rotate") { rotate(item) }
+                    toolCard("좌우반전", asset: "a_tool_flip") { item.isMirrored.toggle() }
                 }
                 toolCard("꾸미기", asset: "a_tool_paint") { editingItem = item }
                 if item.kind.isMovable {
@@ -285,7 +264,7 @@ extension DecorateView {
                 Text(title).pretendard(.bold, 13, tracking: -0.39)
             }
             .foregroundStyle(isDanger ? Color.a.danger : Color.a.brown)
-            .frame(width: 76, height: 84)
+            .frame(maxWidth: .infinity, minHeight: 84)
             .background(isDanger ? Color.a.dangerFill : Color.a.card, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(isDanger ? Color.a.dangerLine : Color.a.line, style: StrokeStyle(lineWidth: 1.1, dash: isDanger ? [4, 3] : [])))
@@ -304,19 +283,24 @@ extension DecorateView {
                 } else {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
                         ForEach(FurnitureKind.allCases.filter { $0.category == category }, id: \.self) { kind in
-                            catalogCell(kind.label, symbol: kind.symbol) { add(kind) }
+                            catalogCell(kind.label, kind: kind) { add(kind) }
                         }
                     }
                 }
             }
         }
         .scrollIndicators(.hidden)
+        .id(category)
     }
 
-    private func catalogCell(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func catalogCell(_ title: String, symbol: String = "photo", kind: FurnitureKind? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: Spacing.xs) {
-                Image(systemName: symbol).appFont(.title2)
+                if let kind {
+                    FurnitureThumbnail(kind: kind)
+                } else {
+                    Image(systemName: symbol).appFont(.title2)
+                }
                 Text(title).pretendard(.bold, 13, tracking: -0.39)
             }
             .foregroundStyle(Color.a.brown)

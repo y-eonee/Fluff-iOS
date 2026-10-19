@@ -19,6 +19,7 @@ final class RoomItem {
     var photoOffsetY = 0.0
     /// 가구를 돌려 놓은 각도(라디안)
     var yaw = 0.0
+    var isMirrored = false
     var createdAt = Date()
 
     init(kind: FurnitureKind, x: Double = 0, z: Double = 0) {
@@ -32,7 +33,7 @@ final class RoomItem {
     var state: RoomItemState {
         RoomItemState(id: id, kind: kind, x: Float(x), z: Float(z), colorName: colorName,
                       photoData: photoData, photoScale: Float(photoScale), photoFit: photoFit, photoFlipped: photoFlipped, photoTurns: photoTurns,
-                      photoOffsetX: Float(photoOffsetX), photoOffsetY: Float(photoOffsetY), yaw: Float(yaw))
+                      photoOffsetX: Float(photoOffsetX), photoOffsetY: Float(photoOffsetY), yaw: Float(yaw), isMirrored: isMirrored)
     }
 
     func restore(_ state: RoomItemState) {
@@ -47,18 +48,7 @@ final class RoomItem {
         photoOffsetX = Double(state.photoOffsetX)
         photoOffsetY = Double(state.photoOffsetY)
         yaw = Double(state.yaw)
-    }
-
-    /// 가구가 처음 놓인 그대로인지. 시안 A의 방 일러스트는 이때만 방 모습을 대신 보여준다.
-    static func isStarterLayout(_ states: [RoomItemState]) -> Bool {
-        let starter = starterRoom.map(\.state)
-        guard states.count == starter.count else { return false }
-        return starter.allSatisfy { start in
-            states.contains {
-                $0.kind == start.kind && $0.x == start.x && $0.z == start.z && $0.yaw == start.yaw
-                    && $0.colorName == start.colorName && $0.photoData == nil
-            }
-        }
+        isMirrored = state.isMirrored
     }
 
     /// 처음 실행할 때 놓이는 기본 방
@@ -67,12 +57,14 @@ final class RoomItem {
         [
             RoomItem(kind: .wall),
             RoomItem(kind: .floor),
-            RoomItem(kind: .bed, x: -0.5, z: -0.25),
-            RoomItem(kind: .desk, x: 0.45, z: -0.77),
-            RoomItem(kind: .chair, x: 0.55, z: 0.05),
-            RoomItem(kind: .plant, x: -0.8, z: 0.75),
-            RoomItem(kind: .rugRound, x: 0.15, z: 0.25),
-            RoomItem(kind: .frame, x: -0.6, z: -0.96),
+            RoomItem(kind: .bed, x: -0.5996, z: -0.22),
+            RoomItem(kind: .desk, x: 0.4105, z: -0.7995),
+            RoomItem(kind: .chair, x: 0.54, z: 0.0201),
+            RoomItem(kind: .plant, x: -0.8425, z: 0.6975),
+            RoomItem(kind: .rugRound, x: 0.2118, z: 0.2119),
+            // 오른쪽 노란색 벽: 액자는 안쪽, 선반은 책상 위쪽.
+            RoomItem(kind: .frame, x: -0.5, z: -0.9775),
+            RoomItem(kind: .shelf, x: 0.4, z: -0.919),
         ]
     }
 }
@@ -92,6 +84,7 @@ struct RoomItemState: Identifiable, Equatable {
     var photoOffsetX: Float = 0
     var photoOffsetY: Float = 0
     var yaw: Float = 0
+    var isMirrored = false
 }
 
 @Model

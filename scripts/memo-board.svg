@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="150" viewBox="0 0 160 150" fill="none">
+  <defs>
+    <filter id="paper" x="0" y="0" width="160" height="150" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.71428573131561279" numOctaves="3" seed="0"/>
+      <feDisplacementMap in="SourceGraphic" scale="2.4000000953674316" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+  <g filter="url(#paper)" stroke="#8E6A5C" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M9 15L150 13L152 139L8 141L9 15Z" fill="#E7C3A2"/>
+    <path d="M14 20L145 18L147 134L13 136L14 20Z" fill="#FFF4F1"/>
+    <path d="M25 38L57 35L59 72L27 74L25 38Z" fill="#FFF0B8"/>
+    <path d="M69 31L103 35L100 74L65 70L69 31Z" fill="#F4B6C3"/>
+    <path d="M111 43L136 41L138 75L113 78L111 43Z" fill="#CFE8EE"/>
+    <path d="M32 87L68 90L65 123L29 120L32 87Z" fill="#C9DFB7"/>
+    <path d="M85 87L127 84L130 119L88 123L85 87Z" fill="#FFF0B8"/>
+    <path d="M82 48C77 40 70 49 81 59C94 52 91 44 86 45C84 45 83 46 82 48Z" fill="#F28FAB" stroke-width="1.6"/>
+    <g stroke-width="1.3" opacity="0.65">
+      <path d="M34 49L49 47M35 55L51 53M37 62L46 61"/>
+      <path d="M119 53L130 52M120 60L131 59"/>
+      <path d="M40 100L59 102M40 107L53 109"/>
+      <path d="M95 99L119 96M96 107L114 105"/>
+    </g>
+    <g stroke="none">
+      <path d="M31 33L45 32L46 41L32 42Z" fill="#F4B6C3"/>
+      <path d="M78 27L93 29L92 38L77 36Z" fill="#FFF0B8"/>
+      <path d="M117 37L129 36L130 45L118 46Z" fill="#C9DFB7"/>
+      <path d="M43 83L58 84L57 93L42 92Z" fill="#CFE8EE"/>
+      <path d="M100 81L116 80L117 89L101 90Z" fill="#F4B6C3"/>
+    </g>
+    <path d="M59 7L100 8L99 23L60 21L59 7Z" fill="#F4B6C3" stroke="none"/>
+  </g>
+</svg>

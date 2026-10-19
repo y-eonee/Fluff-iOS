@@ -15,10 +15,16 @@ struct ItemColorPicker: UIViewControllerRepresentable {
         return controller
     }
 
-    func updateUIViewController(_ controller: UIColorPickerViewController, context: Context) {}
+    func updateUIViewController(_ controller: UIColorPickerViewController, context: Context) {
+        context.coordinator.item = item
+        let color = Palette.uiColor(item.colorName ?? item.kind.defaultColorName)
+        if !controller.selectedColor.isEqual(color) {
+            controller.selectedColor = color
+        }
+    }
 
     final class Coordinator: NSObject, UIColorPickerViewControllerDelegate {
-        let item: RoomItem
+        var item: RoomItem
 
         init(item: RoomItem) { self.item = item }
 

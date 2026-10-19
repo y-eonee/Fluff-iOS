@@ -28,9 +28,6 @@ struct HomeView: View {
 
     private var placedDolls: [Doll] { dolls.filter(\.isPlaced) }
     private var isA: Bool { variant == .a }
-    /// 시안 A는 가구를 바꾸기 전에는 방 일러스트를, 바꾼 뒤에는 바뀐 3D 방을 보여준다.
-    private var showsRoomArt: Bool { isA && RoomItem.isStarterLayout(items.map(\.state)) }
-
     var body: some View {
         NavigationStack {
             // 3D 화면은 상단바·탭바가 사라져도 크기가 변하지 않게 화면 전체에 깐다.
@@ -56,7 +53,6 @@ struct HomeView: View {
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
                             onFeel: { feelCount += 1 },
                             isTransparent: isA,
-                            hidesRoom: showsRoomArt,
                             illustrationTargetY: isA ? 0.84 : nil
                         )
                         .renderedOnlyWhileVisible(background: isA ? .clear : Color.app.background)
@@ -68,7 +64,7 @@ struct HomeView: View {
             .overlay(alignment: .top) { topOverlay }
             .overlay { emptyState }
             .safeAreaInset(edge: .bottom) { bottomBar }
-            .background { if isA { GridPaper().overlay { if showsRoomArt { roomArtA } } } else { Color.app.background } }
+            .background { if isA { GridPaper() } else { Color.app.background } }
             .navigationTitle("내 방")
             .toolbar { toolbar }
             .toolbar(placementStart == nil && !isA ? .automatic : .hidden, for: .navigationBar)
@@ -127,26 +123,6 @@ struct HomeView: View {
         } else {
             topMessage
         }
-    }
-
-    /// 시안 A의 방 일러스트와 바닥 그림자. 피그마 좌표(390x844)를 화면 크기에 맞춰 그대로 둔다.
-    private var roomArtA: some View {
-        GeometryReader { proxy in
-            let scale = proxy.size.width / 390
-            ZStack {
-                Image("a_room_shadow")
-                    .blendMode(.darken)
-                    .position(x: 16 + 357 / 2, y: 512 + 104 / 2)
-                // 내보낸 그림에 종이 색 배경이 같이 들어 있어서, 모눈이 가려지지 않게 어두운 쪽만 남긴다.
-                Image("a_room_home")
-                    .blendMode(.darken)
-                    .position(x: 195, y: 426)
-            }
-            .frame(width: 390, height: 844)
-            .scaleEffect(scale, anchor: .topLeading)
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
     }
 
     /// 시안 A 상단: 마스킹테이프 위에 놓인 집 아이콘과 my room 제목, 알림. 피그마 좌표(390pt 기준)를 화면 맨 위부터 그대로 쓴다.

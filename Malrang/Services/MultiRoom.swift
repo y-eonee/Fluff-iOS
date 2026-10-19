@@ -36,6 +36,7 @@ nonisolated enum MultiRoomMessage: Codable, Sendable {
         var photoOffsetX: Float
         var photoOffsetY: Float
         var yaw: Float
+        var isMirrored: Bool?
     }
 
     struct Doll: Codable, Sendable {
@@ -146,7 +147,7 @@ final class MultiRoom {
             MultiRoomMessage.Item(id: item.id, kind: item.kind.rawValue, x: item.x, z: item.z, colorName: item.colorName,
                                   photo: item.photoData.flatMap { Self.shrink($0, maxSide: 256, keepAlpha: false) },
                                   photoScale: item.photoScale, photoFlipped: item.photoFlipped, photoTurns: item.photoTurns,
-                                  photoOffsetX: item.photoOffsetX, photoOffsetY: item.photoOffsetY, yaw: item.yaw)
+                                  photoOffsetX: item.photoOffsetX, photoOffsetY: item.photoOffsetY, yaw: item.yaw, isMirrored: item.isMirrored)
         }
         let dolls = dolls.map { doll in
             MultiRoomMessage.Doll(id: doll.id, name: doll.name, image: Self.shrink(doll.imageData, maxSide: 256, keepAlpha: true) ?? Data(),
@@ -169,7 +170,7 @@ final class MultiRoom {
                 guard let kind = FurnitureKind(rawValue: item.kind) else { return nil }
                 return RoomItemState(id: item.id, kind: kind, x: item.x, z: item.z, colorName: item.colorName, photoData: item.photo,
                                      photoScale: item.photoScale, photoFlipped: item.photoFlipped, photoTurns: item.photoTurns,
-                                     photoOffsetX: item.photoOffsetX, photoOffsetY: item.photoOffsetY, yaw: item.yaw)
+                                     photoOffsetX: item.photoOffsetX, photoOffsetY: item.photoOffsetY, yaw: item.yaw, isMirrored: item.isMirrored ?? false)
             }
         case .doll(let payload):
             let doll = DollState(id: payload.id, name: payload.name, imageData: payload.image,

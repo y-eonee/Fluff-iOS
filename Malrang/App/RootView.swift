@@ -4,6 +4,8 @@ import SwiftUI
 struct RootView: View {
     @AppStorage("isSignedIn") private var isSignedIn = false
     @AppStorage("nickname") private var nickname = ""
+    @AppStorage("didRestoreIllustrationShelf") private var didRestoreIllustrationShelf = false
+    @AppStorage("didArrangeYellowWallDecor") private var didArrangeYellowWallDecor = false
     @Environment(\.modelContext) private var modelContext
     @Environment(MultiRoom.self) private var multiRoom
     @Query private var items: [RoomItem]
@@ -31,6 +33,24 @@ struct RootView: View {
             .task {
                 if items.isEmpty {
                     RoomItem.starterRoom.forEach(modelContext.insert)
+                } else if !didRestoreIllustrationShelf,
+                          !items.contains(where: { $0.kind == .shelf }),
+                          let shelf = RoomItem.starterRoom.first(where: { $0.kind == .shelf }) {
+                    // 기존 방에는 새 기본 가구가 없으므로 한 번만 보충한다.
+                    modelContext.insert(shelf)
+                }
+                if !didRestoreIllustrationShelf, (try? modelContext.save()) != nil {
+                    didRestoreIllustrationShelf = true
+                }
+                if !didArrangeYellowWallDecor {
+                    for item in items where item.kind == .frame || item.kind == .shelf {
+                        let spot = RoomLayout.snapped([item.kind == .frame ? -0.5 : 0.4, -1], for: item.kind, yaw: Float(item.yaw))
+                        item.x = Double(spot.x)
+                        item.z = Double(spot.y)
+                    }
+                    if (try? modelContext.save()) != nil {
+                        didArrangeYellowWallDecor = true
+                    }
                 }
             }
             .task { await multiRoom.observeSessions() }

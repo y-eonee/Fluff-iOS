@@ -26,9 +26,6 @@ struct DecorateView: View {
     @State var isFull = false
     @State var isBlocked = false
 
-    /// 시안 A는 가구를 바꾸기 전에는 방 일러스트를, 바꾼 뒤에는 바뀐 3D 방을 보여준다.
-    var showsRoomArt: Bool { variant == .a && RoomItem.isStarterLayout(items.map(\.state)) }
-
     var hasChanges: Bool {
         original != nil && (original != items.map(\.state) || dolls.contains { originalDolls[$0.id] != $0.position })
     }
@@ -64,7 +61,7 @@ struct DecorateView: View {
         Group {
             if variant == .a { contentA } else { classicContent }
         }
-        .background { if variant == .a { GridPaper().overlay { if showsRoomArt { roomArtA } } } else { Color.app.background } }
+        .background { if variant == .a { GridPaper() } else { Color.app.background } }
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         .navigationTitle(variant == .a ? "" : "마이 홈")
         .navigationBarTitleDisplayMode(.inline)
@@ -130,16 +127,24 @@ struct DecorateView: View {
 
     var selectedItem: RoomItem? { items.first { $0.id == selectedID } }
 
+    func selectCategory(_ tab: FurnitureCategory) {
+        selectedID = nil
+        category = tab
+    }
+
     /// 가구를 한 번 탭하면 나오는 도구 막대: 꾸미기, 회전, 삭제, 완료
     @ViewBuilder
     var selectionToolbar: some View {
         if let item = selectedItem {
             HStack(spacing: Spacing.xxs) {
                 toolButton("꾸미기", symbol: "paintbrush") { editingItem = item }
-                if item.kind.isMovable && !item.kind.hangsOnWall {
+                if item.kind.isMovable {
                     toolButton("회전", symbol: "rotate.right") { rotate(item) }
                 }
                 if item.kind.isMovable {
+                    toolButton("좌우반전", symbol: "arrow.left.and.right.righttriangle.left.righttriangle.right") {
+                        item.isMirrored.toggle()
+                    }
                     toolButton("삭제", symbol: "trash", tint: Color.app.danger) { remove(item) }
                 }
                 toolButton("완료", symbol: "checkmark", isProminent: true) { selectedID = nil }
@@ -205,7 +210,7 @@ struct DecorateView: View {
             HStack {
                 ForEach(FurnitureCategory.allCases, id: \.self) { tab in
                     Button {
-                        category = tab
+                        selectCategory(tab)
                     } label: {
                         Text(tab.label)
                             .appFont(.body, category == tab ? .bold : .regular)
@@ -232,7 +237,7 @@ struct DecorateView: View {
                     default:
                         ForEach(FurnitureKind.allCases.filter { $0.category == category }, id: \.self) { kind in
                             cell(kind.label) {
-                                Image(systemName: kind.symbol).appFont(.title)
+                                FurnitureThumbnail(kind: kind)
                             } action: {
                                 add(kind)
                             }
@@ -241,6 +246,7 @@ struct DecorateView: View {
                 }
             }
             .frame(height: surfaceKind == nil ? 220 : 360)
+            .id(category)
             CancelConfirmButtons(
                 onCancel: { if hasChanges { isConfirmingDiscard = true } else { dismiss() } },
                 onConfirm: {
@@ -285,7 +291,9 @@ struct DecorateView: View {
             isFull = true
             return
         }
-        modelContext.insert(RoomItem(kind: kind, x: Double(spot.x), z: Double(spot.y)))
+        let item = RoomItem(kind: kind, x: Double(spot.x), z: Double(spot.y))
+        modelContext.insert(item)
+        selectedID = item.id
     }
 
     /// 가구를 옮기면 그 위에 있던 인형도 함께 옮긴다.

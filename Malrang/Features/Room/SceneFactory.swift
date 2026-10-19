@@ -3,7 +3,7 @@ import RealityKit
 import UIKit
 
 /// 방 장면에 들어갈 엔티티를 만든다.
-/// 가구는 Resources에 `FurnitureKind.assetName`.usdz가 있으면 그 모델을, 없으면 임시 도형을 쓴다.
+/// 가구는 Resources에 `FurnitureKind.assetName`.usdz가 있으면 그 모델을, 없으면 공용 가구 모델을 만든다.
 enum SceneFactory {
     static let dollHeight: Float = 0.45
 
@@ -18,21 +18,49 @@ enum SceneFactory {
         let entity: Entity
         if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
+        } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
+            entity = illustration
         } else {
-            entity = await placeholder(item)
+            entity = await modeledFurniture(item)
         }
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
-        entity.position = [item.x, hangs ? FurnitureKind.hangHeight : 0, item.z]
-        entity.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : item.yaw, axis: [0, 1, 0])
-        entity.generateCollisionShapes(recursive: true)
+        entity.position = [item.x, hangs ? item.kind.hangingHeight : 0, item.z]
+        if item.kind.hangsOnWall {
+            let pivot = Entity()
+            for child in Array(entity.children) { pivot.addChild(child) }
+            pivot.position.y = -item.kind.size.y / 2
+            let centered = Entity()
+            centered.addChild(pivot)
+            centered.position.y = item.kind.size.y / 2
+            centered.orientation = simd_quatf(angle: item.yaw, axis: [0, 0, 1])
+            entity.addChild(centered)
+        }
+        entity.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : (item.kind.hangsOnWall ? 0 : item.yaw), axis: [0, 1, 0])
+        if item.isMirrored {
+            let visual = Entity()
+            for child in Array(entity.children) { visual.addChild(child) }
+            visual.scale.x = -1
+            entity.addChild(visual)
+        }
+        // 원본 색상별 메시를 합쳐도 벽 사이의 빈 공간이 충돌 영역이 되지 않게 한다.
+        let shapes: [ShapeResource]
+        if item.kind == .wall {
+            shapes = [ShapeResource.generateBox(size: [0.04, 1.55, 2]).offsetBy(translation: [-1.02, 0.775, 0]),
+                      ShapeResource.generateBox(size: [2, 1.55, 0.04]).offsetBy(translation: [0, 0.775, -1.02])]
+        } else if item.kind == .floor {
+            shapes = [ShapeResource.generateBox(size: [2, 0.145, 2]).offsetBy(translation: [0, -0.0725, 0])]
+        } else {
+            shapes = [ShapeResource.generateBox(size: item.kind.size).offsetBy(translation: [0, item.kind.size.y / 2, 0])]
+        }
+        entity.components.set(CollisionComponent(shapes: shapes))
         return entity
     }
 
     static func doll(_ doll: DollState) async -> Entity {
         let image = UIImage(data: doll.imageData)
         let aspect = Float((image?.size.width ?? 1) / max(image?.size.height ?? 1, 1))
-        var material = UnlitMaterial()
+        var material = UnlitMaterial(applyPostProcessToneMap: false)
         material.faceCulling = .none
         if let image, let cgImage = image.cgImage,
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)),
@@ -66,7 +94,7 @@ enum SceneFactory {
     }
 
     /// RealityKit은 불투명도 텍스처의 빨강 채널을 읽는다. 알파를 흰(보임)/검정(투명) 이미지로 바꾼다.
-    private static func opacityMask(of image: UIImage) -> CGImage? {
+    static func opacityMask(of image: UIImage) -> CGImage? {
         guard let cgImage = image.cgImage else { return nil }
         let rect = CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height)
         let format = UIGraphicsImageRendererFormat()
@@ -126,29 +154,44 @@ enum SceneFactory {
         }
     }
 
-    /// 왼쪽 벽에 걸린 방명록 메모보드. 탭하면 방명록이 열린다.
-    static func memoBoard() -> Entity {
+    private static var memoArtwork: UnlitMaterial?
+
+    /// 가구와 같은 원본 질감 필터로 그린 메모보드. 탭하면 방명록이 열린다.
+    static func memoBoard() async -> Entity {
         let board = Entity()
         board.name = "board"
+        board.position = [-0.977, 1.05, 0.74]
 
-        func part(_ size: SIMD3<Float>, _ position: SIMD3<Float>, color: String, angle: Float = 0) {
-            var material = PhysicallyBasedMaterial()
-            material.roughness = 0.9
-            material.metallic = 0.0
-            material.baseColor = .init(tint: UIColor(named: color) ?? .white)
-            let entity = ModelEntity(mesh: .generateBox(size: size, cornerRadius: 0.004), materials: [material])
-            entity.position = position
-            entity.orientation = simd_quatf(angle: angle, axis: [1, 0, 0])
-            board.addChild(entity)
+        let edge = UnlitMaterial(color: Palette.uiColor("#E7C3A2"), applyPostProcessToneMap: false)
+        board.addChild(ModelEntity(mesh: .generateBox(size: [0.016, 0.38, 0.43]), materials: [edge]))
+        if memoArtwork == nil,
+           let url = Bundle.main.url(forResource: "memo_board", withExtension: "png")
+            ?? Bundle.main.url(forResource: "memo_board", withExtension: "png", subdirectory: "IllustrationTextures"),
+           let image = UIImage(contentsOfFile: url.path), let cgImage = image.cgImage,
+           let mask = opacityMask(of: image),
+           let color = try? await TextureResource(image: cgImage, options: .init(semantic: .color)),
+           let opacity = try? await TextureResource(image: mask, options: .init(semantic: .raw)) {
+            var material = UnlitMaterial(applyPostProcessToneMap: false)
+            material.faceCulling = .none
+            material.color = .init(tint: .white, texture: .init(color))
+            material.blending = .transparent(opacity: .init(scale: 1, texture: .init(opacity)))
+            material.opacityThreshold = 0.1
+            memoArtwork = material
         }
-
-        part([0.03, 0.42, 0.66], [-0.985, 1.0, -0.45], color: "surface")
-        part([0.012, 0.12, 0.12], [-0.962, 1.08, -0.62], color: "pastelYellow", angle: 0.12)
-        part([0.012, 0.12, 0.12], [-0.962, 1.1, -0.45], color: "brandAccent", angle: -0.1)
-        part([0.012, 0.12, 0.12], [-0.962, 1.06, -0.28], color: "pastelMint", angle: 0.08)
-        part([0.012, 0.12, 0.12], [-0.962, 0.92, -0.55], color: "pastelSky", angle: -0.06)
-        part([0.012, 0.12, 0.12], [-0.962, 0.92, -0.35], color: "pastelYellow", angle: 0.1)
-        board.generateCollisionShapes(recursive: true)
+        // 왼쪽 위부터 다른 일러스트 면과 같은 이미지 방향으로 붙인다.
+        var descriptor = MeshDescriptor(name: "memo-board")
+        descriptor.positions = MeshBuffers.Positions([
+            SIMD3<Float>(0.014, 0.234375, 0.25), [0.014, 0.234375, -0.25],
+            [0.014, -0.234375, -0.25], [0.014, -0.234375, 0.25]
+        ])
+        descriptor.textureCoordinates = MeshBuffers.TextureCoordinates([
+            SIMD2<Float>(0, 1), [1, 1], [1, 0], [0, 0]
+        ])
+        descriptor.primitives = .triangles([0, 1, 2, 0, 2, 3])
+        if let mesh = try? MeshResource.generate(from: [descriptor]), let material = memoArtwork {
+            board.addChild(ModelEntity(mesh: mesh, materials: [material]))
+        }
+        board.components.set(CollisionComponent(shapes: [.generateBox(size: [0.05, 0.47, 0.5])]))
         return board
     }
 
@@ -174,21 +217,41 @@ enum SceneFactory {
 
     /// 꾸미기 화면에서 고른 가구를 감싸는 반투명 테두리 상자
     static func selectionBox(_ item: RoomItemState) -> Entity {
-        var material = UnlitMaterial(color: UIColor(named: "brandAccent") ?? .systemPink)
-        material.blending = .transparent(opacity: 0.35)
-        let size = item.kind.size
-        let box = ModelEntity(mesh: .generateBox(size: [size.x + 0.04, max(size.y, 0.04) + 0.04, size.z + 0.04], cornerRadius: 0.01), materials: [material])
+        let material = UnlitMaterial(color: Palette.uiColor("#F48FA8"))
+        var size = item.kind.size
+        if item.kind.hangsOnWall {
+            size = [abs(cos(item.yaw)) * size.x + abs(sin(item.yaw)) * size.y,
+                    abs(sin(item.yaw)) * size.x + abs(cos(item.yaw)) * size.y, size.z]
+        }
+        size += [0.04, 0.04, 0.04]
+        let outline = Entity()
+        for axis in 0..<3 {
+            let others = (0..<3).filter { $0 != axis }
+            let steps = max(1, Int(size[axis] / 0.035))
+            for a: Float in [-1, 1] {
+                for b: Float in [-1, 1] {
+                    for step in stride(from: 0, to: steps, by: 2) {
+                        var dashSize = SIMD3<Float>(repeating: 0.004)
+                        dashSize[axis] = size[axis] / Float(steps)
+                        let dash = ModelEntity(mesh: .generateBox(size: dashSize), materials: [material])
+                        dash.position[axis] = -size[axis] / 2 + (Float(step) + 0.5) * dashSize[axis]
+                        dash.position[others[0]] = a * size[others[0]] / 2
+                        dash.position[others[1]] = b * size[others[1]] / 2
+                        outline.addChild(dash)
+                    }
+                }
+            }
+        }
         let hangs = item.kind.hangsOnWall
-        box.position = [item.x, (hangs ? FurnitureKind.hangHeight : 0) + size.y / 2, item.z]
-        box.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : item.yaw, axis: [0, 1, 0])
-        return box
+        outline.position = [item.x, (hangs ? item.kind.hangingHeight : 0) + item.kind.size.y / 2, item.z]
+        outline.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : item.yaw, axis: [0, 1, 0])
+        return outline
     }
 
     private static func material(_ item: RoomItemState, withPhoto: Bool = true) async -> RealityKit.Material {
-        var material = PhysicallyBasedMaterial()
-        material.roughness = 0.9
-        material.metallic = 0.0
-        material.baseColor = .init(tint: Palette.uiColor(item.colorName ?? item.kind.defaultColorName))
+        var material = UnlitMaterial(applyPostProcessToneMap: false)
+        material.faceCulling = .none
+        material.color = .init(tint: Palette.uiColor(item.colorName ?? item.kind.defaultColorName))
         if withPhoto, let data = item.photoData, let cgImage = UIImage(data: data)?.cgImage,
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
             // 맞추기에서 사진 밖으로 나가는 부분은 흰 여백으로 보인다.
@@ -198,7 +261,7 @@ enum SceneFactory {
             sampler.borderColor = .opaqueWhite
             sampler.minFilter = .linear
             sampler.magFilter = .linear
-            material.baseColor = .init(tint: .white, texture: .init(texture, sampler: .init(sampler)))
+            material.color = .init(tint: .white, texture: .init(texture, sampler: .init(sampler)))
 
             // 면의 가운데를 기준으로, 사진이 보이는 비율을 정한다. 90도로 돌리면 사진의 가로세로가 바뀐다.
             let turned = item.photoTurns % 2 == 1
@@ -216,66 +279,36 @@ enum SceneFactory {
         return material
     }
 
-    private static func placeholder(_ item: RoomItemState) async -> Entity {
+    private static func modeledFurniture(_ item: RoomItemState) async -> Entity {
         let main = await material(item)
         let plain = await material(item, withPhoto: false)
-        let size = item.kind.size
         let root = Entity()
-
-        func box(_ boxSize: SIMD3<Float>, _ center: SIMD3<Float>, _ material: RealityKit.Material) {
-            let entity = ModelEntity(mesh: .generateBox(size: boxSize, cornerRadius: min(0.02, boxSize.min() / 2)), materials: [material])
-            entity.position = center
-            root.addChild(entity)
-        }
-
-        func cylinder(height: Float, radius: Float, _ y: Float, _ material: RealityKit.Material) {
-            let entity = ModelEntity(mesh: .generateCylinder(height: height, radius: radius), materials: [material])
-            entity.position.y = y
-            root.addChild(entity)
-        }
-
-        switch item.kind {
-        case .wall:
-            box([0.04, size.y, size.z], [-1.02, size.y / 2, 0], main)
-            box([size.x, size.y, 0.04], [0, size.y / 2, -1.02], main)
-        case .floor:
-            box([size.x, 0.04, size.z], [0, -0.02, 0], main)
-        case .bed:
-            box([size.x, 0.3, size.z], [0, 0.15, 0], main)
-            box([size.x, size.y, 0.06], [0, size.y / 2, -size.z / 2 + 0.03], plain)
-        case .desk:
-            box([size.x, 0.04, size.z], [0, size.y - 0.02, 0], main)
-            for x in [-1, 1] as [Float] {
-                for z in [-1, 1] as [Float] {
-                    box([0.04, size.y - 0.04, 0.04], [x * (size.x / 2 - 0.03), (size.y - 0.04) / 2, z * (size.z / 2 - 0.03)], plain)
-                }
+        for part in FurnitureModel.parts(for: item.kind) {
+            if part.isPattern && (item.photoData != nil || (item.kind == .wall && item.colorName != nil)) { continue }
+            let mesh: MeshResource
+            switch part.shape {
+            case .box:
+                mesh = .generateBox(size: part.size, cornerRadius: min(0.018, part.size.min() / 3))
+            case .sphere:
+                mesh = .generateSphere(radius: 0.5)
+            case .cylinder:
+                mesh = .generateCylinder(height: part.size.y, radius: part.size.x / 2)
             }
-        case .shelf:
-            box(size, [0, size.y / 2, 0], main)
-        case .chair:
-            box([0.06, 0.3, 0.06], [0, 0.15, 0], plain)
-            box([size.x, 0.05, size.z], [0, 0.32, 0], main)
-            box([size.x, 0.4, 0.04], [0, 0.5, -size.z / 2 + 0.02], plain)
-        case .sofa:
-            box([size.x, 0.3, size.z], [0, 0.15, 0], main)
-            box([size.x, 0.3, 0.1], [0, 0.45, -size.z / 2 + 0.05], plain)
-        case .rugRound:
-            cylinder(height: 0.01, radius: size.x / 2, 0.005, main)
-        case .rugSquare:
-            box([size.x, 0.01, size.z], [0, 0.005, 0], main)
-        case .plant:
-            cylinder(height: 0.2, radius: 0.09, 0.1, await material(RoomItemState(id: item.id, kind: .desk, x: 0, z: 0), withPhoto: false))
-            let leaves = ModelEntity(mesh: .generateSphere(radius: 0.14), materials: [main])
-            leaves.position.y = 0.33
-            root.addChild(leaves)
-        case .frame:
-            box(size, [0, size.y / 2, 0], plain)
-            box([size.x * 0.8, size.y * 0.8, 0.01], [0, size.y / 2, size.z / 2], main)
-        case .lamp:
-            cylinder(height: size.y, radius: 0.02, size.y / 2, plain)
-            let shade = ModelEntity(mesh: .generateSphere(radius: 0.12), materials: [main])
-            shade.position.y = size.y
-            root.addChild(shade)
+            let finish: RealityKit.Material
+            switch part.finish {
+            case .main: finish = main
+            case .plain: finish = plain
+            default:
+                var material = UnlitMaterial(applyPostProcessToneMap: false)
+                material.faceCulling = .none
+                material.color = .init(tint: FurnitureModel.color(for: part.finish, kind: item.kind))
+                finish = material
+            }
+            let entity = ModelEntity(mesh: mesh, materials: [finish])
+            entity.position = part.position
+            entity.orientation = simd_quatf(angle: part.tilt, axis: [0, 0, 1])
+            if part.shape == .sphere { entity.scale = part.size }
+            root.addChild(entity)
         }
         return root
     }

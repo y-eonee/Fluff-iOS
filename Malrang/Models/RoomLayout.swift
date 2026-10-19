@@ -28,7 +28,10 @@ enum RoomLayout {
     /// 가구가 방 밖으로 나가지 않게 중심 위치를 제한하고 격자에 맞춘다. 돌려 놓은 가구는 돌린 크기로 계산한다.
     /// 벽에 거는 가구는 가까운 벽면에 붙인다.
     static func snapped(_ point: SIMD2<Float>, for kind: FurnitureKind, yaw: Float = 0) -> SIMD2<Float> {
-        if kind.hangsOnWall { return wallSpot(near: point, width: kind.size.x) }
+        if kind.hangsOnWall {
+            let width = abs(cos(yaw)) * kind.size.x + abs(sin(yaw)) * kind.size.y
+            return wallSpot(near: point, width: width, depth: kind.size.z)
+        }
         let size = SIMD2(abs(cos(yaw)) * kind.size.x + abs(sin(yaw)) * kind.size.z,
                          abs(sin(yaw)) * kind.size.x + abs(cos(yaw)) * kind.size.z)
         let limit = SIMD2(half - size.x / 2, half - size.y / 2)
@@ -46,16 +49,15 @@ enum RoomLayout {
     /// 벽에 걸린 가구가 붙어 있는 벽. 왼쪽 벽은 x가 작고, 뒤쪽 벽은 z가 작다.
     static func wall(of item: RoomItemState) -> Wall { item.x < item.z ? .left : .back }
 
-    static let wallGap: Float = 0.04
-
     /// 가까운 벽면 위의 자리(벽을 따라 격자에 맞춘다)
-    static func wallSpot(near point: SIMD2<Float>, width: Float) -> SIMD2<Float> {
+    static func wallSpot(near point: SIMD2<Float>, width: Float, depth: Float = 0.06) -> SIMD2<Float> {
+        let gap = depth / 2 + 0.01
         let limit = half - width / 2 - 0.05
         let along = { (value: Float) in simd_clamp((value / grid).rounded() * grid, -limit, limit) }
         if point.x - -half < point.y - -half {
-            return [-half + wallGap, along(point.y)]
+            return [-half + gap, along(point.y)]
         }
-        return [along(point.x), -half + wallGap]
+        return [along(point.x), -half + gap]
     }
 
     static func clampedToFloor(_ point: SIMD2<Float>) -> SIMD2<Float> {
@@ -77,8 +79,9 @@ enum RoomLayout {
     static func freeSpot(for kind: FurnitureKind, among items: [RoomItemState]) -> SIMD2<Float>? {
         if kind.hangsOnWall {
             let hung = items.filter { $0.kind.hangsOnWall }
+            let gap = kind.size.z / 2 + 0.01
             let spots = stride(from: -0.7 as Float, through: 0.7, by: 0.35).flatMap { along in
-                [SIMD2<Float>(along, -half + wallGap), SIMD2<Float>(-half + wallGap, along)]
+                [SIMD2<Float>(along, -half + gap), SIMD2<Float>(-half + gap, along)]
             }
             return spots.first { spot in hung.allSatisfy { simd_distance(SIMD2($0.x, $0.z), spot) > kind.size.x } }
                 ?? spots.first
