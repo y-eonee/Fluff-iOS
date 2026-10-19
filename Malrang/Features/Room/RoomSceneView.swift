@@ -42,6 +42,14 @@ struct RoomSceneView: UIViewRepresentable {
     var onTapItem: (UUID?) -> Void = { _ in }
     /// 가구나 인형을 집거나 놓을 때 불린다. 화면이 이걸로 햅틱을 울린다.
     var onFeel: () -> Void = {}
+    /// 시안 A처럼 방 뒤의 종이 배경이 보여야 할 때 장면 바탕을 투명하게 한다.
+    var isTransparent = false
+    /// 방 일러스트가 방 모습을 대신 보여줄 때, 가구와 벽은 보이지 않게 하고 눌러서 고르는 동작만 남긴다.
+    var hidesRoom = false
+    /// 시안 A의 방 일러스트와 모양이 맞도록 원근을 줄이고 낮춘 카메라로 본다. 값은 카메라가 바라볼 높이(m)로, 방이 화면에서 놓일 세로 위치를 정한다.
+    var illustrationTargetY: Float?
+    /// 첫 번째 인형 머리 위의 화면 좌표. 인형이 없으면 nil. 말풍선이 인형을 따라다니게 한다.
+    var onDollScreen: (CGPoint?) -> Void = { _ in }
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -53,7 +61,8 @@ struct RoomSceneView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
-        view.environment.background = .color(UIColor(Color.app.background))
+        view.environment.background = .color(isTransparent ? .clear : UIColor(Color.app.background))
+        view.backgroundColor = .clear
         context.coordinator.attach(to: view)
         return view
     }
@@ -87,12 +96,14 @@ struct RoomSceneView: UIViewRepresentable {
         private var fittedSize = CGSize.zero
         private var updateSubscription: (any Cancellable)?
         private var orbitYaw: Float = 0
+        private var lastDollPoint: CGPoint?
+        private var roomHidden = false
         private var fitDistance: Float = 1
         /// 방을 두 손가락으로 확대한 정도와 옮긴 위치. 방을 잃어버리지 않게 범위를 제한한다.
         private var zoom: Float = 1
         private var shift = SIMD3<Float>.zero
         private weak var shiftPan: UIPanGestureRecognizer?
-        private let cameraDirection = simd_normalize(SIMD3<Float>(1, 0.9, 1))
+        private lazy var cameraDirection = simd_normalize(SIMD3<Float>(1, parent.illustrationTargetY == nil ? 0.9 : 0.85, 1))
 
         private struct Drag {
             let entity: Entity
@@ -109,13 +120,16 @@ struct RoomSceneView: UIViewRepresentable {
             self.view = view
             orbitYaw = parent.focusItem.map { $0.kind.isMovable ? $0.yaw : 0 } ?? 0
             view.scene.addAnchor(root)
-            camera.camera.fieldOfViewInDegrees = 30
+            camera.camera.fieldOfViewInDegrees = parent.illustrationTargetY == nil ? 30 : 4
             light.light.intensity = 2500
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 6, depthBias: 2)
             light.look(at: .zero, from: [1.5, 3, 2], relativeTo: nil)
             // 화면 크기가 정해지거나 바뀌면 카메라 거리를 다시 맞춘다.
             updateSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
-                MainActor.assumeIsolated { self?.fitCamera() }
+                MainActor.assumeIsolated {
+                    self?.fitCamera()
+                    self?.reportDollScreen()
+                }
             }
 
             let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
@@ -154,10 +168,26 @@ struct RoomSceneView: UIViewRepresentable {
 
         func render(_ state: SceneState) {
             latest = state
+            if parent.hidesRoom != roomHidden {
+                roomHidden = parent.hidesRoom
+                applyRoomHidden()
+            }
             guard state != rendered, drag == nil else { return }
             rendered = state
             renderTask?.cancel()
             renderTask = Task { await build(state) }
+        }
+
+        /// 이미 그려진 방의 가구와 벽을 다시 만들지 않고 바로 보이게 하거나 숨긴다. (끌고 있는 동안에도 쓴다)
+        private func applyRoomHidden() {
+            guard let content = root.children.first else { return }
+            for child in content.children where child.name.hasPrefix("item|") || child.name == "board" {
+                if roomHidden {
+                    child.components.set(OpacityComponent(opacity: 0))
+                } else {
+                    child.components.remove(OpacityComponent.self)
+                }
+            }
         }
 
         private func build(_ state: SceneState) async {
@@ -169,18 +199,22 @@ struct RoomSceneView: UIViewRepresentable {
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
             for item in state.items {
-                    content.addChild(await SceneFactory.furniture(item))
+                    let furniture = await SceneFactory.furniture(item)
+                    if roomHidden { furniture.components.set(OpacityComponent(opacity: 0)) }
+                    content.addChild(furniture)
                 }
                 for var doll in state.dolls {
                     // 가구 위에 있는 인형은 그 윗면에 서고, 가구가 치워졌으면 바닥으로 내려온다.
                     doll.position.y = RoomLayout.seat(at: [doll.position.x, doll.position.z], in: state.items).height
                     content.addChild(await SceneFactory.doll(doll))
                 }
-                content.addChild(SceneFactory.memoBoard())
+                let board = SceneFactory.memoBoard()
+                if roomHidden { board.components.set(OpacityComponent(opacity: 0)) }
+                content.addChild(board)
                 if let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
                     content.addChild(SceneFactory.selectionBox(selected))
                 }
-                aimCamera(at: [0, 0.45, 0], fitting: 3.3, height: 3.1)
+                aimCamera(at: [0, parent.illustrationTargetY ?? 0.45, 0], fitting: parent.illustrationTargetY == nil ? 3.3 : 3.55, height: parent.illustrationTargetY == nil ? 3.1 : 2.9)
             }
             guard !Task.isCancelled else { return }
             root.children.removeAll()
@@ -206,6 +240,21 @@ struct RoomSceneView: UIViewRepresentable {
             let distance = max(aim.width / 2 / (tanHalf * aspect), aim.height / 2 / tanHalf)
             fitDistance = distance
             placeCamera()
+        }
+
+        private func reportDollScreen() {
+            guard let view else { return }
+            let doll = root.children.first?.children.first { $0.name.hasPrefix("doll|") }
+            guard let doll, let point = view.project(doll.position(relativeTo: nil) + [0, SceneFactory.dollHeight + 0.03, 0]) else {
+                if lastDollPoint != nil {
+                    lastDollPoint = nil
+                    parent.onDollScreen(nil)
+                }
+                return
+            }
+            if let last = lastDollPoint, hypot(last.x - point.x, last.y - point.y) < 1 { return }
+            lastDollPoint = point
+            parent.onDollScreen(point)
         }
 
         private func placeCamera() {
@@ -450,17 +499,18 @@ struct RoomSceneView: UIViewRepresentable {
 extension View {
     /// 3D 화면이 여러 개 쌓이면 맨 위 화면이 그려지지 않아서, 화면에 보일 때만 3D를 띄운다.
     /// 다른 화면이 위로 push되면 내려가고, 돌아오면 다시 그린다.
-    func renderedOnlyWhileVisible() -> some View {
-        modifier(VisibleOnly())
+    func renderedOnlyWhileVisible(background: Color = Color.app.background) -> some View {
+        modifier(VisibleOnly(background: background))
     }
 }
 
 private struct VisibleOnly: ViewModifier {
+    let background: Color
     @State private var isVisible = false
 
     func body(content: Content) -> some View {
         ZStack {
-            Color.app.background
+            background
             if isVisible { content }
         }
         .onAppear { isVisible = true }

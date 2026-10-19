@@ -16,6 +16,7 @@ struct HomeView: View {
     @State private var placementStart: [UUID: SIMD3<Float>]?
     @State private var lastMovedID: UUID?
     @AppStorage("hapticOn") private var hapticOn = true
+    @AppStorage("designVariant") private var variant = DesignVariant.a
     @State private var feelCount = 0
     @State private var hold: RoomSceneView.Hold?
     @State private var toast: Toast?
@@ -26,6 +27,9 @@ struct HomeView: View {
     }
 
     private var placedDolls: [Doll] { dolls.filter(\.isPlaced) }
+    private var isA: Bool { variant == .a }
+    /// 시안 A는 가구를 바꾸기 전에는 방 일러스트를, 바꾼 뒤에는 바뀐 3D 방을 보여준다.
+    private var showsRoomArt: Bool { isA && RoomItem.isStarterLayout(items.map(\.state)) }
 
     var body: some View {
         NavigationStack {
@@ -50,22 +54,25 @@ struct HomeView: View {
                                 lastMovedID = id
                             },
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
-                            onFeel: { feelCount += 1 }
+                            onFeel: { feelCount += 1 },
+                            isTransparent: isA,
+                            hidesRoom: showsRoomArt,
+                            illustrationTargetY: isA ? 0.84 : nil
                         )
-                        .renderedOnlyWhileVisible()
+                        .renderedOnlyWhileVisible(background: isA ? .clear : Color.app.background)
                     }
                 }
                 .overlay { holdTooltip }
                 .ignoresSafeArea()
             }
-            .overlay(alignment: .top) { topMessage }
+            .overlay(alignment: .top) { topOverlay }
             .overlay { emptyState }
             .safeAreaInset(edge: .bottom) { bottomBar }
-            .background(Color.app.background)
+            .background { if isA { GridPaper().overlay { if showsRoomArt { roomArtA } } } else { Color.app.background } }
             .navigationTitle("내 방")
             .toolbar { toolbar }
-            .toolbar(placementStart == nil ? .automatic : .hidden, for: .navigationBar)
-            .toolbar(placementStart == nil ? .automatic : .hidden, for: .tabBar)
+            .toolbar(placementStart == nil && !isA ? .automatic : .hidden, for: .navigationBar)
+            .toolbar(placementStart == nil && !isA ? .automatic : .hidden, for: .tabBar)
             .navigationDestination(isPresented: $isDecorating) {
                 DecorateView()
             }
@@ -104,6 +111,82 @@ struct HomeView: View {
     }
 
     @ViewBuilder
+    private var topOverlay: some View {
+        if isA {
+            ZStack(alignment: .top) {
+                Image("a_awning")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
+                if placementStart == nil { headerA }
+                topMessage
+                    .padding(.top, placementStart == nil ? Spacing.xl + Spacing.m : 0)
+            }
+        } else {
+            topMessage
+        }
+    }
+
+    /// 시안 A의 방 일러스트와 바닥 그림자. 피그마 좌표(390x844)를 화면 크기에 맞춰 그대로 둔다.
+    private var roomArtA: some View {
+        GeometryReader { proxy in
+            let scale = proxy.size.width / 390
+            ZStack {
+                Image("a_room_shadow")
+                    .blendMode(.darken)
+                    .position(x: 16 + 357 / 2, y: 512 + 104 / 2)
+                // 내보낸 그림에 종이 색 배경이 같이 들어 있어서, 모눈이 가려지지 않게 어두운 쪽만 남긴다.
+                Image("a_room_home")
+                    .blendMode(.darken)
+                    .position(x: 195, y: 426)
+            }
+            .frame(width: 390, height: 844)
+            .scaleEffect(scale, anchor: .topLeading)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+
+    /// 시안 A 상단: 마스킹테이프 위에 놓인 집 아이콘과 my room 제목, 알림. 피그마 좌표(390pt 기준)를 화면 맨 위부터 그대로 쓴다.
+    private var headerA: some View {
+        ZStack(alignment: .topLeading) {
+            Image("a_tape_mint")
+                .rotationEffect(.degrees(-3.27))
+                .offset(x: 71.78 + 0.5, y: 61.62 + 3.4)
+            Image("a_tape_pink")
+                .rotationEffect(.degrees(11))
+                .offset(x: 150.9, y: 74)
+            Image("a_roof")
+                .offset(x: 22.2, y: 55.2)
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(Color.a.brown)
+                .frame(width: 37.5, height: 19.9)
+                .offset(x: 25.2, y: 67.3)
+            Text("my room")
+                .notCliche(34, relativeTo: .largeTitle)
+                .tracking(-1.36)
+                .foregroundStyle(Color.a.brown)
+                .fixedSize()
+                .offset(x: 74.6, y: 50)
+            NavigationLink {
+                NotificationsView()
+            } label: {
+                Image("a_bell")
+                    .resizable()
+                    .frame(width: 46, height: 46)
+            }
+            .accessibilityLabel("알림함")
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.trailing, 22)
+            .offset(y: 48)
+        }
+        .frame(maxWidth: .infinity, maxHeight: 110, alignment: .topLeading)
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder
     private var topMessage: some View {
         if placementStart != nil {
             HintCapsule(text: "원하는 위치로 끌어다 놓으세요")
@@ -114,7 +197,7 @@ struct HomeView: View {
                 Button("되돌리기") { undo(toast) }
                     .bold()
             }
-            .font(.footnote)
+            .appFont(.footnote)
             .foregroundStyle(Color.app.surface)
             .padding(.horizontal, Spacing.m)
             .frame(minHeight: 44)
@@ -122,7 +205,7 @@ struct HomeView: View {
             .padding(.top, Spacing.xs)
         } else if !placedDolls.isEmpty {
             Text("인형을 눌러 만지고, 벽의 메모보드를 눌러 방명록을 봐요")
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
                 .padding(.top, Spacing.xs)
         }
@@ -153,6 +236,8 @@ struct HomeView: View {
         if placementStart != nil {
             CancelConfirmButtons(onCancel: cancelPlacement, onConfirm: finishPlacement)
                 .padding(Spacing.m)
+        } else if isA {
+            bottomBarA
         } else {
             HStack(alignment: .bottom) {
                 FloatingCircleButton(title: "멀티 룸", symbol: "shareplay") { isStartingMultiRoom = true }
@@ -163,6 +248,28 @@ struct HomeView: View {
                 }
             }
             .padding(Spacing.m)
+        }
+    }
+
+    /// 시안 A 하단: 동그란 버튼들과 수첩 탭바. 인형 만들기는 구름 모양 큰 버튼이다.
+    private var bottomBarA: some View {
+        VStack(spacing: Spacing.s) {
+            VStack(spacing: Spacing.xs) {
+                SketchCircleButton(symbol: "shareplay", label: "멀티 룸") { isStartingMultiRoom = true }
+                SketchCircleButton(symbol: "paintbrush", label: "방 꾸미기") { isDecorating = true }
+                Button {
+                    isCreating = true
+                } label: {
+                    Image("a_fab")
+                        .resizable()
+                        .frame(width: 65, height: 65)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("인형 만들기")
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.horizontal, Spacing.m)
+            NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
         }
     }
 

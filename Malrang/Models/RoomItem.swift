@@ -49,15 +49,30 @@ final class RoomItem {
         yaw = Double(state.yaw)
     }
 
+    /// 가구가 처음 놓인 그대로인지. 시안 A의 방 일러스트는 이때만 방 모습을 대신 보여준다.
+    static func isStarterLayout(_ states: [RoomItemState]) -> Bool {
+        let starter = starterRoom.map(\.state)
+        guard states.count == starter.count else { return false }
+        return starter.allSatisfy { start in
+            states.contains {
+                $0.kind == start.kind && $0.x == start.x && $0.z == start.z && $0.yaw == start.yaw
+                    && $0.colorName == start.colorName && $0.photoData == nil
+            }
+        }
+    }
+
     /// 처음 실행할 때 놓이는 기본 방
+    /// 시안 A의 방 일러스트와 같은 자리에 놓는다. 일러스트 바닥의 네 꼭짓점을 방 바닥(-1...1)에 맞춰 잰 값이다.
     static var starterRoom: [RoomItem] {
         [
             RoomItem(kind: .wall),
             RoomItem(kind: .floor),
-            RoomItem(kind: .bed, x: -0.6, z: -0.45),
-            RoomItem(kind: .desk, x: 0.5, z: -0.72),
-            RoomItem(kind: .shelf, x: -0.83, z: 0.55),
-            RoomItem(kind: .rugRound, x: 0.25, z: 0.4),
+            RoomItem(kind: .bed, x: -0.5, z: -0.25),
+            RoomItem(kind: .desk, x: 0.45, z: -0.77),
+            RoomItem(kind: .chair, x: 0.55, z: 0.05),
+            RoomItem(kind: .plant, x: -0.8, z: 0.75),
+            RoomItem(kind: .rugRound, x: 0.15, z: 0.25),
+            RoomItem(kind: .frame, x: -0.6, z: -0.96),
         ]
     }
 }
