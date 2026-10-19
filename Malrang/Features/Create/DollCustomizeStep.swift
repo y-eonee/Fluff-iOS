@@ -5,8 +5,17 @@ struct DollCustomizeStep: View {
     @Bindable var draft: DollDraft
     let onNext: () -> Void
     @AppStorage("soundOn") private var soundOn = true
+    @AppStorage("designVariant") private var variant = DesignVariant.a
 
     var body: some View {
+        if variant == .a {
+            DollCustomizeStepA(draft: draft, onNext: onNext)
+        } else {
+            classic
+        }
+    }
+
+    private var classic: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.l) {
                 preview
@@ -29,7 +38,7 @@ struct DollCustomizeStep: View {
                 }
                 section("인형 이름") {
                     TextField("", text: $draft.name, prompt: Text("귀염둥이").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
-                        .font(.body)
+                        .appFont(.body)
                         .padding(Spacing.s)
                         .frame(minHeight: 44)
                         .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
@@ -56,7 +65,7 @@ struct DollCustomizeStep: View {
             Button("다음 모양", systemImage: "chevron.right") { cycleShape(by: 1) }
         }
         .labelStyle(.iconOnly)
-        .font(.title2)
+        .appFont(.title2)
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.m)
         .cardStyle()
@@ -66,11 +75,11 @@ struct DollCustomizeStep: View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             HStack {
                 Text(title)
-                    .font(.headline)
+                    .appFont(.headline)
                 Spacer()
                 if let note {
                     Text(note)
-                        .font(.footnote)
+                        .appFont(.footnote)
                         .foregroundStyle(Color.app.inkSecondary)
                 }
             }
