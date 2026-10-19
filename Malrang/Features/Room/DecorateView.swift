@@ -3,28 +3,37 @@ import SwiftUI
 
 /// 마이 홈: 가구를 더하고 옮기고, 두 번 탭해 색이나 사진으로 꾸민다. 적용하기 전에는 되돌릴 수 있다.
 struct DecorateView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
-    @Query(sort: \Doll.createdAt) private var dolls: [Doll]
-    @State private var category = FurnitureCategory.furniture
-    @State private var original: [RoomItemState]?
-    @State private var originalDolls: [UUID: SIMD3<Float>] = [:]
-    @State private var hold: RoomSceneView.Hold?
-    @AppStorage("hapticOn") private var hapticOn = true
-    @State private var feelCount = 0
-    @State private var selectedID: UUID?
-    @State private var rotationFailCount = 0
-    @State private var editingItem: RoomItem?
-    @State private var isConfirmingDiscard = false
-    @State private var isFull = false
-    @State private var isBlocked = false
+    @Environment(\.modelContext) var modelContext
+    @Environment(\.dismiss) var dismiss
+    @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
+    @Query(sort: \Doll.createdAt) var dolls: [Doll]
+    @AppStorage("designVariant") var variant = DesignVariant.a
+    @State var category = FurnitureCategory.furniture
+    @State var dollPoint: CGPoint?
+    @State var undoStack: [[RoomItemState]] = []
+    @State var redoStack: [[RoomItemState]] = []
+    @State var isApplyingHistory = false
+    @State var lastEdit = Date.distantPast
+    @State var original: [RoomItemState]?
+    @State var originalDolls: [UUID: SIMD3<Float>] = [:]
+    @State var hold: RoomSceneView.Hold?
+    @AppStorage("hapticOn") var hapticOn = true
+    @State var feelCount = 0
+    @State var selectedID: UUID?
+    @State var rotationFailCount = 0
+    @State var editingItem: RoomItem?
+    @State var isConfirmingDiscard = false
+    @State var isFull = false
+    @State var isBlocked = false
 
-    private var hasChanges: Bool {
+    /// 시안 A는 가구를 바꾸기 전에는 방 일러스트를, 바꾼 뒤에는 바뀐 3D 방을 보여준다.
+    var showsRoomArt: Bool { variant == .a && RoomItem.isStarterLayout(items.map(\.state)) }
+
+    var hasChanges: Bool {
         original != nil && (original != items.map(\.state) || dolls.contains { originalDolls[$0.id] != $0.position })
     }
 
-    var body: some View {
+    var classicContent: some View {
         VStack(spacing: 0) {
             RoomSceneView(
                 items: items.map(\.state),
@@ -43,24 +52,44 @@ struct DecorateView: View {
             .overlay(alignment: .bottom) { selectionToolbar }
             .overlay(alignment: .top) {
                 Text(isBlocked ? "돌릴 자리가 없어요. 주변 가구를 옮겨 주세요" : isFull ? "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요" : "가구는 탭해서 고르고, 길게 눌러 옮겨요. 인형도 옮길 수 있어요")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
                     .padding(.top, Spacing.xs)
             }
             panel
         }
-        .background(Color.app.background)
+    }
+
+    var body: some View {
+        Group {
+            if variant == .a { contentA } else { classicContent }
+        }
+        .background { if variant == .a { GridPaper().overlay { if showsRoomArt { roomArtA } } } else { Color.app.background } }
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
-        .navigationTitle("마이 홈")
+        .navigationTitle(variant == .a ? "" : "마이 홈")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("뒤로", systemImage: "chevron.left") {
-                    if hasChanges { isConfirmingDiscard = true } else { dismiss() }
+            if variant == .a {
+                toolbarA
+            } else {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("뒤로", systemImage: "chevron.left") {
+                        if hasChanges { isConfirmingDiscard = true } else { dismiss() }
+                    }
                 }
             }
+        }
+        .onChange(of: items.map(\.state)) { old, _ in
+            guard variant == .a else { return }
+            if isApplyingHistory {
+                isApplyingHistory = false
+            } else if Date.now.timeIntervalSince(lastEdit) > 0.6 {
+                undoStack.append(old)
+                redoStack = []
+            }
+            lastEdit = .now
         }
         .confirmationDialog("꾸민 내용을 버릴까요?", isPresented: $isConfirmingDiscard, titleVisibility: .visible) {
             Button("버리고 나가기", role: .destructive) {
@@ -89,7 +118,7 @@ struct DecorateView: View {
 
     /// 인형을 든 동안 머리 위를 따라다니며 어디에 놓일지 알려준다.
     @ViewBuilder
-    private var holdTooltip: some View {
+    var holdTooltip: some View {
         if let hold {
             let seat = RoomLayout.seat(at: [hold.position.x, hold.position.z], in: items.map(\.state)).item
             HintCapsule(text: "옮기는 중 · \(seat?.kind.label ?? "바닥")")
@@ -99,11 +128,11 @@ struct DecorateView: View {
         }
     }
 
-    private var selectedItem: RoomItem? { items.first { $0.id == selectedID } }
+    var selectedItem: RoomItem? { items.first { $0.id == selectedID } }
 
     /// 가구를 한 번 탭하면 나오는 도구 막대: 꾸미기, 회전, 삭제, 완료
     @ViewBuilder
-    private var selectionToolbar: some View {
+    var selectionToolbar: some View {
         if let item = selectedItem {
             HStack(spacing: Spacing.xxs) {
                 toolButton("꾸미기", symbol: "paintbrush") { editingItem = item }
@@ -124,12 +153,12 @@ struct DecorateView: View {
         }
     }
 
-    private func toolButton(_ title: String, symbol: String, tint: Color = Color.app.ink, isProminent: Bool = false,
+    func toolButton(_ title: String, symbol: String, tint: Color = Color.app.ink, isProminent: Bool = false,
                             action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: Spacing.xxs) {
-                Image(systemName: symbol).font(.body)
-                Text(title).font(.caption)
+                Image(systemName: symbol).appFont(.body)
+                Text(title).appFont(.caption)
             }
             .foregroundStyle(tint)
             .frame(minWidth: 56, minHeight: 48)
@@ -140,7 +169,7 @@ struct DecorateView: View {
     }
 
     /// 90도씩 돌린다. 돌린 자리가 다른 가구와 겹치면 돌리지 않는다.
-    private func rotate(_ item: RoomItem) {
+    func rotate(_ item: RoomItem) {
         var rotated = item.state
         rotated.yaw = (rotated.yaw + .pi / 2).truncatingRemainder(dividingBy: 2 * .pi)
         let spot = RoomLayout.snapped([rotated.x, rotated.z], for: rotated.kind, yaw: rotated.yaw)
@@ -157,13 +186,13 @@ struct DecorateView: View {
         }
     }
 
-    private func remove(_ item: RoomItem) {
+    func remove(_ item: RoomItem) {
         selectedID = nil
         modelContext.delete(item)
     }
 
     /// 벽지·바닥재 탭이면 그 면의 종류
-    private var surfaceKind: FurnitureKind? {
+    var surfaceKind: FurnitureKind? {
         switch category {
         case .wallpaper: .wall
         case .flooring: .floor
@@ -171,7 +200,7 @@ struct DecorateView: View {
         }
     }
 
-    private var panel: some View {
+    var panel: some View {
         VStack(spacing: Spacing.m) {
             HStack {
                 ForEach(FurnitureCategory.allCases, id: \.self) { tab in
@@ -179,7 +208,7 @@ struct DecorateView: View {
                         category = tab
                     } label: {
                         Text(tab.label)
-                            .font(.body.weight(category == tab ? .bold : .regular))
+                            .appFont(.body, category == tab ? .bold : .regular)
                             .foregroundStyle(category == tab ? Color.app.ink : Color.app.inkSecondary)
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .overlay(alignment: .bottom) {
@@ -203,7 +232,7 @@ struct DecorateView: View {
                     default:
                         ForEach(FurnitureKind.allCases.filter { $0.category == category }, id: \.self) { kind in
                             cell(kind.label) {
-                                Image(systemName: kind.symbol).font(.title)
+                                Image(systemName: kind.symbol).appFont(.title)
                             } action: {
                                 add(kind)
                             }
@@ -227,22 +256,22 @@ struct DecorateView: View {
 
     /// 벽지·바닥재: 색을 바로 칠하거나, 사진으로 꾸미기 화면으로 간다.
     @ViewBuilder
-    private func surfaceCells(for kind: FurnitureKind) -> some View {
+    func surfaceCells(for kind: FurnitureKind) -> some View {
         if let surface = items.first(where: { $0.kind == kind }) {
             cell("사진으로 꾸미기") {
-                Image(systemName: "photo").font(.title)
+                Image(systemName: "photo").appFont(.title)
             } action: {
                 editingItem = surface
             }
         }
     }
 
-    private func cell(_ title: String, @ViewBuilder icon: () -> some View, action: @escaping () -> Void) -> some View {
+    func cell(_ title: String, @ViewBuilder icon: () -> some View, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: Spacing.xs) {
                 icon()
                 Text(title)
-                    .font(.footnote)
+                    .appFont(.footnote)
             }
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: .infinity, minHeight: 96)
@@ -251,7 +280,7 @@ struct DecorateView: View {
         .buttonStyle(.plain)
     }
 
-    private func add(_ kind: FurnitureKind) {
+    func add(_ kind: FurnitureKind) {
         guard let spot = RoomLayout.freeSpot(for: kind, among: items.map(\.state)) else {
             isFull = true
             return
@@ -260,7 +289,7 @@ struct DecorateView: View {
     }
 
     /// 가구를 옮기면 그 위에 있던 인형도 함께 옮긴다.
-    private func move(_ id: UUID, to point: SIMD2<Float>) {
+    func move(_ id: UUID, to point: SIMD2<Float>) {
         guard let item = items.first(where: { $0.id == id }) else { return }
         let states = items.map(\.state)
         let delta = point - SIMD2(Float(item.x), Float(item.z))
@@ -271,15 +300,21 @@ struct DecorateView: View {
         item.z = Double(point.y)
     }
 
-    private func restoreOriginal() {
+    func restoreOriginal() {
         guard let original else { return }
         for doll in dolls {
             if let position = originalDolls[doll.id] { doll.position = position }
         }
-        for item in items where !original.contains(where: { $0.id == item.id }) {
+        apply(original)
+    }
+
+    /// 가구를 주어진 상태로 되돌린다. 지워진 가구는 다시 만들고, 새로 생긴 가구는 지운다.
+    func apply(_ states: [RoomItemState]) {
+        if states != items.map(\.state) { isApplyingHistory = true }
+        for item in items where !states.contains(where: { $0.id == item.id }) {
             modelContext.delete(item)
         }
-        for state in original {
+        for state in states {
             if let item = items.first(where: { $0.id == state.id }) {
                 item.restore(state)
             } else {
