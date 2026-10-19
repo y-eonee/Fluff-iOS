@@ -12,6 +12,7 @@ struct MyPageView: View {
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("soundOn") private var soundOn = true
     @AppStorage("notificationsOn") private var notificationsOn = true
+    @AppStorage("designVariant") private var variant = DesignVariant.a
     @Environment(\.openURL) private var openURL
     @State private var isChoosingVisibility = false
     @State private var isConfirmingLogout = false
@@ -37,6 +38,17 @@ struct MyPageView: View {
                     }
                     Toggle("친구 요청 받기", isOn: $acceptsRequests).frame(minHeight: 52)
                 }
+                section("디자인 시안") {
+                    Picker("디자인 시안", selection: $variant) {
+                        Text("시안 A").tag(DesignVariant.a)
+                        Text("시안 B").tag(DesignVariant.b)
+                    }
+                    .pickerStyle(.segmented)
+                    Text("내 방, 솜뭉치 만들기, 방 꾸미기 화면이 바뀌어요. 시안 B는 준비 중이라 지금은 기존 디자인으로 보여요")
+                        .appFont(.footnote)
+                        .foregroundStyle(Color.app.inkSecondary)
+                        .padding(.top, Spacing.xs)
+                }
                 section("앱 설정") {
                     Toggle("햅틱(진동)", isOn: $hapticOn).frame(minHeight: 52)
                     Toggle("사운드", isOn: $soundOn).frame(minHeight: 52)
@@ -55,7 +67,7 @@ struct MyPageView: View {
                     }
                 }
                 Button("로그아웃") { isConfirmingLogout = true }
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: 44)
             }
@@ -63,8 +75,9 @@ struct MyPageView: View {
             .foregroundStyle(Color.app.ink)
             .padding(Spacing.m)
         }
-        .background(Color.app.background)
+        .background { AppBackground() }
         .navigationTitle("마이페이지")
+        .notebookTabBar()
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if friendCode.isEmpty {
@@ -91,8 +104,8 @@ struct MyPageView: View {
                 HStack(spacing: Spacing.s) {
                     ProfileAvatar(data: avatarData, size: 64)
                     VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        Text(nickname).font(.headline)
-                        Text("프로필 편집 ›").font(.footnote).foregroundStyle(Color.app.inkSecondary)
+                        Text(nickname).appFont(.headline)
+                        Text("프로필 편집 ›").appFont(.footnote).foregroundStyle(Color.app.inkSecondary)
                     }
                     Spacer()
                 }
@@ -101,10 +114,10 @@ struct MyPageView: View {
             Divider()
             HStack {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text("내 친구 코드").font(.footnote).foregroundStyle(Color.app.inkSecondary)
-                    Text(friendCode).font(.title2.bold()).tracking(2)
+                    Text("내 친구 코드").appFont(.footnote).foregroundStyle(Color.app.inkSecondary)
+                    Text(friendCode).appFont(.title2, .bold).tracking(2)
                     Text("친구를 추가하고 친구의 방을 구경하고 함께 방을 꾸며보세요")
-                        .font(.footnote)
+                        .appFont(.footnote)
                         .foregroundStyle(Color.app.inkSecondary)
                 }
                 Spacer()
@@ -126,7 +139,7 @@ struct MyPageView: View {
 
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.headline).padding(.bottom, Spacing.xs)
+            Text(title).appFont(.headline).padding(.bottom, Spacing.xs)
             content()
         }
     }
@@ -137,7 +150,7 @@ struct MyPageView: View {
             Spacer()
             trailing()
         }
-        .font(.body)
+        .appFont(.body)
         .frame(minHeight: 52)
     }
 }

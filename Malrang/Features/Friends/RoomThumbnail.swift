@@ -54,5 +54,5 @@ struct RoomThumbnail: View {
     RoomThumbnail(room: FriendRoom(items: RoomItem.starterRoom.map(\.state),
                                    dolls: [DollState(id: UUID(), name: "", imageData: Data(), filling: .fluffy, position: [0, 0, 0.5], dance: nil)]))
         .frame(width: 96, height: 80)
-        .background(Color.app.background)
+        .background { AppBackground() }
 }

@@ -23,20 +23,20 @@ struct ProfileEditView: View {
         VStack(spacing: Spacing.l) {
             if isCreating {
                 Text("친구들에게 보여질 모습을 정해주세요")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
             avatar
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text("닉네임")
-                    .font(.headline)
+                    .appFont(.headline)
                 HStack {
                     TextField("", text: $draftName, prompt: Text("닉네임을 입력해주세요").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
                         .onChange(of: draftName) {
                             if draftName.count > maxLength { draftName = String(draftName.prefix(maxLength)) }
                         }
                     Text("\(draftName.count)/\(maxLength)")
-                        .font(.footnote)
+                        .appFont(.footnote)
                         .foregroundStyle(Color.app.inkSecondary)
                 }
                 .padding(.horizontal, Spacing.m)
@@ -44,7 +44,7 @@ struct ProfileEditView: View {
                 .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous).stroke(Color.app.ink.opacity(0.15)))
                 Text("친구에게 보이는 이름이에요 · 최대 \(maxLength)자")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
             Spacer()
@@ -54,7 +54,7 @@ struct ProfileEditView: View {
                     .disabled(trimmed.isEmpty)
             } else {
                 Button("회원탈퇴") { isConfirmingDelete = true }
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
                     .frame(minHeight: 44)
                 CancelConfirmButtons(onCancel: { dismiss() }, onConfirm: save)
@@ -64,7 +64,7 @@ struct ProfileEditView: View {
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.app.background)
+        .background { AppBackground() }
         .navigationTitle(isCreating ? "프로필 만들기" : "프로필 편집")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(!isCreating)
@@ -95,7 +95,7 @@ struct ProfileEditView: View {
                 ProfileAvatar(data: draftAvatar, size: 150)
                     .overlay(alignment: .bottomTrailing) {
                         Image(systemName: "camera.fill")
-                            .font(.body)
+                            .appFont(.body)
                             .frame(width: 44, height: 44)
                             .background(Color.app.surface, in: Circle())
                             .overlay(Circle().stroke(Color.app.ink.opacity(0.15)))
@@ -103,7 +103,7 @@ struct ProfileEditView: View {
             }
             .accessibilityLabel("프로필 사진 바꾸기")
             Text("사진을 눌러 변경할 수 있어요")
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
         }
     }
@@ -138,7 +138,7 @@ struct ProfileAvatar: View {
                     .scaledToFill()
             } else {
                 Image(systemName: "person.fill")
-                    .font(.largeTitle)
+                    .appFont(.largeTitle)
                     .foregroundStyle(Color.app.inkSecondary)
             }
         }

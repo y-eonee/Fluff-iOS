@@ -9,18 +9,18 @@ struct SquishyView: View {
     var body: some View {
         VStack(spacing: Spacing.l) {
             Text("\(doll.filling.label.josa("이", "가")) 들어 있어요")
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
             Spacer()
             SquishyDoll(doll: doll, onTouch: onTouch)
             Spacer()
             Text("꾹 누르면 조물조물, 문지르면 쓰담쓰담")
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
         }
         .padding(Spacing.m)
         .frame(maxWidth: .infinity)
-        .background(Color.app.background)
+        .background { AppBackground() }
         .navigationTitle("만지기")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -76,10 +76,10 @@ struct SquishyDoll: View {
     private var hint: some View {
         VStack(spacing: Spacing.xxs) {
             Image(systemName: "arrow.down")
-                .font(.title.bold())
+                .appFont(.title, .bold)
                 .symbolEffect(.bounce, options: .repeating, isActive: !reduceMotion && !hasTouched)
             Text("만져 보세요")
-                .font(.footnote.bold())
+                .appFont(.footnote, .bold)
         }
         .foregroundStyle(Color.app.ink)
         .opacity(hasTouched ? 0 : 1)

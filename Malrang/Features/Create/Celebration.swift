@@ -19,12 +19,12 @@ struct Celebration: View {
             } symbols: {
                 ForEach(colors.indices, id: \.self) { index in
                     Image(systemName: "balloon.fill")
-                        .font(.largeTitle)
+                        .appFont(.largeTitle)
                         .imageScale(.large)
                         .foregroundStyle(colors[index])
                         .tag("balloon\(index)")
                     Image(systemName: "sparkle")
-                        .font(.title2)
+                        .appFont(.title2)
                         .foregroundStyle(colors[index])
                         .tag("spark\(index)")
                 }
@@ -74,5 +74,5 @@ struct Celebration: View {
 
 #Preview {
     Celebration()
-        .background(Color.app.background)
+        .background { AppBackground() }
 }

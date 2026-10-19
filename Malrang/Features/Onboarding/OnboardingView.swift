@@ -11,9 +11,9 @@ struct OnboardingView: View {
                 .frame(width: 180)
             VStack(spacing: Spacing.xs) {
                 Text("Fluff")
-                    .font(.largeTitle.bold())
+                    .appFont(.largeTitle, .bold)
                 Text("갤러리 속 최애로 나만의 인형을 만들어요")
-                    .font(.body)
+                    .appFont(.body)
                     .foregroundStyle(Color.app.inkSecondary)
             }
             Spacer()
@@ -30,7 +30,7 @@ struct OnboardingView: View {
         }
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.m)
-        .background(Color.app.background)
+        .background { AppBackground() }
     }
 }
 

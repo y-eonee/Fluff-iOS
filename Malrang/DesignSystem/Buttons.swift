@@ -5,7 +5,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
+            .appFont(.headline)
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: .infinity, minHeight: 56)
             .background(Color.app.accent, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
@@ -16,7 +16,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.headline)
+            .appFont(.headline)
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: .infinity, minHeight: 56)
             .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
@@ -61,10 +61,10 @@ struct FloatingCircleButton: View {
         Button(action: action) {
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: symbol)
-                    .font(.title3)
+                    .appFont(.title3)
                     .foregroundStyle(symbolTint)
                 Text(title)
-                    .font(.caption)
+                    .appFont(.caption)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
@@ -85,7 +85,7 @@ struct HintCapsule: View {
 
     var body: some View {
         Text(text)
-            .font(.footnote.bold())
+            .appFont(.footnote, .bold)
             .foregroundStyle(isLight ? Color.app.ink : Color.app.surface)
             .padding(.horizontal, Spacing.m)
             .frame(minHeight: 32)
@@ -106,14 +106,14 @@ struct Chip: View {
             HStack(spacing: Spacing.xxs) {
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.caption.bold())
+                        .appFont(.caption, .bold)
                 }
                 Text(title)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .fixedSize(horizontal: !isCompact, vertical: false)
             }
-            .font(isCompact ? .footnote : .body)
+            .appFont(isCompact ? .footnote : .body)
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: isCompact ? .infinity : nil)
             .padding(.horizontal, isCompact ? Spacing.xxs : Spacing.s)
@@ -138,12 +138,12 @@ struct NoticeCard: View {
     var body: some View {
         VStack(spacing: Spacing.s) {
             Image(systemName: symbol)
-                .font(.largeTitle)
+                .appFont(.largeTitle)
                 .foregroundStyle(Color.app.inkSecondary)
             Text(title)
-                .font(.headline)
+                .appFont(.headline)
             Text(message)
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
                 .multilineTextAlignment(.center)
             if let actionTitle {
@@ -170,5 +170,5 @@ struct NoticeCard: View {
         NoticeCard(symbol: "teddybear", title: "아직 방이 비어 있어요", message: "갤러리 속 사진으로 첫 인형을 만들어 보세요", actionTitle: "첫 인형 만들러 가기")
     }
     .padding(Spacing.m)
-    .background(Color.app.background)
+    .background { AppBackground() }
 }

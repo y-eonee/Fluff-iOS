@@ -33,7 +33,7 @@ struct FriendRoomView: View {
                     .renderedOnlyWhileVisible()
                     .overlay(alignment: .top) {
                         Text("인형을 탭해 만져 보세요")
-                            .font(.footnote)
+                            .appFont(.footnote)
                             .foregroundStyle(Color.app.inkSecondary)
                             .padding(.top, Spacing.xs)
                     }
@@ -42,7 +42,7 @@ struct FriendRoomView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .bottom) { actions }
-        .background(Color.app.background)
+        .background { AppBackground() }
         .navigationTitle("\(friend.name)의 방")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $isShowingGuestbook) {

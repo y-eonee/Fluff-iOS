@@ -25,16 +25,16 @@ struct MultiRoomView: View {
                     )
                     .overlay(alignment: .top) {
                         Text("인형을 탭해 만지고, 길게 눌러 옮기면 모두에게 보여요")
-                            .font(.footnote)
+                            .appFont(.footnote)
                             .foregroundStyle(Color.app.inkSecondary)
                             .padding(.top, Spacing.xs)
                     }
                 }
             }
-            .background(Color.app.background)
+            .background { AppBackground() }
             .safeAreaInset(edge: .bottom) {
                 Label("\(multiRoom.participantCount)명이 함께 있어요", systemImage: "shareplay")
-                    .font(.footnote.bold())
+                    .appFont(.footnote, .bold)
                     .foregroundStyle(Color.app.ink)
                     .padding(.horizontal, Spacing.m)
                     .frame(minHeight: 44)
@@ -92,7 +92,7 @@ private struct SharedDollSheet: View {
                     }
                     .padding(.bottom, Spacing.m)
                 }
-                .background(Color.app.background)
+                .background { AppBackground() }
             }
         }
     }

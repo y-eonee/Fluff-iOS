@@ -54,9 +54,9 @@ struct DancePanel: View {
                     } label: {
                         VStack(spacing: Spacing.xxs) {
                             Image(systemName: selected == move ? "checkmark" : move.symbol)
-                                .font(.title3)
+                                .appFont(.title3)
                             Text(move.label)
-                                .font(.footnote)
+                                .appFont(.footnote)
                         }
                         .foregroundStyle(Color.app.ink)
                         .frame(maxWidth: .infinity, minHeight: 72)
@@ -74,7 +74,7 @@ struct DancePanel: View {
                     doll.dance = nil
                     onClose()
                 }
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
                 .frame(minHeight: 44)
             }
@@ -98,5 +98,5 @@ struct DancePanel: View {
         DancingDoll(image: Doll.sample.image, move: .squish)
         DancePanel(doll: .sample, selected: .constant(.squish)) {}
     }
-    .background(Color.app.background)
+    .background { AppBackground() }
 }

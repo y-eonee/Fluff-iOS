@@ -1,0 +1,22 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="36.8" height="36.8" viewBox="0 0 36.8 36.8" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="&#236;&#134;&#141;&#236;&#158;&#172;&#235;&#163;&#140; &#236;&#149;&#132;&#236;&#157;&#180;&#236;&#189;&#152;/&#235;&#170;&#189;&#234;&#184;&#128; &#235;&#185;&#132;&#236;&#166;&#136;" filter="url(#filter0_g_0_34)">
+<path id="Vector" d="M12.65 28.75C15.8256 28.75 18.4 26.1756 18.4 23C18.4 19.8244 15.8256 17.25 12.65 17.25C9.47436 17.25 6.9 19.8244 6.9 23C6.9 26.1756 9.47436 28.75 12.65 28.75Z" fill="#FBD3DC" stroke-width="1.38" stroke="#8E6A5C"/>
+<path id="Vector_2" d="M24.15 29.325C27.3256 29.325 29.9 26.7506 29.9 23.575C29.9 20.3994 27.3256 17.825 24.15 17.825C20.9744 17.825 18.4 20.3994 18.4 23.575C18.4 26.7506 20.9744 29.325 24.15 29.325Z" fill="#CFE8F2" stroke-width="1.38" stroke="#8E6A5C"/>
+<path id="Vector_3" d="M18.4 19.55C21.5756 19.55 24.15 16.9756 24.15 13.8C24.15 10.6244 21.5756 8.05 18.4 8.05C15.2244 8.05 12.65 10.6244 12.65 13.8C12.65 16.9756 15.2244 19.55 18.4 19.55Z" fill="#FCEBC0" stroke-width="1.38" stroke="#8E6A5C"/>
+<path id="Vector_4" d="M7.4732 15.6405C9.12453 15.6405 10.4632 14.3018 10.4632 12.6504C10.4632 10.9991 9.12453 9.66045 7.4732 9.66045C5.82187 9.66045 4.4832 10.9991 4.4832 12.6504C4.4832 14.3018 5.82187 15.6405 7.4732 15.6405Z" fill="white" stroke-width="1.265" stroke="#8E6A5C"/>
+<path id="Vector_5" d="M29.3268 15.9845C30.8511 15.9845 32.0868 14.7489 32.0868 13.2246C32.0868 11.7002 30.8511 10.4646 29.3268 10.4646C27.8025 10.4646 26.5668 11.7002 26.5668 13.2246C26.5668 14.7489 27.8025 15.9845 29.3268 15.9845Z" fill="#FBD3DC" stroke-width="1.265" stroke="#8E6A5C"/>
+<path id="Vector_6" d="M18.3964 33.5809C19.7937 33.5809 20.9264 32.4482 20.9264 31.0509C20.9264 29.6536 19.7937 28.5209 18.3964 28.5209C16.9991 28.5209 15.8664 29.6536 15.8664 31.0509C15.8664 32.4482 16.9991 33.5809 18.3964 33.5809Z" fill="white" stroke-width="1.265" stroke="#8E6A5C"/>
+<path id="Vector_7" d="M10.35 20.9296C10.81 19.8946 11.615 19.3196 12.65 19.0896M21.85 21.5046C22.31 20.4696 23.115 19.8946 24.15 19.6646M16.1 11.7296C16.56 10.6946 17.365 10.1196 18.4 9.88955" stroke-width="1.495" stroke-linecap="round" stroke="white"/>
+</g>
+<defs>
+<filter id="filter0_g_0_34" x="-0.92" y="-0.92" width="38.64" height="38.64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.72463768720626831 0.72463768720626831" numOctaves="3" seed="0" />
+<feDisplacementMap in="shape" scale="1.8400000333786011" xChannelSelector="R" yChannelSelector="G" result="displacedImage" width="100%" height="100%" />
+<feMerge result="effect1_texture_0_34">
+<feMergeNode in="displacedImage"/>
+</feMerge>
+</filter>
+</defs>
+</svg>

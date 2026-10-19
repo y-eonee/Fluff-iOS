@@ -27,10 +27,10 @@ struct NotificationsView: View {
                 }
             }
         }
-        .font(.body)
+        .appFont(.body)
         .foregroundStyle(Color.app.ink)
         .scrollContentBackground(.hidden)
-        .background(Color.app.background)
+        .background { AppBackground() }
         .safeAreaInset(edge: .top) {
             HStack(spacing: Spacing.xs) {
                 Chip(title: "전체", isSelected: filter == nil, isCompact: true) { filter = nil }
@@ -40,7 +40,7 @@ struct NotificationsView: View {
             }
             .padding(.horizontal, Spacing.m)
             .padding(.vertical, Spacing.xs)
-            .background(Color.app.background)
+            .background { AppBackground() }
         }
         .navigationTitle("알림함")
         .navigationBarTitleDisplayMode(.inline)

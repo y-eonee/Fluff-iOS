@@ -18,15 +18,15 @@ struct MultiRoomStartSheet: View {
                 .accessibilityHidden(true)
             VStack(spacing: Spacing.xs) {
                 Text("멀티 룸 열기")
-                    .font(.title2.bold())
+                    .appFont(.title2, .bold)
                 Text("친구와 SharePlay로 연결하면 내 방에 함께 들어와\n인형을 같이 옮기고 구경할 수 있어요")
-                    .font(.body)
+                    .appFont(.body)
                     .foregroundStyle(Color.app.inkSecondary)
                     .multilineTextAlignment(.center)
             }
             if didFail {
                 Text("SharePlay를 시작하지 못했어요. 잠시 뒤 다시 시도해 주세요")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.danger)
             }
             if groupState.isEligibleForGroupSession {
@@ -43,7 +43,7 @@ struct MultiRoomStartSheet: View {
                 .buttonStyle(.primary)
             } else {
                 Text("FaceTime 통화 중이면 바로 시작할 수 있어요")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
                 ShareLink(item: activity, preview: SharePreview("Fluff 멀티 룸")) {
                     Label("친구에게 초대 보내기", systemImage: "shareplay")
@@ -54,7 +54,7 @@ struct MultiRoomStartSheet: View {
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.l)
         .presentationDetents([.medium])
-        .presentationBackground(Color.app.background)
+        .presentationBackground { AppBackground() }
     }
 }
 

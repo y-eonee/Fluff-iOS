@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="48.4" height="48.4" viewBox="0 0 48.4 48.4" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="&#236;&#149;&#140;&#235;&#166;&#188;" filter="url(#filter0_g_0_215)">
+<rect x="1.2" y="1.2" width="46" height="46" rx="23" fill="#FFF9F2"/>
+<rect x="1.8" y="1.8" width="44.8" height="44.8" rx="22.4" stroke="#8E6A5C" stroke-width="1.2"/>
+<g id="icon">
+<g id="Vector">
+<path d="M18.7 23.2833V28.7833L17.325 30.6167H31.075L29.7 28.7833V23.2833C29.7 21.8246 29.1205 20.4257 28.0891 19.3942C27.0576 18.3628 25.6587 17.7833 24.2 17.7833C22.7413 17.7833 21.3424 18.3628 20.3109 19.3942C19.2795 20.4257 18.7 21.8246 18.7 23.2833Z" fill="#6B4A3E"/>
+<path d="M22.3667 32.45H26.0333M18.7 28.7833V23.2833C18.7 21.8246 19.2795 20.4257 20.3109 19.3942C21.3424 18.3628 22.7413 17.7833 24.2 17.7833C25.6587 17.7833 27.0576 18.3628 28.0891 19.3942C29.1205 20.4257 29.7 21.8246 29.7 23.2833V28.7833L31.075 30.6167H17.325L18.7 28.7833Z" stroke-width="1.46667" stroke-linecap="round" stroke-linejoin="round" stroke="#6B4A3E"/>
+</g>
+</g>
+<path id="Ellipse" d="M39.2 12.3008C39.2 14.5099 37.4091 16.3008 35.2 16.3008C32.9909 16.3008 31.2 14.5099 31.2 12.3008C31.2 10.0916 32.9909 8.30075 35.2 8.30075C37.4091 8.30075 39.2 10.0916 39.2 12.3008Z" fill="#E98BA3" stroke="#8E6A5C"/>
+</g>
+<defs>
+<filter id="filter0_g_0_215" x="0" y="0" width="48.4" height="48.4" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.71428573131561279 0.71428573131561279" numOctaves="3" seed="0" />
+<feDisplacementMap in="shape" scale="2.4000000953674316" xChannelSelector="R" yChannelSelector="G" result="displacedImage" width="100%" height="100%" />
+<feMerge result="effect1_texture_0_215">
+<feMergeNode in="displacedImage"/>
+</feMerge>
+</filter>
+</defs>
+</svg>

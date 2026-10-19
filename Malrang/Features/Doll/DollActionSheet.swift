@@ -20,7 +20,7 @@ struct DollActionSheet: View {
                     content
                 }
             }
-            .background(Color.app.background)
+            .background { AppBackground() }
             .navigationTitle(isRemoved ? "" : doll.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

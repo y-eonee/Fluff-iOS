@@ -32,8 +32,9 @@ struct DollListView: View {
                 FloatingCircleButton(title: "인형 만들기", symbol: "teddybear", isPrimary: true) { isCreating = true }
                     .padding(Spacing.m)
             }
-            .background(Color.app.background)
+            .background { AppBackground() }
             .navigationTitle("인형 목록")
+            .notebookTabBar()
             .toolbar { NotificationsButton() }
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)
@@ -51,7 +52,7 @@ struct DollListView: View {
                 .scaledToFit()
                 .frame(height: 140)
             Text(doll.name)
-                .font(.headline)
+                .appFont(.headline)
         }
         .foregroundStyle(Color.app.ink)
         .frame(maxWidth: .infinity)
@@ -59,7 +60,7 @@ struct DollListView: View {
         .cardStyle()
         .overlay(alignment: .topTrailing) {
             Image(systemName: doll.isPlaced ? "house.fill" : "house")
-                .font(.body)
+                .appFont(.body)
                 .foregroundStyle(Color.app.ink)
                 .frame(width: 36, height: 36)
                 .background(doll.isPlaced ? Color.app.pastelMint : Color.app.background, in: Circle())

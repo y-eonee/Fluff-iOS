@@ -25,7 +25,7 @@ struct MakingStep: View {
             ProgressView(value: progress)
                 .tint(Color.app.accent)
             Text("\(draft.displayName) 꿰매는 중...")
-                .font(.body)
+                .appFont(.body)
                 .foregroundStyle(Color.app.inkSecondary)
         }
         .padding(Spacing.m)
@@ -53,7 +53,7 @@ struct MakingStep: View {
                     .saturation(0)
                     .opacity(0.6)
                 Text("지금 나가면 \(draft.displayName.josa("은", "는"))\n완성되지 않아요!")
-                    .font(.headline)
+                    .appFont(.headline)
                     .multilineTextAlignment(.center)
                 HStack(spacing: Spacing.s) {
                     Button("나가기", action: onLeave)

@@ -28,7 +28,7 @@ struct ARCaptureView: View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.app.background)
+                .background { AppBackground() }
                 .navigationTitle("AR로 함께하기")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(isRecording ? .hidden : .automatic, for: .navigationBar)
@@ -128,7 +128,7 @@ struct ARCaptureView: View {
                 Group {
                     if hasDoll && !isRecording {
                         Button("인형 삭제") { removeCount += 1 }
-                            .font(.headline)
+                            .appFont(.headline)
                             .foregroundStyle(Color.app.surface)
                             .frame(maxWidth: .infinity, minHeight: 56)
                             .background(Color.app.danger, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
@@ -203,7 +203,7 @@ private struct CapturedVideoView: View {
                 .frame(maxHeight: .infinity)
             if isSaved {
                 Label("사진에 저장했어요", systemImage: "checkmark.circle.fill")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
             HStack(spacing: Spacing.s) {
@@ -241,7 +241,7 @@ private struct CapturedPhotoView: View {
                 .frame(maxHeight: .infinity)
             if isSaved {
                 Label("사진에 저장했어요", systemImage: "checkmark.circle.fill")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
             HStack(spacing: Spacing.s) {

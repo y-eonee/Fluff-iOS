@@ -1,0 +1,19 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="36.8" height="36.8" viewBox="0 0 36.8 36.8" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="&#236;&#134;&#141;&#236;&#158;&#172;&#235;&#163;&#140; &#236;&#149;&#132;&#236;&#157;&#180;&#236;&#189;&#152;/&#237;&#143;&#173;&#236;&#139;&#160; &#236;&#134;&#156;" filter="url(#filter0_g_0_14)">
+<path id="Vector" d="M9.775 28.175C5.98 28.175 3.45 25.53 3.45 22.31C3.45 19.435 5.52 17.135 8.28 16.675C8.74 12.42 12.19 9.2 16.33 9.2C19.205 9.2 21.735 10.695 23.115 12.995C23.805 12.765 24.495 12.65 25.3 12.65C29.095 12.65 32.2 15.64 32.2 19.435C32.2 19.78 32.2 20.01 32.085 20.355C33.58 21.275 34.5 22.77 34.5 24.495C34.5 26.565 32.775 28.175 30.475 28.175H9.775Z" fill="white" stroke-width="1.38" stroke-linejoin="round" stroke="#8E6A5C"/>
+<path id="Vector_2" d="M12.075 17.8246C12.765 15.9846 14.375 14.7196 16.33 14.4896M23.575 18.3995C24.15 17.3646 25.185 16.6745 26.335 16.5595" stroke-width="1.38" stroke-linecap="round" stroke="#E8DCE0"/>
+<path id="Vector_3" d="M10.35 24.3791C11.73 25.1841 13.34 25.1841 14.72 24.3791M18.975 24.8391C20.355 25.6441 21.965 25.6441 23.345 24.8391" stroke-width="1.265" stroke-linecap="round" stroke="#F3D4DC"/>
+<path id="Vector_4" d="M29.9 7.475V9.2M29.9 9.2V10.925M29.9 9.2H28.175M29.9 9.2H31.625M5.75 6.9V8.05M5.75 8.05V9.2M5.75 8.05H4.6M5.75 8.05H6.9" stroke-width="1.265" stroke-linecap="round" stroke="#F7B9C8"/>
+</g>
+<defs>
+<filter id="filter0_g_0_14" x="-0.92" y="-0.92" width="38.64" height="38.64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.72463768720626831 0.72463768720626831" numOctaves="3" seed="0" />
+<feDisplacementMap in="shape" scale="1.8400000333786011" xChannelSelector="R" yChannelSelector="G" result="displacedImage" width="100%" height="100%" />
+<feMerge result="effect1_texture_0_14">
+<feMergeNode in="displacedImage"/>
+</feMerge>
+</filter>
+</defs>
+</svg>

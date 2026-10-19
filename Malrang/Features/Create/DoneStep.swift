@@ -9,7 +9,7 @@ struct DoneStep: View {
     var body: some View {
         VStack(spacing: Spacing.l) {
             Text("\(doll.name.josa("이", "가")) 태어났어요!")
-                .font(.title2.bold())
+                .appFont(.title2, .bold)
                 .multilineTextAlignment(.center)
             Image(uiImage: doll.image)
                 .resizable()

@@ -1,16 +1,19 @@
 import SwiftUI
 
 extension Color {
+    /// 시안 A에서는 피그마 팔레트(갈색 #6B4A3E, 분홍 #F7B9C8, 파랑 #A6C5E2, 노랑 #FDE9A0, 크림 #FEF2CC, 종이 #FFFFF4)로 바뀐다.
     enum app {
-        static let background = Color("background")
-        static let surface = Color("surface")
-        static let ink = Color("ink")
-        static let inkSecondary = Color("inkSecondary")
-        static let accent = Color("brandAccent")
-        static let pastelYellow = Color("pastelYellow")
-        static let pastelMint = Color("pastelMint")
-        static let pastelSky = Color("pastelSky")
-        static let danger = Color("danger")
+        private static var isA: Bool { DesignVariant.current == .a }
+
+        static var background: Color { isA ? Color.a.paper : Color("background") }
+        static var surface: Color { isA ? .white : Color("surface") }
+        static var ink: Color { isA ? Color.a.brown : Color("ink") }
+        static var inkSecondary: Color { isA ? Color.a.soft : Color("inkSecondary") }
+        static var accent: Color { isA ? Color.a.pink : Color("brandAccent") }
+        static var pastelYellow: Color { isA ? Color.a.yellow : Color("pastelYellow") }
+        static var pastelMint: Color { isA ? Color.a.cream : Color("pastelMint") }
+        static var pastelSky: Color { isA ? Color.a.blue : Color("pastelSky") }
+        static var danger: Color { isA ? Color.a.danger : Color("danger") }
     }
 }
 

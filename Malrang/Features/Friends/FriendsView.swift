@@ -27,12 +27,13 @@ struct FriendsView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.app.background)
+            .background { AppBackground() }
             .overlay(alignment: .bottomTrailing) {
                 FloatingCircleButton(title: "친구 추가", symbol: "person.badge.plus", isPrimary: true) { isAdding = true }
                 .padding(Spacing.m)
             }
             .navigationTitle("친구")
+            .notebookTabBar()
             .toolbar {
                 NotificationsButton()
             }
@@ -74,10 +75,10 @@ struct FriendsView: View {
                 .background(Color.app.pastelSky.opacity(0.4), in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
                 .clipShape(RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
             Text("\(friend.name)의 방")
-                .font(.headline)
+                .appFont(.headline)
             Spacer()
             Image(systemName: "chevron.right")
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
         }
         .foregroundStyle(Color.app.ink)
@@ -93,7 +94,7 @@ struct FriendsView: View {
             RoomThumbnail(room: room)
         case .some:
             Image(systemName: "house")
-                .font(.title2)
+                .appFont(.title2)
                 .foregroundStyle(Color.app.inkSecondary)
         case .none:
             ProgressView()

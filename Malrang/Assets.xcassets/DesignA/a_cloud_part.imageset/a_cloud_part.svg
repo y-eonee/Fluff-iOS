@@ -1,0 +1,21 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="21.8865" height="16.1239" viewBox="0 0 21.8865 16.1239" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="Vector" filter="url(#filter0_g_0_4)">
+<use xlink:href="#stroke0_0_4" fill="#FFF9F2"/>
+<mask id="stroke1_0_4" fill="white">
+<use xlink:href="#stroke0_0_4"/>
+</mask>
+<path d="M5.50523 15.5239H16.5511C17.7521 15.5243 18.9084 15.0681 19.7856 14.2479C20.6629 13.4276 21.1956 12.3046 21.2759 11.1063C21.3561 9.90792 20.9779 8.72389 20.2178 7.794C19.4577 6.8641 18.3726 6.25786 17.1823 6.09809C16.9958 4.66407 16.3226 3.33756 15.2753 2.34045C14.2279 1.34334 12.87 0.736089 11.4285 0.620281C9.9871 0.504473 8.5496 0.887128 7.3565 1.70424C6.1634 2.52135 5.28705 3.72337 4.87404 5.10922C3.61799 5.3489 2.49226 6.03792 1.7074 7.04742C0.922531 8.05692 0.532284 9.31776 0.609639 10.5941C0.686995 11.8705 1.22666 13.075 2.12769 13.9823C3.02873 14.8896 4.22943 15.4377 5.50523 15.5239Z" stroke-width="2.62" stroke="#6B4A3E" mask="url(#stroke1_0_4)"/>
+</g>
+<defs>
+<filter id="filter0_g_0_4" x="2.44927e-09" y="1.89575e-09" width="21.8865" height="16.1239" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.99900001287460327 0.99900001287460327" numOctaves="3" seed="2541" />
+<feDisplacementMap in="shape" scale="1.2000000476837158" xChannelSelector="R" yChannelSelector="G" result="displacedImage" width="100%" height="100%" />
+<feMerge result="effect1_texture_0_4">
+<feMergeNode in="displacedImage"/>
+</feMerge>
+</filter>
+<path id="stroke0_0_4" d="M5.50523 15.5239H16.5511C17.7521 15.5243 18.9084 15.0681 19.7856 14.2479C20.6629 13.4276 21.1956 12.3046 21.2759 11.1063C21.3561 9.90792 20.9779 8.72389 20.2178 7.794C19.4577 6.8641 18.3726 6.25786 17.1823 6.09809C16.9958 4.66407 16.3226 3.33756 15.2753 2.34045C14.2279 1.34334 12.87 0.736089 11.4285 0.620281C9.9871 0.504473 8.5496 0.887128 7.3565 1.70424C6.1634 2.52135 5.28705 3.72337 4.87404 5.10922C3.61799 5.3489 2.49226 6.03792 1.7074 7.04742C0.922531 8.05692 0.532284 9.31776 0.609639 10.5941C0.686995 11.8705 1.22666 13.075 2.12769 13.9823C3.02873 14.8896 4.22943 15.4377 5.50523 15.5239Z"/>
+</defs>
+</svg>

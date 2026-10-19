@@ -8,9 +8,9 @@ struct CutoutReadyStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
             Text("좋아요!\n이제 인형을 만들러 가요")
-                .font(.title2.bold())
+                .appFont(.title2, .bold)
             Text("투명하게 만든 사진이 인형 원단에 들어가요")
-                .font(.body)
+                .appFont(.body)
                 .foregroundStyle(Color.app.inkSecondary)
             Image(uiImage: draft.finalCutout ?? UIImage())
                 .resizable()
@@ -20,7 +20,7 @@ struct CutoutReadyStep: View {
                 .cardStyle()
                 .overlay(alignment: .topLeading) {
                     Label("투명화 완료", systemImage: "checkmark")
-                        .font(.footnote.bold())
+                        .appFont(.footnote, .bold)
                         .padding(.horizontal, Spacing.s)
                         .padding(.vertical, Spacing.xxs)
                         .background(Color.app.pastelMint, in: Capsule())

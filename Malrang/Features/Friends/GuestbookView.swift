@@ -26,14 +26,14 @@ struct GuestbookView: View {
         VStack(spacing: Spacing.xs) {
             if entries?.contains(where: canEdit) == true {
                 Text("메모지를 꾹 눌러 옮기고, 휴지통에 끌어다 놓으면 지워요")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
             board
         }
         .padding(Spacing.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.app.background)
+        .background { AppBackground() }
         .safeAreaInset(edge: .bottom) {
             if canWrite { composer }
         }
@@ -63,7 +63,7 @@ struct GuestbookView: View {
                     }
                     if entries.isEmpty {
                         Text(canWrite ? "첫 방명록을 남겨 보세요" : "아직 방명록이 없어요")
-                            .font(.body)
+                            .appFont(.body)
                             .foregroundStyle(Color.app.inkSecondary)
                     }
                 }
@@ -85,11 +85,11 @@ struct GuestbookView: View {
         let center = isHeld ? heldCenter : center(of: entry, in: boardSize)
         return VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(entry.message)
-                .font(.footnote)
+                .appFont(.footnote)
                 .lineLimit(4)
             Spacer(minLength: 0)
             Text("- \(entry.author) -")
-                .font(.footnote.bold())
+                .appFont(.footnote, .bold)
         }
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.xs)
@@ -115,7 +115,7 @@ struct GuestbookView: View {
     private func trash(boardSize: CGSize) -> some View {
         let isOver = isOverTrash(heldCenter, in: boardSize)
         return Image(systemName: isOver ? "trash.fill" : "trash")
-            .font(.title2)
+            .appFont(.title2)
             .foregroundStyle(.white)
             .frame(width: trashSize, height: trashSize)
             .background(Color.app.danger, in: Circle())
@@ -147,7 +147,7 @@ struct GuestbookView: View {
             .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
         }
         .padding(Spacing.m)
-        .background(Color.app.background)
+        .background { AppBackground() }
     }
 
     // MARK: 메모지 옮기기

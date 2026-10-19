@@ -16,7 +16,7 @@ struct AddFriendSheet: View {
     var body: some View {
         NavigationStack {
             contactList
-            .background(Color.app.background)
+            .background { AppBackground() }
             .safeAreaInset(edge: .bottom) { invite }
             .navigationTitle("친구 추가")
             .navigationBarTitleDisplayMode(.inline)
@@ -54,7 +54,7 @@ struct AddFriendSheet: View {
                     .frame(maxHeight: .infinity)
             } else {
                 List(friends, rowContent: row)
-                    .font(.body)
+                    .appFont(.body)
                     .scrollContentBackground(.hidden)
             }
         }
@@ -66,14 +66,14 @@ struct AddFriendSheet: View {
         }
         .buttonStyle(.primary)
         .padding(Spacing.m)
-        .background(Color.app.background)
+        .background { AppBackground() }
     }
 
     private func row(_ friend: Friend) -> some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(friend.name).font(.headline)
-                Text("@\(friend.id)").font(.footnote).foregroundStyle(Color.app.inkSecondary)
+                Text(friend.name).appFont(.headline)
+                Text("@\(friend.id)").appFont(.footnote).foregroundStyle(Color.app.inkSecondary)
             }
             Spacer()
             Button(requested.contains(friend.id) ? "요청 보냄" : "요청 보내기") {

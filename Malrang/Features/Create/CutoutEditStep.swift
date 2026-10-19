@@ -97,7 +97,7 @@ struct CutoutEditStep: View {
                 .disabled(strokes.isEmpty)
                 Button(action: clearAll) {
                     Text("초기화")
-                        .font(.body)
+                        .appFont(.body)
                         .padding(.horizontal, Spacing.s)
                         .frame(minHeight: 44)
                         .background(Color.app.surface, in: Capsule())
@@ -105,7 +105,7 @@ struct CutoutEditStep: View {
                 .disabled(strokes.isEmpty && zoom == 1 && offset == .zero)
                 Spacer()
             }
-            .font(.title3)
+            .appFont(.title3)
             .foregroundStyle(Color.app.ink)
             HStack(spacing: Spacing.xs) {
                 Chip(title: "자동 투명화", isSelected: tool == .auto, isCompact: true) {
@@ -130,7 +130,7 @@ struct CutoutEditStep: View {
             }
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("브러시 크기")
-                    .font(.headline)
+                    .appFont(.headline)
                 Slider(value: $brushSize, in: 10...80) { isAdjustingBrush = $0 }
             }
             .disabled(tool == .auto || tool == .move)

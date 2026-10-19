@@ -11,7 +11,7 @@ struct PhotoPickStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.s) {
             Text("얼굴이나 캐릭터가 잘 보이는 사진이 좋아요")
-                .font(.footnote)
+                .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
                 .padding(.horizontal, Spacing.m)
             PhotosPicker("사진 선택", selection: $selection, matching: .images, photoLibrary: .shared())
@@ -20,7 +20,7 @@ struct PhotoPickStep: View {
                 .photosPickerAccessoryVisibility(.hidden, edges: .all)
             VStack(spacing: Spacing.xs) {
                 Text(draft.photo == nil ? "사진 1장을 골라 주세요" : "1장 선택됨")
-                    .font(.footnote)
+                    .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
                 Button {
                     onNext()
@@ -33,7 +33,7 @@ struct PhotoPickStep: View {
             .frame(maxWidth: .infinity)
             .padding(Spacing.m)
         }
-        .background(Color.app.background)
+        .background { AppBackground() }
         .navigationTitle("사진 선택")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: selection) {

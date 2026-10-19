@@ -54,7 +54,7 @@ struct FurnitureCustomView: View {
                     if style == .photo {
                         Button(action: undo) {
                             Image(systemName: "arrow.uturn.backward")
-                                .font(.title3)
+                                .appFont(.title3)
                                 .frame(width: 44, height: 44)
                                 .background(Color.app.surface, in: Circle())
                         }
@@ -73,7 +73,7 @@ struct FurnitureCustomView: View {
                     switch style {
                     case .basic:
                         Text("기본 모습으로 보여요")
-                            .font(.body)
+                            .appFont(.body)
                             .foregroundStyle(Color.app.inkSecondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     case .color:
@@ -94,7 +94,7 @@ struct FurnitureCustomView: View {
             .padding(Spacing.m)
             .background(Color.app.surface, in: UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous))
         }
-        .background(Color.app.background)
+        .background { AppBackground() }
         .navigationTitle("\(item.kind.label) 꾸미기")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -125,7 +125,7 @@ struct FurnitureCustomView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
                     Image(systemName: "plus")
-                        .font(.title)
+                        .appFont(.title)
                         .foregroundStyle(Color.app.ink)
                         .frame(maxWidth: .infinity, minHeight: 96)
                         .background(Color.app.background, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
@@ -140,7 +140,7 @@ struct FurnitureCustomView: View {
                     .overlay(alignment: .topTrailing) {
                         Button("사진 지우기", systemImage: "xmark.circle.fill") { modelContext.delete(photo) }
                             .labelStyle(.iconOnly)
-                            .font(.title3)
+                            .appFont(.title3)
                             .foregroundStyle(Color.app.ink, Color.app.surface)
                             .frame(width: 44, height: 44)
                     }
@@ -159,7 +159,7 @@ struct FurnitureCustomView: View {
                         item.photoData = nil
                     }
                         .labelStyle(.iconOnly)
-                        .font(.title3)
+                        .appFont(.title3)
                         .foregroundStyle(Color.app.ink, Color.app.surface)
                         .frame(width: 44, height: 44)
                 }
@@ -170,7 +170,7 @@ struct FurnitureCustomView: View {
                         Chip(title: "맞추기", isSelected: item.photoFit == 1, isCompact: true) { setFit(1) }
                     }
                     Text("확대")
-                        .font(.headline)
+                        .appFont(.headline)
                     Slider(value: $photoScale, in: 1...3) { isEditing in
                         if isEditing { remember() } else { item.photoScale = photoScale }
                     }
@@ -191,7 +191,7 @@ struct FurnitureCustomView: View {
                 }
                 .buttonStyle(.secondary)
                 .labelStyle(.titleAndIcon)
-                .font(.footnote)
+                .appFont(.footnote)
             }
         }
         .foregroundStyle(Color.app.ink)
