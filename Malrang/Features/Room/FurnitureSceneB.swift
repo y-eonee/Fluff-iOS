@@ -6,7 +6,7 @@ enum FurnitureSceneB {
     private static var studio: EnvironmentResource?
     private static var contactMask: TextureResource?
 
-    static func make(_ item: RoomItemState, photoMaterial: any RealityKit.Material) async -> Entity {
+    static func make(_ item: RoomItemState, photoMaterial: any RealityKit.Material, elevation: Float = 0) async -> Entity {
         let parts = FurnitureModelB.parts(for: item.kind)
         if meshes[item.kind] == nil {
             meshes[item.kind] = parts.map { part in
@@ -60,7 +60,7 @@ enum FurnitureSceneB {
                 // 갓 위로 반사되는 빛이 가까운 벽에 부드럽게 퍼진다.
                 let rotation = simd_quatf(angle: item.yaw, axis: [0, 1, 0])
                 let mirror: Float = item.isMirrored ? -1 : 1
-                let world = rotation.act(position * [mirror, 1, 1]) + [item.x, 0, item.z]
+                let world = rotation.act(position * [mirror, 1, 1]) + [item.x, elevation, item.z]
                 let leftWall = world.x < world.z
                 let wallDistance = leftWall ? world.x + 1 : world.z + 1
                 if wallDistance < 0.6 {

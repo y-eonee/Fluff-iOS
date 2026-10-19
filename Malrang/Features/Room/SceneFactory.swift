@@ -11,13 +11,13 @@ enum SceneFactory {
     private static var models: [FurnitureKind: Entity?] = [:]
 
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
-    static func furniture(_ item: RoomItemState, onFloor: Bool = false) async -> Entity {
+    static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0) async -> Entity {
         if models[item.kind] == nil {
             models[item.kind] = .some(try? await Entity(named: item.kind.assetName))
         }
         let entity: Entity
         if DesignVariant.current == .b {
-            entity = await FurnitureSceneB.make(item, photoMaterial: await material(item))
+            entity = await FurnitureSceneB.make(item, photoMaterial: await material(item), elevation: elevation)
         } else if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
         } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
@@ -27,7 +27,7 @@ enum SceneFactory {
         }
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
-        entity.position = [item.x, hangs ? item.kind.hangingHeight : 0, item.z]
+        entity.position = [item.x, hangs ? item.kind.hangingHeight : elevation, item.z]
         if item.kind.hangsOnWall {
             let pivot = Entity()
             for child in Array(entity.children) { pivot.addChild(child) }

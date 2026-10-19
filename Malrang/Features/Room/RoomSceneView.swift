@@ -226,7 +226,7 @@ struct RoomSceneView: UIViewRepresentable {
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
             for item in state.items {
-                    let furniture = await SceneFactory.furniture(item)
+                    let furniture = await SceneFactory.furniture(item, elevation: RoomLayout.furnitureHeight(item, in: state.items))
                     if roomHidden { furniture.components.set(OpacityComponent(opacity: 0)) }
                     content.addChild(furniture)
                 }
@@ -492,7 +492,7 @@ struct RoomSceneView: UIViewRepresentable {
                         drag.entity.position = spot + [0, lift, 0]
                         report(drag.entity)
                     }
-                } else if let moving = item(drag.id), let floor = floorPoint(at: point) {
+                } else if let moving = item(drag.id), let floor = furniturePoint(at: point, for: moving) {
                     let snapped = RoomLayout.snapped(floor, for: moving.kind, yaw: moving.yaw)
                     if moving.kind.hangsOnWall {
                         var hung = moving
@@ -500,7 +500,9 @@ struct RoomSceneView: UIViewRepresentable {
                         drag.entity.position = [snapped.x, moving.kind.hangingHeight, snapped.y]
                         drag.entity.orientation = simd_quatf(angle: RoomLayout.wall(of: hung).yaw, axis: [0, 1, 0])
                     } else {
-                        drag.entity.position = [snapped.x, 0, snapped.y]
+                        var placed = moving
+                        (placed.x, placed.z) = (snapped.x, snapped.y)
+                        drag.entity.position = [snapped.x, RoomLayout.furnitureHeight(placed, in: rendered?.items ?? []), snapped.y]
                     }
                 }
             case .ended, .cancelled, .failed:
@@ -574,6 +576,24 @@ struct RoomSceneView: UIViewRepresentable {
             let parts = name.split(separator: "|")
             guard parts.count == 2, let id = UUID(uuidString: String(parts[1])) else { return nil }
             return (id, parts[0] == "doll")
+        }
+
+        private func furniturePoint(at point: CGPoint, for moving: RoomItemState) -> SIMD2<Float>? {
+            if moving.kind == .lamp {
+                for hit in hits(at: point) {
+                    var entity: Entity? = hit.entity
+                    while let current = entity, Self.parse(current.name) == nil { entity = current.parent }
+                    guard let entity, let parsed = Self.parse(entity.name), !parsed.isDoll,
+                          item(parsed.id)?.kind == .desk else { continue }
+                    // 충돌 상자의 옆면 대신 실제 책상 높이 평면에 투영한다.
+                    if let ray = view?.ray(through: point), ray.direction.y < 0 {
+                        let height = FurnitureKind.desk.seatHeight ?? 0
+                        let spot = ray.origin + ray.direction * ((height - ray.origin.y) / ray.direction.y)
+                        return [spot.x, spot.z]
+                    }
+                }
+            }
+            return floorPoint(at: point)
         }
 
         private func floorPoint(at point: CGPoint) -> SIMD2<Float>? {

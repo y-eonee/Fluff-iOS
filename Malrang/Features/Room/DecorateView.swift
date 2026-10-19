@@ -146,13 +146,17 @@ struct DecorateView: View {
         selectedID = item.id
     }
 
-    /// 가구를 옮기면 그 위에 있던 인형도 함께 옮긴다.
+    /// 가구를 옮기면 그 위에 있던 인형과 책상 위 조명도 함께 옮긴다.
     func move(_ id: UUID, to point: SIMD2<Float>) {
         guard let item = items.first(where: { $0.id == id }) else { return }
         let states = items.map(\.state)
         let delta = point - SIMD2(Float(item.x), Float(item.z))
         for doll in dolls where doll.isPlaced && RoomLayout.seat(at: [doll.position.x, doll.position.z], in: states).item?.id == id {
             doll.position += [delta.x, 0, delta.y]
+        }
+        for lamp in items where RoomLayout.lampSupport(for: lamp.state, in: states)?.id == id {
+            lamp.x += Double(delta.x)
+            lamp.z += Double(delta.y)
         }
         item.x = Double(point.x)
         item.z = Double(point.y)

@@ -15,11 +15,34 @@ enum RoomLayout {
         return (center - size, center + size)
     }
 
+    /// 조명 바닥 전체가 책상 상판 안에 있을 때만 책상 위에 올린다.
+    static func lampSupport(for item: RoomItemState, in items: [RoomItemState]) -> RoomItemState? {
+        guard item.kind == .lamp else { return nil }
+        return items.first { desk in
+            guard desk.kind == .desk else { return false }
+            let relative = SIMD2(item.x - desk.x, item.z - desk.z)
+            let center = SIMD2(cos(desk.yaw) * relative.x - sin(desk.yaw) * relative.y,
+                               sin(desk.yaw) * relative.x + cos(desk.yaw) * relative.y)
+            let angle = item.yaw - desk.yaw
+            let half = SIMD2(item.kind.size.x, item.kind.size.z) / 2
+            let extent = SIMD2(abs(cos(angle)) * half.x + abs(sin(angle)) * half.y,
+                               abs(sin(angle)) * half.x + abs(cos(angle)) * half.y)
+            return abs(center.x) + extent.x <= desk.kind.size.x / 2 + 0.001
+                && abs(center.y) + extent.y <= desk.kind.size.z / 2 + 0.001
+        }
+    }
+
+    static func furnitureHeight(_ item: RoomItemState, in items: [RoomItemState]) -> Float {
+        lampSupport(for: item, in: items)?.kind.seatHeight ?? 0
+    }
+
     static func overlaps(_ item: RoomItemState, in items: [RoomItemState]) -> Bool {
         guard item.kind.blocksFloor else { return false }
         let a = footprint(item)
         return items.contains { other in
             guard other.id != item.id, other.kind.blocksFloor else { return false }
+            if lampSupport(for: item, in: items)?.id == other.id
+                || lampSupport(for: other, in: items)?.id == item.id { return false }
             let b = footprint(other)
             return a.min.x < b.max.x && b.min.x < a.max.x && a.min.y < b.max.y && b.min.y < a.max.y
         }
