@@ -52,10 +52,10 @@ struct HomeView: View {
                             },
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
                             onFeel: { feelCount += 1 },
-                            isTransparent: isA,
-                            illustrationTargetY: isA ? 0.84 : nil
+                            isTransparent: true,
+                            illustrationTargetY: isA ? 0.84 : 0.7
                         )
-                        .renderedOnlyWhileVisible(background: isA ? .clear : Color.app.background)
+                        .renderedOnlyWhileVisible(background: .clear)
                     }
                 }
                 .overlay { holdTooltip }
@@ -64,11 +64,11 @@ struct HomeView: View {
             .overlay(alignment: .top) { topOverlay }
             .overlay { emptyState }
             .safeAreaInset(edge: .bottom) { bottomBar }
-            .background { if isA { GridPaper() } else { Color.app.background } }
+            .background { if isA { GridPaper() } else { BBackground(grid: true) } }
             .navigationTitle("내 방")
             .toolbar { toolbar }
-            .toolbar(placementStart == nil && !isA ? .automatic : .hidden, for: .navigationBar)
-            .toolbar(placementStart == nil && !isA ? .automatic : .hidden, for: .tabBar)
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbar(.hidden, for: .tabBar)
             .navigationDestination(isPresented: $isDecorating) {
                 DecorateView()
             }
@@ -121,7 +121,18 @@ struct HomeView: View {
                     .padding(.top, placementStart == nil ? Spacing.xl + Spacing.m : 0)
             }
         } else {
-            topMessage
+            VStack {
+                if placementStart == nil {
+                    HStack {
+                        Text("my room").origin(32, relativeTo: .largeTitle).foregroundStyle(Color.b.brown)
+                        Spacer()
+                        NavigationLink { NotificationsView() } label: {
+                            Image("b_screen0_img").resizable().frame(width: 44, height: 44)
+                        }.accessibilityLabel("알림함")
+                    }.padding(.horizontal, Spacing.l)
+                }
+                if placementStart != nil || toast != nil { topMessage }
+            }.padding(.top, Spacing.xs)
         }
     }
 
@@ -215,15 +226,36 @@ struct HomeView: View {
         } else if isA {
             bottomBarA
         } else {
-            HStack(alignment: .bottom) {
-                FloatingCircleButton(title: "멀티 룸", symbol: "shareplay") { isStartingMultiRoom = true }
-                Spacer()
-                VStack(spacing: Spacing.s) {
-                    FloatingCircleButton(title: "방 꾸미기", symbol: "paintbrush") { isDecorating = true }
-                    FloatingCircleButton(title: "인형 만들기", symbol: "teddybear", isPrimary: true) { isCreating = true }
-                }
+            bottomBarB
+        }
+    }
+
+    private var bottomBarB: some View {
+        VStack(spacing: Spacing.l) {
+            VStack(spacing: Spacing.xs) {
+                Button { isStartingMultiRoom = true } label: {
+                    Image(systemName: "shareplay").frame(width: 44, height: 44).background(.white.opacity(0.8), in: Circle())
+                }.accessibilityLabel("멀티 룸")
+                Button { isDecorating = true } label: {
+                    Image(systemName: "paintbrush").frame(width: 44, height: 44).background(.white.opacity(0.8), in: Circle())
+                }.accessibilityLabel("방 꾸미기")
+                Button { isCreating = true } label: {
+                    Image("b_screen0_imgIcon").resizable().frame(width: 36, height: 36)
+                        .frame(width: 76, height: 76)
+                        .background(BStyle.orange, in: Circle())
+                        .overlay(Image("b_screen0_imgEllipse2086").resizable().scaledToFit().blendMode(.softLight))
+                        .overlay(Image("b_screen0_imgEllipse2087").resizable().scaledToFit().blendMode(.softLight))
+                        .overlay(alignment: .topLeading) {
+                            Image("b_screen0_imgEllipse2088").resizable().frame(width: 40, height: 40)
+                        }
+                        .clipShape(Circle())
+                }.accessibilityLabel("인형 만들기")
             }
-            .padding(Spacing.m)
+            .buttonStyle(BGlossButtonStyle(radius: 38))
+            .foregroundStyle(Color.b.brown)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.horizontal, Spacing.l)
+            BTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
         }
     }
 

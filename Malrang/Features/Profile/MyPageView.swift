@@ -44,7 +44,7 @@ struct MyPageView: View {
                         Text("시안 B").tag(DesignVariant.b)
                     }
                     .pickerStyle(.segmented)
-                    Text("내 방, 솜뭉치 만들기, 방 꾸미기 화면이 바뀌어요. 시안 B는 준비 중이라 지금은 기존 디자인으로 보여요")
+                    Text("시안 A는 손그림, 시안 B는 따뜻한 입체 스타일이에요. 배치와 꾸미기 기능은 같아요")
                         .appFont(.footnote)
                         .foregroundStyle(Color.app.inkSecondary)
                         .padding(.top, Spacing.xs)

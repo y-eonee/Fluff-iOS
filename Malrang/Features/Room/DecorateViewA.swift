@@ -13,6 +13,7 @@ extension DecorateView {
                 onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
                 onMoveItem: move,
                 onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
+                onTapBoard: { isShowingGuestbook = true },
                 selectedItemID: selectedID,
                 onTapItem: { selectedID = $0 },
                 onFeel: { feelCount += 1 },
@@ -126,14 +127,14 @@ extension DecorateView {
         .accessibilityLabel(label)
     }
 
-    private func undo() {
+    func undo() {
         guard let previous = undoStack.popLast() else { return }
         redoStack.append(items.map(\.state))
         selectedID = nil
         apply(previous)
     }
 
-    private func redo() {
+    func redo() {
         guard let next = redoStack.popLast() else { return }
         undoStack.append(items.map(\.state))
         selectedID = nil
@@ -141,7 +142,7 @@ extension DecorateView {
     }
 
     /// 꾸미기를 시작하던 때의 방으로 돌린다.
-    private func reset() {
+    func reset() {
         restoreOriginal()
         selectedID = nil
         undoStack = []

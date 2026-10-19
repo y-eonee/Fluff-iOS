@@ -25,45 +25,19 @@ struct DecorateView: View {
     @State var isConfirmingDiscard = false
     @State var isFull = false
     @State var isBlocked = false
+    @State var isShowingGuestbook = false
 
     var hasChanges: Bool {
         original != nil && (original != items.map(\.state) || dolls.contains { originalDolls[$0.id] != $0.position })
     }
 
-    var classicContent: some View {
-        VStack(spacing: 0) {
-            RoomSceneView(
-                items: items.map(\.state),
-                dolls: dolls.filter(\.isPlaced).map(\.state),
-                mode: .decorate,
-                onHoldDoll: { hold = $0 },
-                onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
-                onMoveItem: move,
-                onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
-                selectedItemID: selectedID,
-                onTapItem: { selectedID = $0 },
-                onFeel: { feelCount += 1 }
-            )
-            .renderedOnlyWhileVisible()
-            .overlay { holdTooltip }
-            .overlay(alignment: .bottom) { selectionToolbar }
-            .overlay(alignment: .top) {
-                Text(isBlocked ? "돌릴 자리가 없어요. 주변 가구를 옮겨 주세요" : isFull ? "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요" : "가구는 탭해서 고르고, 길게 눌러 옮겨요. 인형도 옮길 수 있어요")
-                    .appFont(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
-                    .padding(.top, Spacing.xs)
-            }
-            panel
-        }
-    }
-
     var body: some View {
         Group {
-            if variant == .a { contentA } else { classicContent }
+            if variant == .a { contentA } else { contentB }
         }
-        .background { if variant == .a { GridPaper() } else { Color.app.background } }
+        .background { if variant == .a { GridPaper() } else { BBackground(grid: true) } }
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
-        .navigationTitle(variant == .a ? "" : "마이 홈")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
@@ -71,15 +45,10 @@ struct DecorateView: View {
             if variant == .a {
                 toolbarA
             } else {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("뒤로", systemImage: "chevron.left") {
-                        if hasChanges { isConfirmingDiscard = true } else { dismiss() }
-                    }
-                }
+                toolbarB
             }
         }
         .onChange(of: items.map(\.state)) { old, _ in
-            guard variant == .a else { return }
             if isApplyingHistory {
                 isApplyingHistory = false
             } else if Date.now.timeIntervalSince(lastEdit) > 0.6 {
@@ -96,6 +65,9 @@ struct DecorateView: View {
         }
         .navigationDestination(item: $editingItem) { item in
             FurnitureCustomView(item: item)
+        }
+        .navigationDestination(isPresented: $isShowingGuestbook) {
+            GuestbookView(ownerID: "me", title: "내 방명록", canWrite: false)
         }
         .onAppear {
             if original == nil {
@@ -132,47 +104,6 @@ struct DecorateView: View {
         category = tab
     }
 
-    /// 가구를 한 번 탭하면 나오는 도구 막대: 꾸미기, 회전, 삭제, 완료
-    @ViewBuilder
-    var selectionToolbar: some View {
-        if let item = selectedItem {
-            HStack(spacing: Spacing.xxs) {
-                toolButton("꾸미기", symbol: "paintbrush") { editingItem = item }
-                if item.kind.isMovable {
-                    toolButton("회전", symbol: "rotate.right") { rotate(item) }
-                }
-                if item.kind.isMovable {
-                    toolButton("좌우반전", symbol: "arrow.left.and.right.righttriangle.left.righttriangle.right") {
-                        item.isMirrored.toggle()
-                    }
-                    toolButton("삭제", symbol: "trash", tint: Color.app.danger) { remove(item) }
-                }
-                toolButton("완료", symbol: "checkmark", isProminent: true) { selectedID = nil }
-            }
-            .padding(Spacing.xxs)
-            .background(Color.app.surface, in: Capsule())
-            .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: 4)
-            .padding(.bottom, Spacing.s)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-            .sensoryFeedback(.warning, trigger: rotationFailCount)
-        }
-    }
-
-    func toolButton(_ title: String, symbol: String, tint: Color = Color.app.ink, isProminent: Bool = false,
-                            action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.xxs) {
-                Image(systemName: symbol).appFont(.body)
-                Text(title).appFont(.caption)
-            }
-            .foregroundStyle(tint)
-            .frame(minWidth: 56, minHeight: 48)
-            .padding(.horizontal, Spacing.xxs)
-            .background(isProminent ? Color.app.accent : .clear, in: Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-
     /// 90도씩 돌린다. 돌린 자리가 다른 가구와 겹치면 돌리지 않는다.
     func rotate(_ item: RoomItem) {
         var rotated = item.state
@@ -203,87 +134,6 @@ struct DecorateView: View {
         case .flooring: .floor
         default: nil
         }
-    }
-
-    var panel: some View {
-        VStack(spacing: Spacing.m) {
-            HStack {
-                ForEach(FurnitureCategory.allCases, id: \.self) { tab in
-                    Button {
-                        selectCategory(tab)
-                    } label: {
-                        Text(tab.label)
-                            .appFont(.body, category == tab ? .bold : .regular)
-                            .foregroundStyle(category == tab ? Color.app.ink : Color.app.inkSecondary)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .overlay(alignment: .bottom) {
-                                Capsule()
-                                    .fill(category == tab ? Color.app.ink : .clear)
-                                    .frame(height: 3)
-                            }
-                    }
-                    .accessibilityAddTraits(category == tab ? .isSelected : [])
-                }
-            }
-            ScrollView {
-                if let surface = items.first(where: { $0.kind == surfaceKind }) {
-                    ItemColorPicker(item: surface)
-                        .frame(height: 300)
-                }
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
-                    switch category {
-                    case .wallpaper, .flooring:
-                        surfaceCells(for: surfaceKind ?? .wall)
-                    default:
-                        ForEach(FurnitureKind.allCases.filter { $0.category == category }, id: \.self) { kind in
-                            cell(kind.label) {
-                                FurnitureThumbnail(kind: kind)
-                            } action: {
-                                add(kind)
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(height: surfaceKind == nil ? 220 : 360)
-            .id(category)
-            CancelConfirmButtons(
-                onCancel: { if hasChanges { isConfirmingDiscard = true } else { dismiss() } },
-                onConfirm: {
-                    try? modelContext.save()
-                    dismiss()
-                }
-            )
-        }
-        .padding(Spacing.m)
-        .background(Color.app.surface, in: UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous))
-        .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: -4)
-    }
-
-    /// 벽지·바닥재: 색을 바로 칠하거나, 사진으로 꾸미기 화면으로 간다.
-    @ViewBuilder
-    func surfaceCells(for kind: FurnitureKind) -> some View {
-        if let surface = items.first(where: { $0.kind == kind }) {
-            cell("사진으로 꾸미기") {
-                Image(systemName: "photo").appFont(.title)
-            } action: {
-                editingItem = surface
-            }
-        }
-    }
-
-    func cell(_ title: String, @ViewBuilder icon: () -> some View, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.xs) {
-                icon()
-                Text(title)
-                    .appFont(.footnote)
-            }
-            .foregroundStyle(Color.app.ink)
-            .frame(maxWidth: .infinity, minHeight: 96)
-            .background(Color.app.background, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
-        }
-        .buttonStyle(.plain)
     }
 
     func add(_ kind: FurnitureKind) {

@@ -4,20 +4,23 @@ import SwiftUI
 /// SwiftUI의 ColorPicker는 작은 동그라미를 눌러야 열려서, 시스템 컬러 피커를 그대로 감싼다.
 struct ItemColorPicker: UIViewControllerRepresentable {
     let item: RoomItem
+    private var selectedColor: UIColor {
+        Palette.uiColor(item.colorName ?? (DesignVariant.current == .b ? FurnitureModelB.defaultColor(for: item.kind) : item.kind.defaultColorName))
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(item: item) }
 
     func makeUIViewController(context: Context) -> UIColorPickerViewController {
         let controller = UIColorPickerViewController()
         controller.supportsAlpha = false
-        controller.selectedColor = Palette.uiColor(item.colorName ?? item.kind.defaultColorName)
+        controller.selectedColor = selectedColor
         controller.delegate = context.coordinator
         return controller
     }
 
     func updateUIViewController(_ controller: UIColorPickerViewController, context: Context) {
         context.coordinator.item = item
-        let color = Palette.uiColor(item.colorName ?? item.kind.defaultColorName)
+        let color = selectedColor
         if !controller.selectedColor.isEqual(color) {
             controller.selectedColor = color
         }
