@@ -17,8 +17,11 @@ struct HomeView: View {
     @State private var isStartingMultiRoom = false
     /// 배치 모드일 때 시작 위치. 취소하면 여기로 되돌린다. nil이면 배치 모드가 아니다.
     @State private var placementStart: [UUID: SIMD3<Float>]?
+    @State private var roomPlacement = RoomSceneView.Placement()
+    @State private var placementPositions: [UUID: SIMD3<Float>] = [:]
     @State private var lastMovedID: UUID?
     @State private var placementAddedID: UUID?
+    @State private var isPlacementSaveFailed = false
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("designVariant") private var variant = DesignVariant.a
     @State private var feelCount = 0
@@ -32,6 +35,13 @@ struct HomeView: View {
     }
 
     private var placedDolls: [Doll] { dolls.filter(\.isPlaced) }
+    private var roomDolls: [DollState] {
+        placedDolls.map { doll in
+            var state = doll.state
+            if let position = placementPositions[doll.id] { state.position = position }
+            return state
+        }
+    }
     private var isA: Bool { variant == .a }
     var body: some View {
         NavigationStack {
@@ -44,19 +54,17 @@ struct HomeView: View {
                     } else {
                         RoomSceneView(
                             items: items.map(\.state),
-                            dolls: placedDolls.map(\.state),
+                            dolls: roomDolls,
                             mode: .home,
                             onTapDoll: { id in
                                 if placementStart == nil { selectedDoll = dolls.first { $0.id == id } }
                             },
                             canMoveDolls: placementStart != nil,
                             movingDollID: lastMovedID,
+                            placement: roomPlacement,
                             onPickDoll: { lastMovedID = $0 },
                             onHoldDoll: { hold = $0 },
-                            onMoveDoll: { id, position in
-                                dolls.first { $0.id == id }?.position = position
-                                lastMovedID = id
-                            },
+                            onMoveDoll: moveDoll,
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
                             onFeel: { feelCount += 1 },
                             isTransparent: true,
@@ -93,6 +101,11 @@ struct HomeView: View {
             }
             .navigationDestination(isPresented: $isShowingGuestbook) {
                 GuestbookView(ownerID: "me", title: "내 방명록", canWrite: false)
+            }
+            .alert("배치를 저장하지 못했어요", isPresented: $isPlacementSaveFailed) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text("배치한 위치는 유지돼요. 잠시 후 다시 완료를 눌러 주세요.")
             }
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)
@@ -340,12 +353,31 @@ struct HomeView: View {
         guard placementStart == nil else { return }
         toast = nil
         placementStart = Dictionary(uniqueKeysWithValues: placedDolls.map { ($0.id, $0.position) })
+        placementPositions = placementStart ?? [:]
+    }
+
+    private func moveDoll(_ id: UUID, to position: SIMD3<Float>) {
+        guard placementStart != nil else { return }
+        placementPositions[id] = position
+        lastMovedID = id
     }
 
     private func finishPlacement() {
         guard let start = placementStart else { return }
+        if let hold, let id = lastMovedID { placementPositions[id] = hold.position }
+        placementPositions.merge(roomPlacement.finish(), uniquingKeysWith: { _, visible in visible })
+        for doll in placedDolls {
+            if let position = placementPositions[doll.id] { doll.position = position }
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            isPlacementSaveFailed = true
+            return
+        }
         placementStart = nil
-        try? modelContext.save()
+        placementPositions = [:]
+        hold = nil
         guard let moved = dolls.first(where: { $0.id == lastMovedID }) else { return }
         let seat = RoomLayout.seat(at: [moved.position.x, moved.position.z], in: items.map(\.state)).item
         toast = Toast(message: "\(seat?.kind.label ?? "바닥")에 배치했어요", undo: start, addedID: placementAddedID)
@@ -358,6 +390,8 @@ struct HomeView: View {
         if let id = placementAddedID { dolls.first { $0.id == id }?.isPlaced = false }
         placementAddedID = nil
         placementStart = nil
+        placementPositions = [:]
+        hold = nil
         lastMovedID = nil
         try? modelContext.save()
     }
@@ -383,6 +417,7 @@ struct HomeView: View {
             doll.position = RoomLayout.dollSpot(avoiding: items.map(\.state), dolls: placedDolls.map(\.position))
             doll.isPlaced = true
         }
+        placementPositions[doll.id] = doll.position
         lastMovedID = doll.id
     }
 }

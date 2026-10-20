@@ -148,3 +148,5 @@ Malrang/
 - A안은 원본 PNG를 축소하지 않은 가구별 이미지 묶음과 미리 만든 투명도 마스크를 사용한다. `scripts/build_illustration_atlas.swift Malrang/Resources`를 Swift로 실행하면 원본 `RoomIllustration.json`·`IllustrationTextures`에서 묶음과 좌표 메타데이터를 다시 생성할 수 있다. 묶음 메타데이터가 없는 경우 기존 개별 이미지를 사용한다.
 
 - A안 탭바·구름/알림 버튼·아이콘은 피그마 원본 SVG의 TEXTURE 필터를 3배 밀도 PNG로 보존해 사용한다. `node scripts/render_design_a_assets.cjs <sharp 모듈 경로>`로 다시 생성한다. 원본 SVG도 각 이미지 에셋에 함께 보관한다. 공용 손그림 테두리는 원본 외곽선을 늘이지 않고 반복해 질감 크기를 유지한다.
+
+- 홈에서 인형을 배치하는 동안에는 편집 좌표를 별도로 유지하고, 완료 시 3D 장면의 실제 인형 위치를 직접 읽어 저장한 뒤 배치 모드를 종료한다. 끌기 직후의 장면 재구성도 최신 이동 좌표를 사용하며, 완료 후 늦게 도착한 끌기 이벤트는 저장 위치를 덮어쓰지 않는다. 저장에 실패하면 배치 모드를 유지하고 다시 시도할 수 있도록 알린다. A/B 공통 적용.

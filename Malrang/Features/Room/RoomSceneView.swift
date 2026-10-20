@@ -14,6 +14,13 @@ struct RoomSceneView: UIViewRepresentable {
         case decorate
     }
 
+    /// 완료 버튼이 화면에 남아 있는 실제 배치 좌표를 가져오는 UIKit 연결점.
+    final class Placement {
+        fileprivate var snapshot: (() -> [UUID: SIMD3<Float>])?
+
+        func finish() -> [UUID: SIMD3<Float>] { snapshot?() ?? [:] }
+    }
+
     var items: [RoomItemState]
     var dolls: [DollState] = []
     var mode = Mode.view
@@ -25,6 +32,7 @@ struct RoomSceneView: UIViewRepresentable {
     /// 내 방(home)에서는 새 인형을 배치하는 동안에만 인형을 끌 수 있다.
     var canMoveDolls = true
     var movingDollID: UUID?
+    var placement: Placement?
     var onPickDoll: (UUID) -> Void = { _ in }
     /// 인형을 들고 있는 동안 화면 위치와 놓일 자리를 알린다. 놓으면 nil.
     var onHoldDoll: (Hold?) -> Void = { _ in }
@@ -90,6 +98,7 @@ struct RoomSceneView: UIViewRepresentable {
         private let fillLight = SpotLight()
         private var latest: SceneState?
         private var rendered: SceneState?
+        private var displayed: SceneState?
         private var renderTask: Task<Void, Never>?
         private var drag: Drag?
         private var highlights: [Entity] = []
@@ -122,6 +131,7 @@ struct RoomSceneView: UIViewRepresentable {
 
         func attach(to view: ARView) {
             self.view = view
+            parent.placement?.snapshot = { [weak self] in self?.finishPlacement() ?? [:] }
             orbitYaw = parent.focusItem.map { $0.kind.isMovable && !$0.kind.hangsOnWall ? $0.yaw : 0 } ?? 0
             view.scene.addAnchor(root)
             camera.camera.fieldOfViewInDegrees = parent.illustrationTargetY == nil ? 30 : 4
@@ -193,6 +203,14 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         func render(_ state: SceneState) {
+            if parent.mode == .home && !parent.canMoveDolls && drag != nil {
+                // 완료를 먼저 눌러도 든 인형을 편집 좌표에 내려놓고, 늦게 끝난 제스처는 무시한다.
+                drag = nil
+                parent.onHoldDoll(nil)
+                highlights.forEach { $0.removeFromParent() }
+                highlights = []
+                rendered = nil
+            }
             latest = state
             if parent.hidesRoom != roomHidden {
                 roomHidden = parent.hidesRoom
@@ -251,7 +269,39 @@ struct RoomSceneView: UIViewRepresentable {
             root.addChild(camera)
             root.addChild(light)
             if DesignVariant.current == .b { root.addChild(fillLight) }
+            displayed = state
             configureAccessibility(content)
+        }
+
+        private func finishPlacement() -> [UUID: SIMD3<Float>] {
+            var positions: [UUID: SIMD3<Float>] = [:]
+            let items = latest?.items ?? []
+            for entity in root.children.first.map({ Array($0.children) }) ?? [] {
+                guard let parsed = Self.parse(entity.name), parsed.isDoll else { continue }
+                var point = entity.position
+                let requested = latest?.dolls.first { $0.id == parsed.id }?.position
+                let shown = displayed?.dolls.first { $0.id == parsed.id }?.position
+                // 탭 배치의 새 장면이 아직 준비 중이면, 표시 전의 이전 좌표를 저장하지 않는다.
+                if drag?.entity !== entity, requested != shown, let requested { point = requested }
+                point.y = RoomLayout.seat(at: [point.x, point.z], in: items).height
+                positions[parsed.id] = point
+            }
+            // SwiftUI 갱신 전에도 늦게 들어온 배치 터치를 즉시 차단한다.
+            parent.canMoveDolls = false
+            parent.movingDollID = nil
+            // 완료 뒤 늦게 끝나는 끌기나 이전 장면의 생성 작업이 좌표를 되돌리지 않게 한다.
+            renderTask?.cancel()
+            drag = nil
+            highlights.forEach { $0.removeFromParent() }
+            highlights = []
+            if var state = latest {
+                for index in state.dolls.indices {
+                    if let point = positions[state.dolls[index].id] { state.dolls[index].position = point }
+                }
+                latest = state
+            }
+            rendered = nil
+            return positions
         }
 
         private func configureAccessibility(_ content: Entity) {
@@ -436,7 +486,9 @@ struct RoomSceneView: UIViewRepresentable {
                     parent.onPickDoll(hit.id)
                 } else if let id = parent.movingDollID, let entity = root.findEntity(named: "doll|\(id)"),
                           let spot = dollSpot(at: point, excluding: entity) {
-                    parent.onMoveDoll(id, spot)
+                    recordDollMove(id, to: spot)
+                    rendered = nil
+                    if let latest { render(latest) }
                     parent.onFeel()
                 }
                 return
@@ -516,7 +568,7 @@ struct RoomSceneView: UIViewRepresentable {
                     if drag.isDoll { parent.onHoldDoll(nil) }
                 } else if drag.isDoll {
                     parent.onHoldDoll(nil)
-                    parent.onMoveDoll(drag.id, drag.entity.position - [0, lift, 0])
+                    recordDollMove(drag.id, to: drag.entity.position - [0, lift, 0])
                 } else if var moved = item(drag.id) {
                     (moved.x, moved.z) = (drag.entity.position.x, drag.entity.position.z)
                     if RoomLayout.overlaps(moved, in: rendered?.items ?? []) {
@@ -531,6 +583,15 @@ struct RoomSceneView: UIViewRepresentable {
             default:
                 break
             }
+        }
+
+        /// SwiftUI 갱신을 기다리는 동안에도 재구성에 쓰는 좌표를 마지막 이동 위치로 유지한다.
+        private func recordDollMove(_ id: UUID, to position: SIMD3<Float>) {
+            if var snapshot = latest, let index = snapshot.dolls.firstIndex(where: { $0.id == id }) {
+                snapshot.dolls[index].position = position
+                latest = snapshot
+            }
+            parent.onMoveDoll(id, position)
         }
 
         /// 집거나 놓을 때 짧게 진동한다. 마이페이지에서 햅틱을 껐으면 울리지 않는다.
