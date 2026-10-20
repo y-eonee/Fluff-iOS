@@ -21,17 +21,13 @@ struct FaceSizeControl: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
-            HStack {
-                Text("얼굴 크기").appFont(.footnote, .bold)
-                Spacer()
-                Button("원래 크기") { scale = 1 }.appFont(.caption).frame(minHeight: 44)
-            }
+            Text("인형 크기").appFont(.footnote, .bold)
             Slider(value: $scale, in: 0.6...2) {
-                Text("얼굴 크기")
+                Text("인형 크기")
             } minimumValueLabel: {
-                Image(systemName: "minus.magnifyingglass")
+                Text("작게").appFont(.caption)
             } maximumValueLabel: {
-                Image(systemName: "plus.magnifyingglass")
+                Text("크게").appFont(.caption)
             }
             .accessibilityValue("\(Int(scale * 100))퍼센트")
         }
