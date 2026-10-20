@@ -6,30 +6,10 @@ struct SplashView: View {
         GeometryReader { geometry in
             let width = min(geometry.size.width, geometry.size.height * 0.75, 540)
             ZStack {
-                Color("splash_paper")
-                Image("splash_grid")
-                    .resizable(resizingMode: .tile)
-
-                VStack(spacing: 0) {
-                    Image("splash_curtain")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: geometry.size.width, height: width * 0.23, alignment: .bottom)
-                        .clipped()
-                    Spacer()
-                }
+                FluffBackdrop()
 
                 VStack(spacing: Spacing.l) {
-                    ZStack {
-                        Image("splash_orbit")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: width * 0.92)
-                        Image("splash_logo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: width * 0.88)
-                    }
+                    FluffLogo().frame(width: width * 0.92)
                     VStack(spacing: Spacing.xs) {
                         Text("갤러리 속 무엇이든 인형으로!")
                         Text("나만의 작은 아지트, Fluff")
@@ -61,6 +41,38 @@ struct SplashView: View {
         .ignoresSafeArea()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fluff, 나만의 작은 아지트")
+    }
+}
+
+struct FluffBackdrop: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let width = min(geometry.size.width, geometry.size.height * 0.75, 540)
+            ZStack(alignment: .top) {
+                Color("splash_paper")
+                Image("splash_grid").resizable(resizingMode: .tile)
+                Image("splash_curtain")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: width * 0.23, alignment: .bottom)
+                    .clipped()
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+}
+
+struct FluffLogo: View {
+    var body: some View {
+        ZStack {
+            Image("splash_orbit").resizable().scaledToFit()
+            Image("splash_logo").resizable().scaledToFit()
+                .scaleEffect(0.88 / 0.92)
+        }
+        .aspectRatio(1022.369 / 521.637, contentMode: .fit)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Fluff")
     }
 }
 
