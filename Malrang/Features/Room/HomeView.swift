@@ -8,6 +8,8 @@ struct HomeView: View {
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var selectedDoll: Doll?
+    @State private var isHomeMenuOpen = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isCreating = false
     @State private var pendingDoll: Doll?
     @State private var isDecorating = false
@@ -68,7 +70,19 @@ struct HomeView: View {
             }
             .overlay(alignment: .top) { topOverlay }
             .overlay { emptyState }
+            .overlay {
+                if isHomeMenuOpen {
+                    Color.black.opacity(0.08)
+                        .ignoresSafeArea()
+                        .onTapGesture { closeHomeMenu() }
+                        .accessibilityLabel("홈 메뉴 닫기")
+                        .accessibilityAddTraits(.isButton)
+                }
+            }
             .safeAreaInset(edge: .bottom) { bottomBar }
+            .onChange(of: appState.tab) { closeHomeMenu() }
+            .onChange(of: placementStart != nil) { closeHomeMenu() }
+            .onDisappear { isHomeMenuOpen = false }
             .background { if isA { GridPaper() } else { BBackground(grid: true) } }
             .navigationTitle("내 방")
             .toolbar { toolbar }
@@ -242,53 +256,84 @@ struct HomeView: View {
 
     private var bottomBarB: some View {
         VStack(spacing: Spacing.l) {
-            VStack(spacing: Spacing.xs) {
-                Button { isStartingMultiRoom = true } label: {
-                    Image(systemName: "shareplay").frame(width: 44, height: 44).background(.white.opacity(0.8), in: Circle())
-                }.accessibilityLabel("멀티 룸")
-                Button { isDecorating = true } label: {
-                    Image(systemName: "paintbrush").frame(width: 44, height: 44).background(.white.opacity(0.8), in: Circle())
-                }.accessibilityLabel("방 꾸미기")
-                Button { isCreating = true } label: {
-                    Image("b_screen0_imgIcon").resizable().frame(width: 36, height: 36)
-                        .frame(width: 76, height: 76)
-                        .background(BStyle.orange, in: Circle())
-                        .overlay(Image("b_screen0_imgEllipse2086").resizable().scaledToFit().blendMode(.softLight))
-                        .overlay(Image("b_screen0_imgEllipse2087").resizable().scaledToFit().blendMode(.softLight))
-                        .overlay(alignment: .topLeading) {
-                            Image("b_screen0_imgEllipse2088").resizable().frame(width: 40, height: 40)
-                        }
-                        .clipShape(Circle())
-                }.accessibilityLabel("인형 만들기")
-            }
-            .buttonStyle(BGlossButtonStyle(radius: 38))
-            .foregroundStyle(Color.b.brown)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.horizontal, Spacing.l)
+            homeMenuButton
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.horizontal, Spacing.l)
             BTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
         }
     }
 
-    /// 시안 A 하단: 동그란 버튼들과 수첩 탭바. 인형 만들기는 구름 모양 큰 버튼이다.
+    /// 시안 A 하단: 구름 메뉴와 수첩 탭바.
     private var bottomBarA: some View {
         VStack(spacing: Spacing.s) {
-            VStack(spacing: Spacing.xs) {
-                SketchCircleButton(symbol: "shareplay", label: "멀티 룸") { isStartingMultiRoom = true }
-                SketchCircleButton(symbol: "paintbrush", label: "방 꾸미기") { isDecorating = true }
-                Button {
-                    isCreating = true
-                } label: {
-                    Image("a_fab")
-                        .resizable()
-                        .frame(width: 65, height: 65)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("인형 만들기")
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.horizontal, Spacing.m)
+            homeMenuButton
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.horizontal, Spacing.m)
             NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
         }
+    }
+
+    private var homeMenuButton: some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8)) {
+                isHomeMenuOpen.toggle()
+            }
+        } label: {
+            if isA {
+                Image("a_fab").resizable().frame(width: 65, height: 65)
+            } else {
+                Image("b_screen0_imgIcon").resizable().frame(width: 36, height: 36)
+                    .frame(width: 76, height: 76)
+                    .background(BStyle.orange, in: Circle())
+                    .overlay(Image("b_screen0_imgEllipse2086").resizable().scaledToFit().blendMode(.softLight))
+                    .overlay(Image("b_screen0_imgEllipse2087").resizable().scaledToFit().blendMode(.softLight))
+                    .overlay(alignment: .topLeading) {
+                        Image("b_screen0_imgEllipse2088").resizable().frame(width: 40, height: 40)
+                    }
+                    .clipShape(Circle())
+            }
+        }
+        .buttonGloss(radius: 38)
+        .accessibilityLabel(isHomeMenuOpen ? "홈 메뉴 닫기" : "홈 메뉴 열기")
+        .accessibilityValue(isHomeMenuOpen ? "펼쳐짐" : "접힘")
+        .overlay(alignment: .bottomTrailing) {
+            if isHomeMenuOpen {
+                VStack(alignment: .trailing, spacing: Spacing.xs) {
+                    homeMenuAction("멀티 룸", symbol: "shareplay") { isStartingMultiRoom = true }
+                    homeMenuAction("방 꾸미기", symbol: "paintbrush") { isDecorating = true }
+                    homeMenuAction("인형 만들기", symbol: "teddybear") { isCreating = true }
+                }
+                .fixedSize()
+                .padding(.bottom, (isA ? 65 : 76) + Spacing.s)
+                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+
+    private func homeMenuAction(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button {
+            closeHomeMenu()
+            action()
+        } label: {
+            Label(title, systemImage: symbol)
+                .appFont(.subheadline, .semiBold)
+                .foregroundStyle(Color.app.ink)
+                .padding(.horizontal, Spacing.m)
+                .frame(minHeight: 48)
+                .background {
+                    if isA {
+                        Capsule().fill(Color.a.card).overlay(Capsule().stroke(Color.a.line, lineWidth: 1.2))
+                    } else {
+                        BButtonSurface(primary: false, radius: Radius.large)
+                    }
+                }
+                .shadow(color: Color.app.ink.opacity(0.12), radius: Spacing.xs, y: Spacing.xxs)
+        }
+        .buttonGloss(radius: Radius.large)
+    }
+
+    private func closeHomeMenu() {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { isHomeMenuOpen = false }
     }
 
     private func beginPlacement() {
