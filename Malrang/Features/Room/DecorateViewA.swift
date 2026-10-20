@@ -205,9 +205,7 @@ extension DecorateView {
                         .pretendard(.semiBold, 12, tracking: -0.36)
                         .foregroundStyle(isSelected ? Color.a.brown : Color.a.soft)
                         .frame(maxWidth: .infinity, minHeight: isSelected ? 30 : 26)
-                        .background(tabColor(tab), in: UnevenRoundedRectangle(topLeadingRadius: 9, topTrailingRadius: 9, style: .continuous))
-                        .overlay(UnevenRoundedRectangle(topLeadingRadius: 9, topTrailingRadius: 9, style: .continuous)
-                            .stroke(Color.a.line, lineWidth: 1))
+                        .background { ASketchIndexSurface(fill: tabColor(tab)) }
                         .frame(minHeight: 44, alignment: .bottom)
                 }
                 .buttonStyle(.plain)

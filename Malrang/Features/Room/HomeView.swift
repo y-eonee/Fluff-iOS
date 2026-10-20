@@ -322,7 +322,7 @@ struct HomeView: View {
                 .frame(minHeight: 48)
                 .background {
                     if isA {
-                        Capsule().fill(Color.a.card).overlay(Capsule().stroke(Color.a.line, lineWidth: 1.2))
+                        ASketchSurface(radius: 24)
                     } else {
                         BButtonSurface(primary: false, radius: Radius.large)
                     }

@@ -74,9 +74,7 @@ extension View {
 
     /// 손으로 그린 듯한 갈색 테두리 상자 (시안 A)
     func sketchBox(fill: Color = Color.a.card, radius: CGFloat = 8, line: CGFloat = 1.2, dashed: Bool = false) -> some View {
-        background(fill, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .stroke(Color.a.line, style: StrokeStyle(lineWidth: line, dash: dashed ? [4, 3] : [])))
+        background { ASketchSurface(fill: fill, radius: radius, line: line, dashed: dashed) }
     }
 }
 
@@ -155,15 +153,18 @@ struct NotebookTabBar: View {
                             .foregroundStyle(Color.a.brown)
                     }
                     .frame(maxWidth: .infinity, minHeight: 66)
-                    .sketchBox(radius: 4)
+                    .background {
+                        Image("a_tab_card")
+                            .resizable(capInsets: EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7), resizingMode: .tile)
+                            .padding(-1.2)
+                    }
                     .background(alignment: .top) {
-                        UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4, style: .continuous)
-                            .fill(isSelected ? Color.a.pink : .white)
-                            .overlay(UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4, style: .continuous)
-                                .stroke(Color.a.line, lineWidth: 1.1))
-                            .frame(height: 16)
+                        Image(isSelected ? "a_tab_selected" : "a_tab_idle")
+                            .resizable(capInsets: EdgeInsets(top: 6, leading: 6, bottom: 3, trailing: 6), resizingMode: .tile)
+                            .frame(height: 18.4)
                             .padding(.horizontal, Spacing.xxs)
-                            .offset(y: isSelected ? -10 : -5)
+                            .rotationEffect(.degrees(isSelected ? -3.07 : 0))
+                            .offset(y: isSelected ? -12 : -6)
                     }
                 }
                 .buttonStyle(.plain)

@@ -1,15 +1,13 @@
 {
   "images": [
     {
-      "filename": "a_redo.svg",
-      "idiom": "universal"
+      "filename": "a_redo@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
     }
   ],
   "info": {
     "author": "xcode",
     "version": 1
-  },
-  "properties": {
-    "preserves-vector-representation": true
   }
 }

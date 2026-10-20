@@ -23,7 +23,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .background {
                 if DesignVariant.current == .b && whiteDollButtons { RoundedRectangle(cornerRadius: Radius.large).fill(.white) }
                 else if DesignVariant.current == .b { BButtonSurface(radius: Radius.large) }
-                else { RoundedRectangle(cornerRadius: Radius.large, style: .continuous).fill(Color.app.accent) }
+                else { ASketchSurface(fill: Color.app.accent, radius: Radius.large) }
             }
             .overlay {
                 if DesignVariant.current == .b && whiteDollButtons {
@@ -49,9 +49,13 @@ struct SecondaryButtonStyle: ButtonStyle {
             .background {
                 if DesignVariant.current == .b && whiteDollButtons { RoundedRectangle(cornerRadius: Radius.large).fill(.white) }
                 else if DesignVariant.current == .b { BButtonSurface(primary: false, radius: Radius.large) }
-                else { RoundedRectangle(cornerRadius: Radius.large, style: .continuous).fill(Color.app.surface) }
+                else { ASketchSurface(fill: Color.app.surface, radius: Radius.large) }
             }
-            .overlay(RoundedRectangle(cornerRadius: Radius.large, style: .continuous).stroke(Color.app.ink.opacity(0.15)))
+            .overlay {
+                if DesignVariant.current == .b {
+                    RoundedRectangle(cornerRadius: Radius.large, style: .continuous).stroke(Color.app.ink.opacity(0.15))
+                }
+            }
             .overlay {
                 if DesignVariant.current == .b && !whiteDollButtons {
                     RoundedRectangle(cornerRadius: Radius.large)

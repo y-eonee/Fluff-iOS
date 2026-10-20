@@ -146,3 +146,5 @@ Malrang/
 - A/B 공통으로 조명은 바닥 전체가 책상 상판 안에 들어오면 책상 높이에 놓인다. 책상을 이동하면 위에 놓인 조명도 함께 이동하고, 책상 밖으로 옮기거나 책상을 삭제하면 바닥 높이로 돌아온다. 배치 높이는 저장된 가구 위치에서 계산한다.
 
 - A안은 원본 PNG를 축소하지 않은 가구별 이미지 묶음과 미리 만든 투명도 마스크를 사용한다. `scripts/build_illustration_atlas.swift Malrang/Resources`를 Swift로 실행하면 원본 `RoomIllustration.json`·`IllustrationTextures`에서 묶음과 좌표 메타데이터를 다시 생성할 수 있다. 묶음 메타데이터가 없는 경우 기존 개별 이미지를 사용한다.
+
+- A안 탭바·구름/알림 버튼·아이콘은 피그마 원본 SVG의 TEXTURE 필터를 3배 밀도 PNG로 보존해 사용한다. `node scripts/render_design_a_assets.cjs <sharp 모듈 경로>`로 다시 생성한다. 원본 SVG도 각 이미지 에셋에 함께 보관한다. 공용 손그림 테두리는 원본 외곽선을 늘이지 않고 반복해 질감 크기를 유지한다.
