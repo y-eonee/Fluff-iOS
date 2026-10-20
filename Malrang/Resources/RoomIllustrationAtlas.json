@@ -1,0 +1,1766 @@
+{
+  "illustration_bed_0" : {
+    "rect" : [
+      0.5475544,
+      0.68465906,
+      0.22690217,
+      0.10397727
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_1" : {
+    "rect" : [
+      0.0027173914,
+      0.0022727272,
+      0.20652173,
+      0.2159091
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_10" : {
+    "rect" : [
+      0.30570653,
+      0.5460227,
+      0.20652173,
+      0.12954545
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_11" : {
+    "rect" : [
+      0.42663044,
+      0.0022727272,
+      0.3512228,
+      0.15738636
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_12" : {
+    "rect" : [
+      0.359375,
+      0.22272727,
+      0.35054347,
+      0.15681818
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_13" : {
+    "rect" : [
+      0.0027173914,
+      0.68465906,
+      0.20652173,
+      0.11647727
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_14" : {
+    "rect" : [
+      0.6589674,
+      0.8056818,
+      0.16100544,
+      0.09715909
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_15" : {
+    "rect" : [
+      0.8254076,
+      0.8056818,
+      0.16100544,
+      0.09715909
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_16" : {
+    "rect" : [
+      0.72961956,
+      0.5460227,
+      0.20652173,
+      0.117045455
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_17" : {
+    "rect" : [
+      0.0027173914,
+      0.22272727,
+      0.3512228,
+      0.15738636
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_18" : {
+    "rect" : [
+      0.44293478,
+      0.38465908,
+      0.296875,
+      0.13409092
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_19" : {
+    "rect" : [
+      0.23505434,
+      0.8056818,
+      0.20652173,
+      0.101704545
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_2" : {
+    "rect" : [
+      0.40081522,
+      0.38465908,
+      0.03668478,
+      0.14318182
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_20" : {
+    "rect" : [
+      0.65217394,
+      0.91420454,
+      0.10733695,
+      0.05909091
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_21" : {
+    "rect" : [
+      0.7649456,
+      0.91420454,
+      0.10733695,
+      0.05909091
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_22" : {
+    "rect" : [
+      0.44701087,
+      0.8056818,
+      0.20652173,
+      0.101704545
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_23" : {
+    "rect" : [
+      0.0027173914,
+      0.5460227,
+      0.29755434,
+      0.13409092
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_24" : {
+    "rect" : [
+      0.2941576,
+      0.91420454,
+      0.1732337,
+      0.08125
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_25" : {
+    "rect" : [
+      0.0027173914,
+      0.91420454,
+      0.13994566,
+      0.08181818
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_26" : {
+    "rect" : [
+      0.8777174,
+      0.91420454,
+      0.04959239,
+      0.043181818
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_27" : {
+    "rect" : [
+      0.93274456,
+      0.91420454,
+      0.04959239,
+      0.043181818
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_28" : {
+    "rect" : [
+      0.14809783,
+      0.91420454,
+      0.140625,
+      0.08181818
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_29" : {
+    "rect" : [
+      0.4728261,
+      0.91420454,
+      0.17391305,
+      0.08125
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_3" : {
+    "rect" : [
+      0.35869566,
+      0.38465908,
+      0.03668478,
+      0.14375
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_4" : {
+    "rect" : [
+      0.2146739,
+      0.0022727272,
+      0.20652173,
+      0.2159091
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_5" : {
+    "rect" : [
+      0.0027173914,
+      0.8056818,
+      0.22690217,
+      0.10397727
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_6" : {
+    "rect" : [
+      0.0027173914,
+      0.38465908,
+      0.35054347,
+      0.15681818
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_7" : {
+    "rect" : [
+      0.51766306,
+      0.5460227,
+      0.20652173,
+      0.12954545
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_8" : {
+    "rect" : [
+      0.2146739,
+      0.68465906,
+      0.16100544,
+      0.11022727
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_bed_9" : {
+    "rect" : [
+      0.38111413,
+      0.68465906,
+      0.16100544,
+      0.11022727
+    ],
+    "texture" : "illustration_atlas_bed"
+  },
+  "illustration_chair_0" : {
+    "rect" : [
+      0.4,
+      0.5240113,
+      0.3796875,
+      0.19209039
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_1" : {
+    "rect" : [
+      0.625,
+      0.0056497175,
+      0.2078125,
+      0.19915254
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_10" : {
+    "rect" : [
+      0.00625,
+      0.0056497175,
+      0.209375,
+      0.29661018
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_11" : {
+    "rect" : [
+      0.00625,
+      0.7288136,
+      0.2484375,
+      0.13135593
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_12" : {
+    "rect" : [
+      0.00625,
+      0.8714689,
+      0.228125,
+      0.121468924
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_13" : {
+    "rect" : [
+      0.575,
+      0.8714689,
+      0.1140625,
+      0.10169491
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_14" : {
+    "rect" : [
+      0.4109375,
+      0.8714689,
+      0.1515625,
+      0.118644066
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_15" : {
+    "rect" : [
+      0.246875,
+      0.8714689,
+      0.1515625,
+      0.120056495
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_16" : {
+    "rect" : [
+      0.7015625,
+      0.8714689,
+      0.1140625,
+      0.10169491
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_17" : {
+    "rect" : [
+      0.5265625,
+      0.7288136,
+      0.228125,
+      0.12288135
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_2" : {
+    "rect" : [
+      0.00625,
+      0.31355932,
+      0.2078125,
+      0.19915254
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_3" : {
+    "rect" : [
+      0.2265625,
+      0.31355932,
+      0.209375,
+      0.19915254
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_4" : {
+    "rect" : [
+      0.4484375,
+      0.31355932,
+      0.209375,
+      0.19915254
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_5" : {
+    "rect" : [
+      0.00625,
+      0.5240113,
+      0.38125,
+      0.19350283
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_6" : {
+    "rect" : [
+      0.2671875,
+      0.7288136,
+      0.246875,
+      0.1299435
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_7" : {
+    "rect" : [
+      0.228125,
+      0.0056497175,
+      0.2078125,
+      0.29519773
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_8" : {
+    "rect" : [
+      0.5375,
+      0.0056497175,
+      0.075,
+      0.23305085
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_chair_9" : {
+    "rect" : [
+      0.4484375,
+      0.0056497175,
+      0.0765625,
+      0.23446327
+    ],
+    "texture" : "illustration_atlas_chair"
+  },
+  "illustration_desk_0" : {
+    "rect" : [
+      0.5724432,
+      0.8135776,
+      0.08522727,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_1" : {
+    "rect" : [
+      0.5255682,
+      0.22413793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_10" : {
+    "rect" : [
+      0.59659094,
+      0.22413793,
+      0.061079547,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_11" : {
+    "rect" : [
+      0.66903406,
+      0.8135776,
+      0.08664773,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_12" : {
+    "rect" : [
+      0.76704544,
+      0.8135776,
+      0.08522727,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_13" : {
+    "rect" : [
+      0.66903406,
+      0.22413793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_14" : {
+    "rect" : [
+      0.7400568,
+      0.22413793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_15" : {
+    "rect" : [
+      0.81107956,
+      0.22413793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_16" : {
+    "rect" : [
+      0.88210225,
+      0.22413793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_17" : {
+    "rect" : [
+      0.8636364,
+      0.8135776,
+      0.08664773,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_18" : {
+    "rect" : [
+      0.0056818184,
+      0.9461207,
+      0.08522727,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_19" : {
+    "rect" : [
+      0.0056818184,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_2" : {
+    "rect" : [
+      0.07670455,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_20" : {
+    "rect" : [
+      0.14772727,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_21" : {
+    "rect" : [
+      0.21875,
+      0.44288793,
+      0.061079547,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_22" : {
+    "rect" : [
+      0.2911932,
+      0.44288793,
+      0.061079547,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_23" : {
+    "rect" : [
+      0.10227273,
+      0.9461207,
+      0.08664773,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_24" : {
+    "rect" : [
+      0.0056818184,
+      0.22413793,
+      0.50852275,
+      0.2101293
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_25" : {
+    "rect" : [
+      0.0056818184,
+      0.8135776,
+      0.22443181,
+      0.123922415
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_26" : {
+    "rect" : [
+      0.0056818184,
+      0.64331895,
+      0.31960228,
+      0.16163793
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_27" : {
+    "rect" : [
+      0.33664772,
+      0.64331895,
+      0.31960228,
+      0.16163793
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_28" : {
+    "rect" : [
+      0.6676136,
+      0.64331895,
+      0.22443181,
+      0.125
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_29" : {
+    "rect" : [
+      0.0056818184,
+      0.004310345,
+      0.5099432,
+      0.2112069
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_3" : {
+    "rect" : [
+      0.36363637,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_30" : {
+    "rect" : [
+      0.24147727,
+      0.8135776,
+      0.03409091,
+      0.082974136
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_31" : {
+    "rect" : [
+      0.2869318,
+      0.8135776,
+      0.13068181,
+      0.075431034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_32" : {
+    "rect" : [
+      0.42897728,
+      0.8135776,
+      0.13210227,
+      0.075431034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_4" : {
+    "rect" : [
+      0.4346591,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_5" : {
+    "rect" : [
+      0.2002841,
+      0.9461207,
+      0.08664773,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_6" : {
+    "rect" : [
+      0.29829547,
+      0.9461207,
+      0.08522727,
+      0.046336208
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_7" : {
+    "rect" : [
+      0.5056818,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_8" : {
+    "rect" : [
+      0.57670456,
+      0.44288793,
+      0.05965909,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_desk_9" : {
+    "rect" : [
+      0.64772725,
+      0.44288793,
+      0.061079547,
+      0.19181034
+    ],
+    "texture" : "illustration_atlas_desk"
+  },
+  "illustration_floor_0" : {
+    "rect" : [
+      0.003125,
+      0.0038022813,
+      0.96875,
+      0.615019
+    ],
+    "texture" : "illustration_atlas_floor"
+  },
+  "illustration_floor_1" : {
+    "rect" : [
+      0.003125,
+      0.62642586,
+      0.49375,
+      0.36977187
+    ],
+    "texture" : "illustration_atlas_floor"
+  },
+  "illustration_floor_2" : {
+    "rect" : [
+      0.503125,
+      0.62642586,
+      0.49375,
+      0.36977187
+    ],
+    "texture" : "illustration_atlas_floor"
+  },
+  "illustration_frame_0" : {
+    "rect" : [
+      0.0125,
+      0.010638298,
+      0.378125,
+      0.5398936
+    ],
+    "texture" : "illustration_atlas_frame"
+  },
+  "illustration_frame_1" : {
+    "rect" : [
+      0.415625,
+      0.010638298,
+      0.378125,
+      0.5398936
+    ],
+    "texture" : "illustration_atlas_frame"
+  },
+  "illustration_frame_2" : {
+    "rect" : [
+      0.1375,
+      0.5718085,
+      0.403125,
+      0.20744681
+    ],
+    "texture" : "illustration_atlas_frame"
+  },
+  "illustration_frame_3" : {
+    "rect" : [
+      0.81875,
+      0.010638298,
+      0.1,
+      0.4175532
+    ],
+    "texture" : "illustration_atlas_frame"
+  },
+  "illustration_frame_4" : {
+    "rect" : [
+      0.565625,
+      0.5718085,
+      0.403125,
+      0.20744681
+    ],
+    "texture" : "illustration_atlas_frame"
+  },
+  "illustration_frame_5" : {
+    "rect" : [
+      0.0125,
+      0.5718085,
+      0.1,
+      0.4175532
+    ],
+    "texture" : "illustration_atlas_frame"
+  },
+  "illustration_lamp_0" : {
+    "rect" : [
+      0.020833334,
+      0.014285714,
+      0.125,
+      0.275
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_lamp_1" : {
+    "rect" : [
+      0.020833334,
+      0.31785715,
+      0.47916666,
+      0.25
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_lamp_2" : {
+    "rect" : [
+      0.020833334,
+      0.5964286,
+      0.484375,
+      0.25
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_lamp_3" : {
+    "rect" : [
+      0.020833334,
+      0.875,
+      0.5208333,
+      0.1
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_lamp_4" : {
+    "rect" : [
+      0.1875,
+      0.014285714,
+      0.265625,
+      0.2642857
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_lamp_5" : {
+    "rect" : [
+      0.5833333,
+      0.875,
+      0.32291666,
+      0.1
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_lamp_6" : {
+    "rect" : [
+      0.49479166,
+      0.014285714,
+      0.265625,
+      0.2642857
+    ],
+    "texture" : "illustration_atlas_lamp"
+  },
+  "illustration_plant_0" : {
+    "rect" : [
+      0.010416667,
+      0.8211009,
+      0.31510416,
+      0.16972478
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_1" : {
+    "rect" : [
+      0.010416667,
+      0.0091743115,
+      0.19010417,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_2" : {
+    "rect" : [
+      0.22135417,
+      0.0091743115,
+      0.19010417,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_3" : {
+    "rect" : [
+      0.43229166,
+      0.0091743115,
+      0.19010417,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_4" : {
+    "rect" : [
+      0.6432292,
+      0.0091743115,
+      0.19010417,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_40" : {
+    "rect" : [
+      0.010416667,
+      0.2798165,
+      0.23958333,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_41" : {
+    "rect" : [
+      0.27083334,
+      0.2798165,
+      0.23958333,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_5" : {
+    "rect" : [
+      0.34635416,
+      0.8211009,
+      0.31770834,
+      0.16972478
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_6" : {
+    "rect" : [
+      0.53125,
+      0.2798165,
+      0.23958333,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_7" : {
+    "rect" : [
+      0.010416667,
+      0.5504587,
+      0.23958333,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_74" : {
+    "rect" : [
+      0.27083334,
+      0.5504587,
+      0.23958333,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_plant_75" : {
+    "rect" : [
+      0.53125,
+      0.5504587,
+      0.23958333,
+      0.2522936
+    ],
+    "texture" : "illustration_atlas_plant"
+  },
+  "illustration_rugRound_0" : {
+    "rect" : [
+      0.010416667,
+      0.01923077,
+      0.9583333,
+      0.96153843
+    ],
+    "texture" : "illustration_atlas_rugRound"
+  },
+  "illustration_rugSquare_0" : {
+    "rect" : [
+      0.0056818184,
+      0.63809526,
+      0.42329547,
+      0.2
+    ],
+    "texture" : "illustration_atlas_rugSquare"
+  },
+  "illustration_rugSquare_1" : {
+    "rect" : [
+      0.0056818184,
+      0.84761906,
+      0.29261363,
+      0.14404762
+    ],
+    "texture" : "illustration_atlas_rugSquare"
+  },
+  "illustration_rugSquare_2" : {
+    "rect" : [
+      0.4403409,
+      0.63809526,
+      0.42329547,
+      0.2
+    ],
+    "texture" : "illustration_atlas_rugSquare"
+  },
+  "illustration_rugSquare_3" : {
+    "rect" : [
+      0.3096591,
+      0.84761906,
+      0.29261363,
+      0.14404762
+    ],
+    "texture" : "illustration_atlas_rugSquare"
+  },
+  "illustration_rugSquare_4" : {
+    "rect" : [
+      0.0056818184,
+      0.004761905,
+      0.6818182,
+      0.30714285
+    ],
+    "texture" : "illustration_atlas_rugSquare"
+  },
+  "illustration_rugSquare_5" : {
+    "rect" : [
+      0.0056818184,
+      0.32142857,
+      0.6818182,
+      0.30714285
+    ],
+    "texture" : "illustration_atlas_rugSquare"
+  },
+  "illustration_shelf_0" : {
+    "rect" : [
+      0.0078125,
+      0.0066225166,
+      0.48632812,
+      0.23178808
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_1" : {
+    "rect" : [
+      0.51953125,
+      0.7350993,
+      0.13085938,
+      0.107615896
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_10" : {
+    "rect" : [
+      0.27539062,
+      0.7350993,
+      0.107421875,
+      0.14238411
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_11" : {
+    "rect" : [
+      0.8125,
+      0.7350993,
+      0.17773438,
+      0.09602649
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_12" : {
+    "rect" : [
+      0.0078125,
+      0.8956954,
+      0.17773438,
+      0.09602649
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_13" : {
+    "rect" : [
+      0.81640625,
+      0.49668875,
+      0.10546875,
+      0.16556291
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_14" : {
+    "rect" : [
+      0.5605469,
+      0.49668875,
+      0.1171875,
+      0.1705298
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_15" : {
+    "rect" : [
+      0.42578125,
+      0.49668875,
+      0.119140625,
+      0.17218544
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_16" : {
+    "rect" : [
+      0.6933594,
+      0.49668875,
+      0.107421875,
+      0.16721854
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_17" : {
+    "rect" : [
+      0.20117188,
+      0.8956954,
+      0.17773438,
+      0.09602649
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_2" : {
+    "rect" : [
+      0.0078125,
+      0.49668875,
+      0.40234375,
+      0.22516556
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_3" : {
+    "rect" : [
+      0.51171875,
+      0.25165564,
+      0.40429688,
+      0.2268212
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_4" : {
+    "rect" : [
+      0.6660156,
+      0.7350993,
+      0.13085938,
+      0.107615896
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_5" : {
+    "rect" : [
+      0.0078125,
+      0.25165564,
+      0.48828125,
+      0.23178808
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_6" : {
+    "rect" : [
+      0.39453125,
+      0.8956954,
+      0.17773438,
+      0.09602649
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_7" : {
+    "rect" : [
+      0.3984375,
+      0.7350993,
+      0.10546875,
+      0.14072847
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_8" : {
+    "rect" : [
+      0.14257812,
+      0.7350993,
+      0.1171875,
+      0.14569536
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_shelf_9" : {
+    "rect" : [
+      0.0078125,
+      0.7350993,
+      0.119140625,
+      0.147351
+    ],
+    "texture" : "illustration_atlas_shelf"
+  },
+  "illustration_sofa_0" : {
+    "rect" : [
+      0.5661765,
+      0.0029850747,
+      0.27389705,
+      0.19402985
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_1" : {
+    "rect" : [
+      0.3961397,
+      0.42537314,
+      0.13419117,
+      0.1358209
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_10" : {
+    "rect" : [
+      0.2867647,
+      0.6007463,
+      0.2904412,
+      0.12985075
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_11" : {
+    "rect" : [
+      0.58455884,
+      0.6007463,
+      0.2904412,
+      0.12985075
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_12" : {
+    "rect" : [
+      0.0036764706,
+      0.7402985,
+      0.04319853,
+      0.09552239
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_13" : {
+    "rect" : [
+      0.67922795,
+      0.42537314,
+      0.13419117,
+      0.13358209
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_14" : {
+    "rect" : [
+      0.05422794,
+      0.7402985,
+      0.04319853,
+      0.09552239
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_15" : {
+    "rect" : [
+      0.82077205,
+      0.42537314,
+      0.13419117,
+      0.13358209
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_16" : {
+    "rect" : [
+      0.5257353,
+      0.7402985,
+      0.15441176,
+      0.073134325
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_17" : {
+    "rect" : [
+      0.6875,
+      0.7402985,
+      0.15441176,
+      0.073134325
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_18" : {
+    "rect" : [
+      0.104779415,
+      0.7402985,
+      0.04319853,
+      0.09552239
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_19" : {
+    "rect" : [
+      0.0036764706,
+      0.6007463,
+      0.13419117,
+      0.13358209
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_2" : {
+    "rect" : [
+      0.0036764706,
+      0.22537313,
+      0.27389705,
+      0.19402985
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_20" : {
+    "rect" : [
+      0.15533088,
+      0.7402985,
+      0.04319853,
+      0.09552239
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_21" : {
+    "rect" : [
+      0.1452206,
+      0.6007463,
+      0.13419117,
+      0.13358209
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_22" : {
+    "rect" : [
+      0.0036764706,
+      0.84179103,
+      0.15441176,
+      0.073134325
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_23" : {
+    "rect" : [
+      0.16544117,
+      0.84179103,
+      0.15441176,
+      0.073134325
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_24" : {
+    "rect" : [
+      0.20588236,
+      0.7402985,
+      0.0726103,
+      0.08283582
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_25" : {
+    "rect" : [
+      0.3272059,
+      0.84179103,
+      0.037683822,
+      0.06865671
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_26" : {
+    "rect" : [
+      0.28584558,
+      0.7402985,
+      0.0726103,
+      0.08283582
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_27" : {
+    "rect" : [
+      0.37224266,
+      0.84179103,
+      0.037683822,
+      0.06865671
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_28" : {
+    "rect" : [
+      0.50735295,
+      0.84179103,
+      0.08731618,
+      0.045522388
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_29" : {
+    "rect" : [
+      0.60202205,
+      0.84179103,
+      0.08731618,
+      0.045522388
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_3" : {
+    "rect" : [
+      0.53768384,
+      0.42537314,
+      0.13419117,
+      0.1358209
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_30" : {
+    "rect" : [
+      0.3658088,
+      0.7402985,
+      0.0726103,
+      0.08283582
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_31" : {
+    "rect" : [
+      0.41727942,
+      0.84179103,
+      0.037683822,
+      0.06865671
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_32" : {
+    "rect" : [
+      0.44577205,
+      0.7402985,
+      0.0726103,
+      0.08283582
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_33" : {
+    "rect" : [
+      0.4623162,
+      0.84179103,
+      0.037683822,
+      0.06865671
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_34" : {
+    "rect" : [
+      0.69669116,
+      0.84179103,
+      0.08731618,
+      0.045522388
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_35" : {
+    "rect" : [
+      0.7913603,
+      0.84179103,
+      0.08731618,
+      0.045522388
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_36" : {
+    "rect" : [
+      0.8860294,
+      0.84179103,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_37" : {
+    "rect" : [
+      0.92922795,
+      0.84179103,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_38" : {
+    "rect" : [
+      0.0036764706,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_39" : {
+    "rect" : [
+      0.046875,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_4" : {
+    "rect" : [
+      0.28492647,
+      0.22537313,
+      0.3851103,
+      0.16940299
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_40" : {
+    "rect" : [
+      0.6084559,
+      0.9208955,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_41" : {
+    "rect" : [
+      0.66544116,
+      0.9208955,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_42" : {
+    "rect" : [
+      0.090073526,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_43" : {
+    "rect" : [
+      0.13327205,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_44" : {
+    "rect" : [
+      0.1764706,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_45" : {
+    "rect" : [
+      0.21966912,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_46" : {
+    "rect" : [
+      0.7224265,
+      0.9208955,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_47" : {
+    "rect" : [
+      0.7794118,
+      0.9208955,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_48" : {
+    "rect" : [
+      0.26286766,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_49" : {
+    "rect" : [
+      0.3060662,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_5" : {
+    "rect" : [
+      0.0036764706,
+      0.42537314,
+      0.3851103,
+      0.16940299
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_50" : {
+    "rect" : [
+      0.3492647,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_51" : {
+    "rect" : [
+      0.39246324,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_52" : {
+    "rect" : [
+      0.83639705,
+      0.9208955,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_53" : {
+    "rect" : [
+      0.8933824,
+      0.9208955,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_54" : {
+    "rect" : [
+      0.43566176,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_55" : {
+    "rect" : [
+      0.4788603,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_56" : {
+    "rect" : [
+      0.52205884,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_57" : {
+    "rect" : [
+      0.5652574,
+      0.9208955,
+      0.03584559,
+      0.040298507
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_58" : {
+    "rect" : [
+      0.0036764706,
+      0.96716416,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_59" : {
+    "rect" : [
+      0.060661763,
+      0.96716416,
+      0.04963235,
+      0.029850746
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_6" : {
+    "rect" : [
+      0.0036764706,
+      0.0029850747,
+      0.27389705,
+      0.21641791
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_7" : {
+    "rect" : [
+      0.88235295,
+      0.6007463,
+      0.03860294,
+      0.11865672
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_8" : {
+    "rect" : [
+      0.28492647,
+      0.0029850747,
+      0.27389705,
+      0.21641791
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_sofa_9" : {
+    "rect" : [
+      0.92830884,
+      0.6007463,
+      0.03860294,
+      0.11865672
+    ],
+    "texture" : "illustration_atlas_sofa"
+  },
+  "illustration_wall_0" : {
+    "rect" : [
+      0.0036764706,
+      0.0021881838,
+      0.5808824,
+      0.49562362
+    ],
+    "texture" : "illustration_atlas_wall"
+  },
+  "illustration_wall_1" : {
+    "rect" : [
+      0.0036764706,
+      0.5021882,
+      0.5808824,
+      0.49562362
+    ],
+    "texture" : "illustration_atlas_wall"
+  }
+}

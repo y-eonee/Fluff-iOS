@@ -12,8 +12,12 @@ enum SceneFactory {
 
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
     static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0) async -> Entity {
-        if models[item.kind] == nil {
-            models[item.kind] = .some(try? await Entity(named: item.kind.assetName))
+        if DesignVariant.current == .a && models[item.kind] == nil {
+            if let url = Bundle.main.url(forResource: item.kind.assetName, withExtension: "usdz") {
+                models[item.kind] = .some(try? await Entity(contentsOf: url))
+            } else {
+                models[item.kind] = .some(nil)
+            }
         }
         let entity: Entity
         if DesignVariant.current == .b {

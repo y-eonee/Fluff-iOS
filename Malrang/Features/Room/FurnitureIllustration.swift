@@ -20,6 +20,16 @@ enum FurnitureIllustration {
     private static var parts: [FurnitureKind: [Part]] = [:]
     private static var artwork: [String: Artwork] = [:]
     private static var floorColors: [String: (name: String, texture: TextureResource)] = [:]
+    private struct AtlasEntry: Decodable {
+        let texture: String
+        let rect: [Float]
+    }
+    private static let atlas: [String: AtlasEntry] = {
+        guard let url = Bundle.main.url(forResource: "RoomIllustrationAtlas", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([String: AtlasEntry].self, from: data) else { return [:] }
+        return entries
+    }()
     private static let source: [String: [IllustrationFace]] = {
         guard let url = Bundle.main.url(forResource: "RoomIllustration", withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -28,16 +38,19 @@ enum FurnitureIllustration {
     }()
 
     static func make(_ item: RoomItemState, photoMaterial: RealityKit.Material) async throws -> Entity? {
-        guard let faces = source[item.kind.rawValue] else { return nil }
+        guard let original = source[item.kind.rawValue] else { return nil }
+        let faces = original.map { face in
+            var face = face
+            if let name = face.texture, let entry = atlas[name] {
+                face.texture = entry.texture
+                face.textureRegion = entry.rect
+            }
+            return face
+        }
         if parts[item.kind] == nil {
             var photoMeshes: [String: MeshResource] = [:]
-            for var face in faces where face.photo {
-                guard let name = face.texture else { continue }
-                face.texture = nil
-                face.textureVertices = nil
-                if let buffer = IllustrationMesh.build([face]).first {
-                    photoMeshes[name] = try mesh(buffer)
-                }
+            for buffer in IllustrationMesh.build(faces.filter(\.photo), usesArtwork: false) {
+                if let name = buffer.texture { photoMeshes[name] = try mesh(buffer) }
             }
             parts[item.kind] = try IllustrationMesh.build(faces).map { buffer in
                 Part(mesh: try mesh(buffer), color: buffer.color, custom: buffer.custom,
@@ -58,9 +71,10 @@ enum FurnitureIllustration {
                 if let name = part.texture {
                     if artwork[name] == nil {
                         let url = Bundle.main.url(forResource: name, withExtension: "png")
+                            ?? Bundle.main.url(forResource: name, withExtension: "png", subdirectory: "IllustrationAtlases")
                             ?? Bundle.main.url(forResource: name, withExtension: "png", subdirectory: "IllustrationTextures")
                         if let url, let image = UIImage(contentsOfFile: url.path), let cgImage = image.cgImage,
-                           let mask = SceneFactory.opacityMask(of: image) {
+                           let mask = opacityImage(named: name, fallback: image) {
                             let color = try await TextureResource(image: cgImage, options: .init(semantic: .color))
                             let opacity = try await TextureResource(image: mask, options: .init(semantic: .raw))
                             artwork[name] = Artwork(color: color, opacity: opacity, source: cgImage)
@@ -102,6 +116,13 @@ enum FurnitureIllustration {
             root.addChild(ModelEntity(mesh: displayedMesh, materials: [finish]))
         }
         return root
+    }
+
+    private static func opacityImage(named name: String, fallback image: UIImage) -> CGImage? {
+        let url = Bundle.main.url(forResource: name + "_opacity", withExtension: "png")
+            ?? Bundle.main.url(forResource: name + "_opacity", withExtension: "png", subdirectory: "IllustrationAtlases")
+        if let url, let mask = UIImage(contentsOfFile: url.path)?.cgImage { return mask }
+        return SceneFactory.opacityMask(of: image)
     }
 
     private static func mesh(_ buffer: IllustrationMesh) throws -> MeshResource {

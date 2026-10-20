@@ -13,6 +13,7 @@ struct IllustrationFace: Decodable {
     var hiddenByPhoto: Bool
     var texture: String?
     var textureVertices: [[Float]]?
+    var textureRegion: [Float]? = nil
 }
 
 struct IllustrationMesh {
@@ -25,10 +26,10 @@ struct IllustrationMesh {
     var triangles: [UInt32] = []
     var uv: [SIMD2<Float>] = []
 
-    static func build(_ faces: [IllustrationFace]) -> [IllustrationMesh] {
+    static func build(_ faces: [IllustrationFace], usesArtwork: Bool = true) -> [IllustrationMesh] {
         var batches: [String: IllustrationMesh] = [:]
         for (layer, face) in faces.enumerated() {
-            let textured = face.texture != nil && face.textureVertices?.count == 4
+            let textured = usesArtwork && face.texture != nil && face.textureVertices?.count == 4
             let points = (textured ? face.textureVertices! : face.vertices).map { SIMD3<Float>($0[0], $0[1], $0[2]) }
             guard points.count >= 2 else { continue }
             var normal = SIMD3<Float>(1, 0, 1)
@@ -49,7 +50,10 @@ struct IllustrationMesh {
                 if textured {
                     // SVG의 첫 꼭짓점은 이미지 왼쪽 위다. RealityKit의 이미지
                     // 텍스처는 V=1이 위쪽이므로 뒤집어 연결해야 면의 모양이 맞는다.
-                    batch.uv += [[0, 1], [1, 1], [1, 0], [0, 0]]
+                    let region = face.textureRegion ?? [0, 0, 1, 1]
+                    let left = region[0], right = left + region[2]
+                    let top = 1 - region[1], bottom = top - region[3]
+                    batch.uv += [[left, top], [right, top], [right, bottom], [left, bottom]]
                 } else {
                     let axes: (Int, Int) = abs(normal.y) > 0.5 ? (0, 2) : abs(normal.x) > abs(normal.z) ? (2, 1) : (0, 1)
                     let minU = points.map { $0[axes.0] }.min() ?? 0
