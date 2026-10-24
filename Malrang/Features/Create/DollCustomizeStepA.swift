@@ -119,7 +119,7 @@ struct DollCustomizeStepA: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxHeight: .infinity, alignment: .top)
-            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()), showsPhoto: draft.finalCutout != nil, faceScale: draft.faceScale)
+            DollArtwork(shape: draft.shape, cutout: Image(uiImage: draft.finalCutout ?? UIImage()), faceScale: draft.faceScale)
                 .padding(.horizontal, Spacing.xl)
                 .padding(.top, Spacing.m)
                 .padding(.bottom, 56)

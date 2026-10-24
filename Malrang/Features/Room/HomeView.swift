@@ -23,7 +23,6 @@ struct HomeView: View {
     @State private var placementAddedID: UUID?
     @State private var isPlacementSaveFailed = false
     @AppStorage("hapticOn") private var hapticOn = true
-    @AppStorage("designVariant") private var variant = DesignVariant.a
     @State private var feelCount = 0
     @State private var hold: RoomSceneView.Hold?
     @State private var toast: Toast?
@@ -42,7 +41,6 @@ struct HomeView: View {
             return state
         }
     }
-    private var isA: Bool { variant == .a }
     var body: some View {
         NavigationStack {
             // 3D 화면은 상단바·탭바가 사라져도 크기가 변하지 않게 화면 전체에 깐다.
@@ -68,7 +66,7 @@ struct HomeView: View {
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
                             onFeel: { feelCount += 1 },
                             isTransparent: true,
-                            illustrationTargetY: isA ? 0.84 : 0.7
+                            illustrationTargetY: 0.84
                         )
                         .renderedOnlyWhileVisible(background: .clear)
                     }
@@ -91,7 +89,7 @@ struct HomeView: View {
             .onChange(of: appState.tab) { closeHomeMenu() }
             .onChange(of: placementStart != nil) { closeHomeMenu() }
             .onDisappear { isHomeMenuOpen = false }
-            .background { if isA { GridPaper() } else { BBackground(grid: true) } }
+            .background { GridPaper() }
             .navigationTitle("내 방")
             .toolbar { toolbar }
             .toolbar(.hidden, for: .navigationBar)
@@ -145,31 +143,16 @@ struct HomeView: View {
 
     @ViewBuilder
     private var topOverlay: some View {
-        if isA {
-            ZStack(alignment: .top) {
-                Image("a_awning")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .ignoresSafeArea(edges: .top)
-                    .allowsHitTesting(false)
-                if placementStart == nil { headerA }
-                topMessage
-                    .padding(.top, placementStart == nil ? Spacing.xl + Spacing.m : 0)
-            }
-        } else {
-            VStack {
-                if placementStart == nil {
-                    HStack {
-                        Text("my room").origin(32, relativeTo: .largeTitle).foregroundStyle(Color.b.brown)
-                        Spacer()
-                        NavigationLink { NotificationsView() } label: {
-                            Image("b_screen0_img").resizable().frame(width: 44, height: 44)
-                        }.accessibilityLabel("알림함")
-                    }.padding(.horizontal, Spacing.l)
-                }
-                if placementStart != nil || toast != nil { topMessage }
-            }.padding(.top, Spacing.xs)
+        ZStack(alignment: .top) {
+            Image("a_awning")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
+            if placementStart == nil { headerA }
+            topMessage
+                .padding(.top, placementStart == nil ? Spacing.xl + Spacing.m : 0)
         }
     }
 
@@ -260,19 +243,8 @@ struct HomeView: View {
         if placementStart != nil {
             CancelConfirmButtons(onCancel: cancelPlacement, onConfirm: finishPlacement)
                 .padding(Spacing.m)
-        } else if isA {
-            bottomBarA
         } else {
-            bottomBarB
-        }
-    }
-
-    private var bottomBarB: some View {
-        VStack(spacing: Spacing.l) {
-            homeMenuButton
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.horizontal, Spacing.l)
-            BTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
+            bottomBarA
         }
     }
 
@@ -292,21 +264,9 @@ struct HomeView: View {
                 isHomeMenuOpen.toggle()
             }
         } label: {
-            if isA {
-                Image("a_fab").resizable().frame(width: 65, height: 65)
-            } else {
-                Image("b_screen0_imgIcon").resizable().frame(width: 36, height: 36)
-                    .frame(width: 76, height: 76)
-                    .background(BStyle.orange, in: Circle())
-                    .overlay(Image("b_screen0_imgEllipse2086").resizable().scaledToFit().blendMode(.softLight))
-                    .overlay(Image("b_screen0_imgEllipse2087").resizable().scaledToFit().blendMode(.softLight))
-                    .overlay(alignment: .topLeading) {
-                        Image("b_screen0_imgEllipse2088").resizable().frame(width: 40, height: 40)
-                    }
-                    .clipShape(Circle())
-            }
+            Image("a_fab").resizable().frame(width: 65, height: 65)
         }
-        .buttonGloss(radius: 38)
+        .buttonStyle(.plain)
         .accessibilityLabel(isHomeMenuOpen ? "홈 메뉴 닫기" : "홈 메뉴 열기")
         .accessibilityValue(isHomeMenuOpen ? "펼쳐짐" : "접힘")
         .overlay(alignment: .bottomTrailing) {
@@ -317,7 +277,7 @@ struct HomeView: View {
                     homeMenuAction("인형 만들기", symbol: "teddybear") { isCreating = true }
                 }
                 .fixedSize()
-                .padding(.bottom, (isA ? 65 : 76) + Spacing.s)
+                .padding(.bottom, 65 + Spacing.s)
                 .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
             }
         }
@@ -334,15 +294,11 @@ struct HomeView: View {
                 .padding(.horizontal, Spacing.m)
                 .frame(minHeight: 48)
                 .background {
-                    if isA {
-                        ASketchSurface(radius: 24)
-                    } else {
-                        BButtonSurface(primary: false, radius: Radius.large)
-                    }
+                    ASketchSurface(radius: 24)
                 }
                 .shadow(color: Color.app.ink.opacity(0.12), radius: Spacing.xs, y: Spacing.xxs)
         }
-        .buttonGloss(radius: Radius.large)
+        .buttonStyle(.plain)
     }
 
     private func closeHomeMenu() {

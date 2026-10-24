@@ -4,16 +4,10 @@ import SwiftUI
 struct DollCustomizeStep: View {
     @Bindable var draft: DollDraft
     let onNext: () -> Void
-    @AppStorage("designVariant") private var variant = DesignVariant.a
 
     var body: some View {
-        if variant == .a {
-            DollCustomizeStepA(draft: draft, onNext: onNext)
-        } else {
-            DollCustomizeStepB(draft: draft, onNext: onNext)
-        }
+        DollCustomizeStepA(draft: draft, onNext: onNext)
     }
-
 }
 
 struct FaceSizeControl: View {

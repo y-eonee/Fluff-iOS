@@ -1,68 +1,25 @@
 import SwiftUI
 
-private struct WhiteDollButtonsKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-extension EnvironmentValues {
-    var whiteDollButtons: Bool {
-        get { self[WhiteDollButtonsKey.self] }
-        set { self[WhiteDollButtonsKey.self] = newValue }
-    }
-}
-
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.whiteDollButtons) private var whiteDollButtons
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .appFont(.headline)
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background {
-                if DesignVariant.current == .b && whiteDollButtons { RoundedRectangle(cornerRadius: Radius.large).fill(.white) }
-                else if DesignVariant.current == .b { BButtonSurface(radius: Radius.large) }
-                else { ASketchSurface(fill: Color.app.accent, radius: Radius.large) }
-            }
-            .overlay {
-                if DesignVariant.current == .b && whiteDollButtons {
-                    RoundedRectangle(cornerRadius: Radius.large).stroke(Color.app.ink.opacity(0.15))
-                }
-                if DesignVariant.current == .b && !whiteDollButtons {
-                    RoundedRectangle(cornerRadius: Radius.large)
-                        .fill(LinearGradient(colors: [.white.opacity(0.45), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .allowsHitTesting(false)
-                }
-            }
+            .background { ASketchSurface(fill: Color.app.accent, radius: Radius.large) }
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
-    @Environment(\.whiteDollButtons) private var whiteDollButtons
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .appFont(.headline)
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background {
-                if DesignVariant.current == .b && whiteDollButtons { RoundedRectangle(cornerRadius: Radius.large).fill(.white) }
-                else if DesignVariant.current == .b { BButtonSurface(primary: false, radius: Radius.large) }
-                else { ASketchSurface(fill: Color.app.surface, radius: Radius.large) }
-            }
-            .overlay {
-                if DesignVariant.current == .b {
-                    RoundedRectangle(cornerRadius: Radius.large, style: .continuous).stroke(Color.app.ink.opacity(0.15))
-                }
-            }
-            .overlay {
-                if DesignVariant.current == .b && !whiteDollButtons {
-                    RoundedRectangle(cornerRadius: Radius.large)
-                        .fill(LinearGradient(colors: [.white.opacity(0.5), .clear], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .allowsHitTesting(false)
-                }
-            }
+            .background { ASketchSurface(fill: Color.app.surface, radius: Radius.large) }
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }
@@ -93,7 +50,6 @@ struct CancelConfirmButtons: View {
 
 /// 화면 위에 띄우는 동그란 버튼. 아이콘 아래에 글자를 세로로 둔다. 주요 버튼은 화면에 하나만 쓴다.
 struct FloatingCircleButton: View {
-    @Environment(\.whiteDollButtons) private var whiteDollButtons
     let title: String
     let symbol: String
     var isPrimary = false
@@ -113,10 +69,10 @@ struct FloatingCircleButton: View {
             }
             .foregroundStyle(Color.app.ink)
             .frame(width: 76, height: 76)
-            .background(isPrimary && !(DesignVariant.current == .b && whiteDollButtons) ? Color.app.accent : Color.app.surface, in: Circle())
+            .background(isPrimary ? Color.app.accent : Color.app.surface, in: Circle())
             .overlay(Circle().stroke(Color.app.ink.opacity(isPrimary ? 0 : 0.15)))
         }
-        .buttonGloss(radius: Radius.small)
+        .buttonStyle(.plain)
     }
 }
 
@@ -166,7 +122,7 @@ struct Chip: View {
             .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
                 .stroke(isSelected ? Color.app.ink : Color.app.ink.opacity(0.15)))
         }
-        .buttonGloss(radius: Radius.small)
+        .buttonStyle(.plain)
     }
 }
 

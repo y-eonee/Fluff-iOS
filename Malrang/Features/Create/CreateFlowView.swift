@@ -9,15 +9,11 @@ final class DollDraft {
     var cutout: UIImage?
     /// 지우기·복원으로 다듬은 결과
     var editedCutout: UIImage?
-    var shape = DesignVariant.current == .b ? DollShape.bear : DollShape.pillow
+    var shape = DollShape.pillow
     var filling = Filling.fluffy
     /// 비워 두면 플레이스홀더인 "귀염둥이"가 이름이 된다.
     var name = ""
     var faceScale: CGFloat = 1
-    var showsFace = true
-    var showsPhoto: Bool {
-        finalCutout != nil && (DesignVariant.current == .a || shape == .pillow || showsFace)
-    }
     /// 확대해서 보여준 부분(사진 크기를 1로 본 비율). 인형에는 이 부분만 크게 들어간다.
     var cropRect: CGRect?
 
@@ -49,11 +45,7 @@ struct CreateFlowView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            PhotoPickStep(draft: draft, onPreset: {
-                draft.showsFace = false
-                draft.shape = .bear
-                path.append(.customize)
-            }) { path.append(.cutout) }
+            PhotoPickStep(draft: draft) { path.append(.cutout) }
                 .toolbar {
                     Button("닫기", systemImage: "xmark") { dismiss() }
                 }

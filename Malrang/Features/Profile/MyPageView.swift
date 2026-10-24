@@ -12,7 +12,6 @@ struct MyPageView: View {
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("soundOn") private var soundOn = true
     @AppStorage("notificationsOn") private var notificationsOn = true
-    @AppStorage("designVariant") private var variant = DesignVariant.a
     @Environment(\.openURL) private var openURL
     @State private var isChoosingVisibility = false
     @State private var isConfirmingLogout = false
@@ -37,17 +36,6 @@ struct MyPageView: View {
                         }
                     }
                     Toggle("친구 요청 받기", isOn: $acceptsRequests).frame(minHeight: 52)
-                }
-                section("디자인 시안") {
-                    Picker("디자인 시안", selection: $variant) {
-                        Text("시안 A").tag(DesignVariant.a)
-                        Text("시안 B").tag(DesignVariant.b)
-                    }
-                    .pickerStyle(.segmented)
-                    Text("시안 A는 손그림, 시안 B는 따뜻한 입체 스타일이에요. 배치와 꾸미기 기능은 같아요")
-                        .appFont(.footnote)
-                        .foregroundStyle(Color.app.inkSecondary)
-                        .padding(.top, Spacing.xs)
                 }
                 section("앱 설정") {
                     Toggle("햅틱(진동)", isOn: $hapticOn).frame(minHeight: 52)

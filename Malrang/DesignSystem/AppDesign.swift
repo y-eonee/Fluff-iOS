@@ -1,17 +1,6 @@
 import CoreText
 import SwiftUI
 
-/// 테스터가 마이페이지에서 고르는 디자인 시안. 시안 A는 피그마 1안이고, 시안 B는 따뜻한 원목과 부드러운 입체 스타일이다.
-/// 시안이 다른 화면은 내 방, 솜뭉치 만들기(속재료·모양 고르기), 방 꾸미기 세 개다.
-enum DesignVariant: String {
-    case a, b
-
-    /// 마이페이지에서 고른 시안. 색과 글꼴 토큰이 이 값을 읽는다.
-    static var current: DesignVariant {
-        DesignVariant(rawValue: UserDefaults.standard.string(forKey: "designVariant") ?? "") ?? .a
-    }
-}
-
 extension Color {
     /// 시안 A(피그마 1안)의 색. 손그림 느낌의 갈색 선과 크림색 종이 바탕을 쓴다.
     enum a {
@@ -40,7 +29,7 @@ extension Color {
 }
 
 extension Font {
-    /// Resources의 Origin과 Pretendard 글꼴을 등록한다.
+    /// Resources의 NotCliche와 Pretendard 글꼴을 등록한다.
     static func registerCustomFonts() {
         for url in Bundle.main.urls(forResourcesWithExtension: "otf", subdirectory: nil) ?? [] {
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
@@ -53,16 +42,10 @@ enum Pretendard: String {
 }
 
 extension View {
-    /// A·B 공통 본문 글꼴(Pretendard).
+    /// 공통 본문 글꼴(Pretendard).
     func pretendard(_ weight: Pretendard, _ size: CGFloat, tracking: CGFloat = 0) -> some View {
         font(.custom("Pretendard-\(weight.rawValue)", size: size, relativeTo: .body))
             .tracking(tracking)
-            .fontDesign(nil)
-    }
-
-    /// 영문 제목은 첨부된 Origin Display를 쓴다.
-    func origin(_ size: CGFloat, relativeTo style: Font.TextStyle) -> some View {
-        font(.custom("Origin-RegularDisplay", size: size, relativeTo: style))
             .fontDesign(nil)
     }
 
@@ -186,14 +169,14 @@ struct NotebookTabBar: View {
 }
 
 
-/// 화면 바탕. 시안 A는 모눈종이, 시안 B는 흰색에서 크림색으로 이어지는 바탕이다.
+/// 모눈종이 화면 바탕.
 struct AppBackground: View {
     var body: some View {
-        if DesignVariant.current == .a { GridPaper() } else { BBackground() }
+        GridPaper()
     }
 }
 
-/// 두 시안에서 동일한 Pretendard 본문을 쓴다.
+/// 공통 Pretendard 본문을 쓴다.
 struct AppFont: ViewModifier {
     let style: Font.TextStyle
     var weight: Pretendard?
@@ -248,17 +231,12 @@ extension View {
 
 private struct NotebookTabBarModifier: ViewModifier {
     @Environment(AppState.self) private var appState
-    @AppStorage("designVariant") private var variant = DesignVariant.a
 
     func body(content: Content) -> some View {
         content
             .toolbar(.hidden, for: .tabBar)
             .safeAreaInset(edge: .bottom) {
-                if variant == .a {
-                    NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
-                } else {
-                    BTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
-                }
+                NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
             }
     }
 }

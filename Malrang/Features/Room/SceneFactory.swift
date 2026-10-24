@@ -12,7 +12,7 @@ enum SceneFactory {
 
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
     static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0) async -> Entity {
-        if DesignVariant.current == .a && models[item.kind] == nil {
+        if models[item.kind] == nil {
             if let url = Bundle.main.url(forResource: item.kind.assetName, withExtension: "usdz") {
                 models[item.kind] = .some(try? await Entity(contentsOf: url))
             } else {
@@ -20,9 +20,7 @@ enum SceneFactory {
             }
         }
         let entity: Entity
-        if DesignVariant.current == .b {
-            entity = await FurnitureSceneB.make(item, photoMaterial: await material(item), elevation: elevation)
-        } else if let model = models[item.kind] ?? nil {
+        if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
         } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
             entity = illustration
@@ -57,7 +55,7 @@ enum SceneFactory {
         } else if item.kind == .floor {
             shapes = [ShapeResource.generateBox(size: [2, 0.145, 2]).offsetBy(translation: [0, -0.0725, 0])]
         } else {
-            let size = DesignVariant.current == .b ? FurnitureModelB.visualSize(for: item.kind) : item.kind.size
+            let size = item.kind.size
             shapes = [ShapeResource.generateBox(size: size).offsetBy(translation: [0, size.y / 2, 0])]
         }
         entity.components.set(CollisionComponent(shapes: shapes))
@@ -168,7 +166,6 @@ enum SceneFactory {
 
     /// 가구와 같은 원본 질감 필터로 그린 메모보드. 탭하면 방명록이 열린다.
     static func memoBoard() async -> Entity {
-        if DesignVariant.current == .b { return FurnitureSceneB.board() }
         let board = Entity()
         board.name = "board"
         board.position = [-0.977, 1.05, 0.74]
@@ -228,9 +225,8 @@ enum SceneFactory {
 
     /// 꾸미기 화면에서 고른 가구를 감싸는 반투명 테두리 상자
     static func selectionBox(_ item: RoomItemState) -> Entity {
-        let isB = DesignVariant.current == .b
-        let material = UnlitMaterial(color: Palette.uiColor(isB ? "#B8553F" : "#F48FA8"), applyPostProcessToneMap: false)
-        let visualSize = isB ? FurnitureModelB.visualSize(for: item.kind) : item.kind.size
+        let material = UnlitMaterial(color: Palette.uiColor("#F48FA8"), applyPostProcessToneMap: false)
+        let visualSize = item.kind.size
         var size = visualSize
         if item.kind.hangsOnWall {
             size = [abs(cos(item.yaw)) * size.x + abs(sin(item.yaw)) * size.y,
@@ -278,7 +274,7 @@ enum SceneFactory {
 
             // 면의 가운데를 기준으로, 사진이 보이는 비율을 정한다. 90도로 돌리면 사진의 가로세로가 바뀐다.
             let turned = item.photoTurns % 2 == 1
-            let aspect = DesignVariant.current == .b ? FurnitureModelB.photoAspect(for: item.kind) : item.kind.photoAspect
+            let aspect = item.kind.photoAspect
             let ratio = Float(cgImage.width) / Float(cgImage.height) / aspect
             let shown = turned ? 1 / ratio : ratio
             let isFit = item.photoFit == 1

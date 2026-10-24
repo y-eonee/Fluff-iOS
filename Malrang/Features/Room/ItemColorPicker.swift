@@ -5,7 +5,7 @@ import SwiftUI
 struct ItemColorPicker: UIViewControllerRepresentable {
     let item: RoomItem
     private var selectedColor: UIColor {
-        Palette.uiColor(item.colorName ?? (DesignVariant.current == .b ? FurnitureModelB.defaultColor(for: item.kind) : item.kind.defaultColorName))
+        Palette.uiColor(item.colorName ?? item.kind.defaultColorName)
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(item: item) }

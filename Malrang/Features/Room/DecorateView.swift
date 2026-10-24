@@ -7,7 +7,6 @@ struct DecorateView: View {
     @Environment(\.dismiss) var dismiss
     @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
-    @AppStorage("designVariant") var variant = DesignVariant.a
     @State var category = FurnitureCategory.furniture
     @State var dollPoint: CGPoint?
     @State var undoStack: [[RoomItemState]] = []
@@ -32,21 +31,15 @@ struct DecorateView: View {
     }
 
     var body: some View {
-        Group {
-            if variant == .a { contentA } else { contentB }
-        }
-        .background { if variant == .a { GridPaper() } else { BBackground(grid: true) } }
+        contentA
+        .background { GridPaper() }
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            if variant == .a {
-                toolbarA
-            } else {
-                toolbarB
-            }
+            toolbarA
         }
         .onChange(of: items.map(\.state)) { old, _ in
             if isApplyingHistory {

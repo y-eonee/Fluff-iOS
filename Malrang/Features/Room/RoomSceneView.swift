@@ -95,7 +95,6 @@ struct RoomSceneView: UIViewRepresentable {
         private let root = AnchorEntity(world: .zero)
         private let camera = PerspectiveCamera()
         private let light = DirectionalLight()
-        private let fillLight = SpotLight()
         private var latest: SceneState?
         private var rendered: SceneState?
         private var displayed: SceneState?
@@ -138,19 +137,7 @@ struct RoomSceneView: UIViewRepresentable {
             light.light.intensity = 2500
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 6, depthBias: 2)
             light.look(at: .zero, from: [1.5, 3, 2], relativeTo: nil)
-            if DesignVariant.current == .b {
-                light.light.intensity = 1800
-                light.light.color = Palette.uiColor("#FFF5E8")
-                light.look(at: [0, 0.5, 0], from: [3, 5, 2], relativeTo: nil)
-                fillLight.light.color = Palette.uiColor("#FFFBF1")
-                fillLight.light.intensity = 6500
-                fillLight.light.innerAngleInDegrees = 65
-                fillLight.light.outerAngleInDegrees = 105
-                fillLight.light.attenuationRadius = 8
-                fillLight.shadow = nil
-                fillLight.look(at: [0, 0.4, 0], from: [1.2, 2.2, 1.8], relativeTo: nil)
-                Task { await FurnitureSceneB.light(view) }
-            }
+
             // 화면 크기가 정해지거나 바뀌면 카메라 거리를 다시 맞춘다.
             updateSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -240,7 +227,7 @@ struct RoomSceneView: UIViewRepresentable {
                 (item.x, item.z) = (0, 0)
                 if !item.kind.hangsOnWall { item.yaw = 0 }
                 content.addChild(await SceneFactory.furniture(item, onFloor: true))
-                let size = DesignVariant.current == .b ? FurnitureModelB.visualSize(for: item.kind) : item.kind.size
+                let size = item.kind.size
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
             for item in state.items {
@@ -268,7 +255,7 @@ struct RoomSceneView: UIViewRepresentable {
             root.addChild(content)
             root.addChild(camera)
             root.addChild(light)
-            if DesignVariant.current == .b { root.addChild(fillLight) }
+
             displayed = state
             configureAccessibility(content)
         }
@@ -387,12 +374,8 @@ struct RoomSceneView: UIViewRepresentable {
             camera.camera.near = max(0.01, distance - 3)
             camera.camera.far = distance + 3
             // 좁은 화각에서는 카메라가 멀리 물러난다. 그림자 범위도 실제 방까지 닿아야 한다.
-            if DesignVariant.current == .b {
-                // 방 크기에 맞춰 그림자 해상도를 확보해 가구 아래의 명암을 살린다.
-                light.shadow = .init(shadowProjection: .fixed(zNear: 0.1, zFar: 12, orthographicScale: 3.5), depthBias: 2)
-            } else {
-                light.shadow = DirectionalLightComponent.Shadow(maximumDistance: distance + 4, depthBias: 1)
-            }
+            light.shadow = DirectionalLightComponent.Shadow(maximumDistance: distance + 4, depthBias: 1)
+
             camera.look(at: target, from: target + cameraDirection * distance, relativeTo: nil)
         }
 

@@ -5,7 +5,6 @@ import SwiftUI
 struct MalrangApp: App {
     @State private var friendStore = FriendStore(api: MockFriendAPI())
     @State private var multiRoom = MultiRoom()
-    @AppStorage("designVariant") private var variant = DesignVariant.a
     @State private var isShowingSplash = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -36,7 +35,6 @@ struct MalrangApp: App {
             .environment(multiRoom)
             .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
             .tint(Color.app.ink)
-            .id(variant)
             .preferredColorScheme(.light)
         }
         .modelContainer(for: [Doll.self, RoomItem.self, DecorPhoto.self])

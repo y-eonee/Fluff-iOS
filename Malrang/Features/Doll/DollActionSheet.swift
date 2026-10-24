@@ -51,7 +51,7 @@ struct DollActionSheet: View {
                 Text("방에서도 사라지고 되돌릴 수 없어요")
             }
         }
-        .environment(\.whiteDollButtons, true)
+
     }
 
     private var content: some View {
