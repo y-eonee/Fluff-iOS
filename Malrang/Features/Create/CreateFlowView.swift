@@ -14,8 +14,10 @@ final class DollDraft {
     var usesPresetPhoto = false
     var snapshot: UIImage?
     var filling = Filling.fluffy
-    /// 비워 두면 플레이스홀더인 "귀염둥이"가 이름이 된다.
+    /// 비워 두면 플레이스홀더인 "솜뭉치"가 이름이 된다.
     var name = ""
+    var customScale: CGFloat = 1
+    var customOffset = CGSize.zero
     var faceScale: CGFloat = 1
     var faceOffsetX: Float = 0
     var faceOffsetY: Float = 0
@@ -33,30 +35,61 @@ final class DollDraft {
                           width: cropRect.width * width, height: cropRect.height * height).integral
         return cgImage.cropping(to: rect).map { UIImage(cgImage: $0) } ?? image
     }
-    var displayName: String { name.isEmpty ? "귀염둥이" : name }
+    @ObservationIgnored private var cachedPhoto: UIImage?
+    @ObservationIgnored private var cachedCrop: CGRect?
+    @ObservationIgnored private var cachedPhotoData: Data?
+
+    var presetPhotoData: Data? {
+        let source = editable ?? photo
+        guard let source else { return nil }
+        if cachedPhoto !== source || cachedCrop != cropRect {
+            cachedPhoto = source
+            cachedCrop = cropRect
+            cachedPhotoData = (finalCutout ?? source).pngData()
+        }
+        return cachedPhotoData
+    }
+
+    var displayName: String { name.isEmpty ? "솜뭉치" : name }
 }
 
 enum CreateStep: Hashable {
-    case cutout, ready, customize, making, done
+    case method, cutout, ready, customize, making
+    case done(Doll)
 }
 
-/// 갤러리 → 누끼 편집 → 인형 꾸미기 → 완성
+/// 갤러리 → 이미지 투명화 → 만들기 방식 → 꾸미기 → 완성
 struct CreateFlowView: View {
     let onPlace: (Doll) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var draft = DollDraft()
     @State private var path: [CreateStep] = []
-    @State private var createdDoll: Doll?
+
+    init(onPlace: @escaping (Doll) -> Void) { self.onPlace = onPlace }
+
+#if DEBUG
+    init(previewDraft: DollDraft, startAtMaking: Bool = false, onPlace: @escaping (Doll) -> Void) {
+        self.onPlace = onPlace
+        _draft = State(initialValue: previewDraft)
+        _path = State(initialValue: [startAtMaking ? .making : .method])
+    }
+#endif
 
     var body: some View {
         NavigationStack(path: $path) {
             PhotoPickStep(draft: draft) { path.append(.cutout) }
+                .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 0) }
                 .toolbar {
                     Button("닫기", systemImage: "xmark") { dismiss() }
                 }
                 .navigationDestination(for: CreateStep.self) { step in
                     destination(step)
                         .background { AppBackground() }
+                        .safeAreaInset(edge: .top, spacing: 0) {
+                            if step == .cutout || step == .ready || step == .method {
+                                CreationProgress(step: step == .method ? 2 : 1)
+                            }
+                        }
                 }
         }
     }
@@ -64,30 +97,38 @@ struct CreateFlowView: View {
     @ViewBuilder
     private func destination(_ step: CreateStep) -> some View {
         switch step {
+        case .method:
+            CreateMethodStep(draft: draft, onPreset: {
+                if draft.shape == .pillow { draft.shape = .cat }
+                draft.usesPresetPhoto = true
+                draft.snapshot = nil
+                path.append(.customize)
+            }, onCutout: {
+                draft.shape = .pillow
+                draft.usesPresetPhoto = false
+                draft.snapshot = nil
+                path.append(.customize)
+            })
         case .cutout:
-            CutoutEditStep(draft: draft, onReselect: { path.removeLast() }, onNext: { path.append(.ready) })
+            CutoutEditStep(draft: draft, onReselect: { path = [] }, onNext: { path.append(.ready) })
         case .ready:
-            CutoutReadyStep(draft: draft, onEdit: { path.removeLast() }, onNext: { path.append(.customize) })
+            CutoutReadyStep(draft: draft, onEdit: { path.removeLast() }, onNext: { path.append(.method) })
         case .customize:
             DollCustomizeStep(draft: draft) { path.append(.making) }
         case .making:
             MakingStep(draft: draft, onLeave: { path.removeLast() }) { doll in
-                createdDoll = doll
-                path = [.done]
+                path = [.done(doll)]
             }
-        case .done:
-            if let createdDoll {
-                DoneStep(doll: createdDoll, onRestart: restart) {
-                    onPlace(createdDoll)
-                    dismiss()
-                }
+        case .done(let doll):
+            DoneStep(doll: doll, onRestart: restart) {
+                onPlace(doll)
+                dismiss()
             }
         }
     }
 
     private func restart() {
         draft = DollDraft()
-        createdDoll = nil
         path = []
     }
 }

@@ -26,6 +26,11 @@ final class DesignPreviewData {
                 Text("PHOTO").font(.title.bold())
             }.padding(24).frame(width: 240, height: 300).background(.mint.opacity(0.3)))
             draft.photo = renderer.uiImage
+            if route == "photo-finish" {
+                draft.preset.face = draft.presetPhotoData
+                draft.preset.faceScale = 1.4
+                draft.preset.faceOpeningScale = 0.9
+            }
         }
         for (shape, name) in [(DollShape.cat, "귀염둥이"), (.bear, "몽글이"), (.rabbit, "포근이")] {
             let renderer = ImageRenderer(content: CottonArtwork(shape: shape).frame(width: 240, height: 253))
@@ -50,12 +55,22 @@ struct DesignPreview: View {
     private var draft: DollDraft { fixture.draft }
     var body: some View {
         Group {
-            if route == "model-compare" { PresetComparisonView() }
+            if route == "tabs-ui" { MainTabs() }
+            else if route == "model-compare" { PresetComparisonView() }
             else if route == "model-side" { PresetComparisonView(cameraYaw: .pi / 4) }
+            else if ["create-method", "photo-method"].contains(route) {
+                NavigationStack { CreateMethodStep(draft: draft, onPreset: {}, onCutout: {}).safeAreaInset(edge: .top) { CreationProgress(step: 2) } }
+            }
+            else if route == "photo-finish" { CreateFlowView(previewDraft: draft, startAtMaking: true) { _ in } }
+            else if route == "photo-flow" { CreateFlowView(previewDraft: draft) { _ in } }
             else if route == "create-entry" { CreateFlowView { _ in } }
             else if ["create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
                 NavigationStack { DollCustomizeStepA(draft: draft) {} }
-            } else if route == "decorate" { NavigationStack { DecorateView() } }
+            } else if route == "home-ui" { NavigationStack { HomeView() } }
+            else if route == "decorate" { NavigationStack { DecorateView() } }
+            else if route == "decorate-selected" {
+                NavigationStack { DecorateView(selectedID: (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first { $0.kind == .desk }?.id) }
+            }
             else { FocusFlowView(session: fixture.session, showMain: route == "main", showReward: route == "reward") }
         }.modelContainer(fixture.container).environment(AppState()).environment(MultiRoom()).environment(FriendStore(api: MockFriendAPI()))
     }

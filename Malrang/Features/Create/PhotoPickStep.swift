@@ -45,6 +45,14 @@ struct PhotoPickStep: View {
                 draft.photo = CutoutService.normalized(image)
                 draft.cutout = nil
                 draft.editedCutout = nil
+                draft.cropRect = nil
+                draft.snapshot = nil
+                draft.preset.faceOpeningScale = nil
+                draft.customScale = 1
+                draft.customOffset = .zero
+                draft.faceScale = 1
+                draft.faceOffsetX = 0
+                draft.faceOffsetY = 0
             }
         }
     }

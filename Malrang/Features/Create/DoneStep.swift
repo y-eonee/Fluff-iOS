@@ -11,11 +11,14 @@ struct DoneStep: View {
             Text("\(doll.name.josa("이", "가")) 태어났어요!")
                 .appFont(.title2, .bold)
                 .multilineTextAlignment(.center)
-            Image(uiImage: doll.image)
-                .resizable()
-                .scaledToFit()
-                .frame(maxHeight: .infinity)
-                .accessibilityLabel(doll.name)
+            Group {
+                if let configuration = doll.presetConfiguration {
+                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19)
+                        .renderedOnlyWhileVisible(background: .clear)
+                } else {
+                    Image(uiImage: doll.image).resizable().scaledToFit()
+                }
+            }.frame(maxHeight: .infinity).accessibilityLabel(doll.name)
             HStack(spacing: Spacing.s) {
                 Button("다시 만들기", action: onRestart)
                     .buttonStyle(.secondary)

@@ -7,7 +7,7 @@ struct CutoutReadyStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
-            Text("좋아요!\n이제 인형을 만들러 가요")
+            Text("좋아요!\n이제 만들기 방식을 골라요")
                 .appFont(.title2, .bold)
             Text("투명하게 만든 사진이 인형 원단에 들어가요")
                 .appFont(.body)
@@ -29,7 +29,7 @@ struct CutoutReadyStep: View {
             HStack(spacing: Spacing.s) {
                 Button("다시 편집", action: onEdit)
                     .buttonStyle(.secondary)
-                Button("인형 만들러 가기", action: onNext)
+                Button("방식 선택하기", action: onNext)
                     .buttonStyle(.primary)
             }
         }
