@@ -36,15 +36,58 @@ enum RoomLayout {
         lampSupport(for: item, in: items)?.kind.seatHeight ?? 0
     }
 
+    /// 상판 아래의 빈 공간까지 막지 않도록 실제 가구 부위별로 검사한다.
+    private static func collisionParts(_ kind: FurnitureKind) -> [(size: SIMD3<Float>, center: SIMD3<Float>)] {
+        let s = kind.size
+        switch kind {
+        case .desk:
+            let top = kind.seatHeight ?? 0.47
+            var parts: [(SIMD3<Float>, SIMD3<Float>)] = [([s.x, 0.075, s.z], [0, top - 0.0375, 0])]
+            for x: Float in [-s.x * 0.39, s.x * 0.39] {
+                for z: Float in [-s.z * 0.32, s.z * 0.32] {
+                    parts.append(([0.064, top - 0.06, 0.064], [x, (top - 0.06) / 2, z]))
+                }
+            }
+            return parts
+        case .bed:
+            return [([s.x, 0.39, s.z], [0, 0.195, 0]),
+                    ([s.x, 0.55, 0.10], [0, 0.395, -s.z / 2 + 0.04]),
+                    ([s.x * 0.83, 0.15, 0.26], [0, 0.43, -s.z * 0.30]),
+                    ([s.x * 1.02, 0.10, 0.20], [0, 0.375, -s.z * 0.14])]
+        case .chair:
+            return [([s.x, 0.227, s.z * 0.94], [0, 0.1135, 0]),
+                    ([s.x * 0.95, s.y - 0.227, 0.085], [0, (s.y + 0.227) / 2, -s.z * 0.36])]
+        default:
+            return [(s, [0, s.y / 2, 0])]
+        }
+    }
+
+    private static func collisionBounds(_ item: RoomItemState, in items: [RoomItemState]) -> [(min: SIMD3<Float>, max: SIMD3<Float>)] {
+        collisionParts(item.kind).map { part in
+            let c = cos(item.yaw), s = sin(item.yaw)
+            let half = part.size / 2
+            let extent = SIMD3(abs(c) * half.x + abs(s) * half.z, half.y, abs(s) * half.x + abs(c) * half.z)
+            let center = SIMD3(item.x + c * part.center.x + s * part.center.z,
+                               furnitureHeight(item, in: items) + part.center.y,
+                               item.z - s * part.center.x + c * part.center.z)
+            return (center - extent, center + extent)
+        }
+    }
+
     static func overlaps(_ item: RoomItemState, in items: [RoomItemState]) -> Bool {
         guard item.kind.blocksFloor else { return false }
-        let a = footprint(item)
+        let parts = collisionBounds(item, in: items)
         return items.contains { other in
             guard other.id != item.id, other.kind.blocksFloor else { return false }
             if lampSupport(for: item, in: items)?.id == other.id
                 || lampSupport(for: other, in: items)?.id == item.id { return false }
-            let b = footprint(other)
-            return a.min.x < b.max.x && b.min.x < a.max.x && a.min.y < b.max.y && b.min.y < a.max.y
+            return collisionBounds(other, in: items).contains { b in
+                parts.contains { a in
+                    a.min.x < b.max.x && b.min.x < a.max.x
+                        && a.min.y < b.max.y && b.min.y < a.max.y
+                        && a.min.z < b.max.z && b.min.z < a.max.z
+                }
+            }
         }
     }
 
@@ -59,7 +102,9 @@ enum RoomLayout {
                          abs(sin(yaw)) * kind.size.x + abs(cos(yaw)) * kind.size.z)
         let limit = SIMD2(half - size.x / 2, half - size.y / 2)
         let snapped = (point / grid).rounded(.toNearestOrAwayFromZero) * grid
-        return simd_clamp(snapped, -limit, limit)
+        // 러그는 벽을 넘지 않되, 앞쪽으로 이어지는 열린 바닥까지 놓을 수 있다.
+        let front = kind.category == .rug ? SIMD2<Float>(repeating: 0.3) : .zero
+        return simd_clamp(snapped, -limit, limit + front)
     }
 
     enum Wall {

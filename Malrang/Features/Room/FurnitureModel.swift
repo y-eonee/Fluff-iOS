@@ -52,6 +52,12 @@ enum FurnitureModel {
             }
         }
         switch kind {
+        case .flowerCushion:
+            for i in 0..<5 {
+                let a = Float(i) / 5 * 2 * .pi
+                box([0.11, 0.07, 0.11], [cos(a) * 0.065, 0.04, sin(a) * 0.065], .cream)
+            }
+            box([0.07, 0.08, 0.07], [0, 0.05, 0], .yellow)
         case .wall:
             box([0.04, s.y, s.z], [-1.02, s.y / 2, 0], .main)
             box([s.x, s.y, 0.04], [0, s.y / 2, -1.02], .main)

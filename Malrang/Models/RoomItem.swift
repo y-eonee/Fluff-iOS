@@ -52,19 +52,28 @@ final class RoomItem {
     }
 
     /// 처음 실행할 때 놓이는 기본 방
-    /// 시안 A의 방 일러스트와 같은 자리에 놓는다. 일러스트 바닥의 네 꼭짓점을 방 바닥(-1...1)에 맞춰 잰 값이다.
+    /// 945:2242의 침대 방향, 책상 의자, 앞쪽 라운지 의자를 분리해 배치한다.
     static var starterRoom: [RoomItem] {
-        [
+        let bed = RoomItem(kind: .bed, x: -0.41, z: 0.18)
+        bed.yaw = .pi / 2
+        let chair = RoomItem(kind: .chair, x: 0.49, z: 0.01)
+        chair.yaw = .pi
+        let lounge = RoomItem(kind: .sofa, x: 0.67, z: 0.658)
+        lounge.yaw = 1.3
+        let rug = RoomItem(kind: .rugRound, x: 0.534, z: 0.734)
+        rug.yaw = 0.633
+        return [
             RoomItem(kind: .wall),
             RoomItem(kind: .floor),
-            RoomItem(kind: .bed, x: -0.5996, z: -0.22),
-            RoomItem(kind: .desk, x: 0.4105, z: -0.7995),
-            RoomItem(kind: .chair, x: 0.54, z: 0.0201),
-            RoomItem(kind: .plant, x: -0.8425, z: 0.6975),
-            RoomItem(kind: .rugRound, x: 0.2118, z: 0.2119),
+            bed,
+            RoomItem(kind: .desk, x: 0.345, z: -0.38),
+            chair,
+            lounge,
+            RoomItem(kind: .lamp, x: 0.495, z: -0.30),
+            rug,
             // 오른쪽 노란색 벽: 액자는 안쪽, 선반은 책상 위쪽.
-            RoomItem(kind: .frame, x: -0.5, z: -0.9775),
-            RoomItem(kind: .shelf, x: 0.4, z: -0.919),
+            RoomItem(kind: .frame, x: -0.72, z: -0.9775),
+            RoomItem(kind: .shelf, x: -0.05, z: -0.919),
         ]
     }
 }

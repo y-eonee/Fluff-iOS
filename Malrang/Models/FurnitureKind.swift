@@ -18,7 +18,7 @@ enum FurnitureKind: String, CaseIterable {
     case wall, floor
     case bed, desk, shelf, chair, sofa
     case rugRound, rugSquare
-    case plant, frame, lamp
+    case plant, frame, lamp, flowerCushion
 
     var label: String {
         switch self {
@@ -34,6 +34,7 @@ enum FurnitureKind: String, CaseIterable {
         case .plant: "화분"
         case .frame: "액자"
         case .lamp: "조명"
+        case .flowerCushion: "꽃 쿠션"
         }
     }
 
@@ -43,7 +44,7 @@ enum FurnitureKind: String, CaseIterable {
         case .floor: .flooring
         case .bed, .desk, .shelf, .chair, .sofa: .furniture
         case .rugRound, .rugSquare: .rug
-        case .plant, .frame, .lamp: .decor
+        case .plant, .frame, .lamp, .flowerCushion: .decor
         }
     }
 
@@ -61,6 +62,7 @@ enum FurnitureKind: String, CaseIterable {
         case .plant: "leaf"
         case .frame: "photo.artframe"
         case .lamp: "lamp.floor"
+        case .flowerCushion: "camera.macro"
         }
     }
 
@@ -79,6 +81,7 @@ enum FurnitureKind: String, CaseIterable {
         case .rugRound, .rugSquare: "#F7B9C8"
         case .plant: "#A9D49A"
         case .lamp: "#FFF0B8"
+        case .flowerCushion: "#FFF1D9"
         }
     }
 
@@ -87,16 +90,17 @@ enum FurnitureKind: String, CaseIterable {
         switch self {
         case .wall: [2, 1.55, 2]
         case .floor: [2, 0.145, 2]
-        case .bed: [0.802, 0.577, 0.922]
+        case .bed: [0.98, 0.67, 0.922]
         case .desk: [0.662, 0.705, 0.441]
         case .shelf: [0.602, 0.217, 0.142]
-        case .chair: [0.362, 0.516, 0.362]
-        case .sofa: [0.9, 0.6, 0.4]
-        case .rugRound: [0.801, 0.01, 0.801]
+        case .chair: [0.315, 0.516, 0.315]
+        case .sofa: [0.50, 0.40, 0.48]
+        case .rugRound: [1.32, 0.01, 0.79]
         case .rugSquare: [0.9, 0.011, 0.6]
         case .plant: [0.208, 0.528, 0.208]
-        case .frame: [0.32, 0.351, 0.025]
-        case .lamp: [0.113, 0.268, 0.138]
+        case .frame: [0.32, 0.40, 0.025]
+        case .lamp: [0.16, 0.268, 0.16]
+        case .flowerCushion: [0.25, 0.10, 0.25]
         }
     }
 
@@ -105,20 +109,20 @@ enum FurnitureKind: String, CaseIterable {
         switch self {
         case .wall: size.z / size.y
         case .floor, .desk, .sofa, .rugRound, .rugSquare: size.x / size.z
-        case .bed: 0.44 / 0.922
+        case .bed: size.x / size.z
         case .chair: 1.5
-        case .shelf, .plant, .frame, .lamp: size.x / size.y
+        case .shelf, .plant, .frame, .lamp, .flowerCushion: size.x / size.y
         }
     }
 
     /// 인형을 올려둘 수 있는 윗면 높이. nil이면 올려둘 수 없다.
     var seatHeight: Float? {
         switch self {
-        case .bed: 0.299
-        case .desk: 0.437
+        case .bed: 0.39
+        case .desk: 0.47
         case .shelf: nil
         case .chair: 0.227
-        case .sofa: 0.32
+        case .sofa: 0.16
         case .rugRound, .rugSquare: 0.01
         default: nil
         }
@@ -130,8 +134,8 @@ enum FurnitureKind: String, CaseIterable {
     var hangsOnWall: Bool { self == .frame || self == .shelf }
 
     /// 벽에 걸릴 때 아래쪽 끝의 높이
-    var hangingHeight: Float { self == .shelf ? 1.038 : 0.866 }
+    var hangingHeight: Float { self == .shelf ? 0.49 : 0.654 }
 
     /// 러그는 다른 가구와 겹쳐 놓을 수 있다.
-    var blocksFloor: Bool { isMovable && category != .rug && !hangsOnWall }
+    var blocksFloor: Bool { isMovable && self != .flowerCushion && category != .rug && !hangsOnWall }
 }
