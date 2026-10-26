@@ -32,8 +32,8 @@ struct FriendsView: View {
                 FloatingCircleButton(title: "친구 추가", symbol: "person.badge.plus", isPrimary: true) { isAdding = true }
                 .padding(Spacing.m)
             }
-            .navigationTitle("친구")
-            .notebookTabBar()
+            .cozyPageTitle("friends")
+            .cozyTabBar()
             .toolbar {
                 NotificationsButton()
             }
@@ -63,6 +63,7 @@ struct FriendsView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(Spacing.m)
+                    .padding(.bottom, 92)
                 }
             }
         }
@@ -83,7 +84,7 @@ struct FriendsView: View {
         }
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.s)
-        .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .cardStyle()
         .accessibilityElement(children: .combine)
     }
 

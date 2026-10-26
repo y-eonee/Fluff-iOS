@@ -2,6 +2,8 @@ import SwiftUI
 
 /// Figma Cotton tokens, shared by all focus states.
 enum FocusStyle {
+    static let giftTop = Color(uiColor: Palette.uiColor("#F0E7EF"))
+    static let giftBottom = Color(uiColor: Palette.uiColor("#FBF5E8"))
     static let canvas = Color(uiColor: Palette.uiColor("#FBF9F5"))
     static let paper = Color(uiColor: Palette.uiColor("#FFFCF8"))
     static let ink = Color(uiColor: Palette.uiColor("#674D42"))
@@ -62,12 +64,24 @@ struct CottonArtwork: View {
 }
 
 enum CreationStyle {
-    static let blue = Color(uiColor: Palette.uiColor("#CFE7EE"))
-    static let yellow = Color(uiColor: Palette.uiColor("#FFF0BE"))
+    static let value = Color(uiColor: Palette.uiColor("#5A89A8"))
+    static let blue = Color(uiColor: Palette.uiColor("#CFE8F2"))
+    static let yellow = Color(uiColor: Palette.uiColor("#FCEBC0"))
 }
 extension View {
     func creationOutline(fill: Color, radius: CGFloat) -> some View {
         background(fill, in: RoundedRectangle(cornerRadius: radius))
             .overlay(RoundedRectangle(cornerRadius: radius).stroke(Color.a.line, lineWidth: 1))
+    }
+}
+
+struct CreationPrimaryButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.pretendard(.bold, 20, tracking: -0.6).foregroundStyle(Color.a.cream)
+            .frame(maxWidth: .infinity, minHeight: 60)
+            .background(Color.a.brown, in: Capsule())
+            .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 2).blur(radius: 2))
+            .shadow(color: .black.opacity(0.20), radius: 2, y: 4)
+            .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

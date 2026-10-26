@@ -59,13 +59,13 @@ struct MyPageView: View {
                 .foregroundStyle(Color.app.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: 44)
             }
-            .tint(Color.app.accent)
+            .tint(Color.a.brown)
             .foregroundStyle(Color.app.ink)
             .padding(Spacing.m)
         }
         .background { AppBackground() }
-        .navigationTitle("마이페이지")
-        .notebookTabBar()
+        .cozyPageTitle("my page")
+        .cozyTabBar()
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if friendCode.isEmpty {
@@ -92,7 +92,7 @@ struct MyPageView: View {
                 HStack(spacing: Spacing.s) {
                     ProfileAvatar(data: avatarData, size: 64)
                     VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        Text(nickname).appFont(.headline)
+                        Text(nickname.isEmpty ? "나의 솜뭉치 방" : nickname).appFont(.headline)
                         Text("프로필 편집 ›").appFont(.footnote).foregroundStyle(Color.app.inkSecondary)
                     }
                     Spacer()
@@ -129,7 +129,7 @@ struct MyPageView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title).appFont(.headline).padding(.bottom, Spacing.xs)
             content()
-        }
+        }.padding(Spacing.m).cardStyle()
     }
 
     private func row(_ title: String, @ViewBuilder trailing: () -> some View) -> some View {

@@ -21,11 +21,12 @@ struct DollListView: View {
                     }
                 }
                 .padding(Spacing.m)
+                .padding(.bottom, 92)
             }
             .overlay {
                 if dolls.isEmpty {
                     NoticeCard(symbol: "teddybear", title: "아직 인형이 없어요",
-                               message: "아래 + 버튼으로 갤러리 속 사진을 인형으로 만들어 보세요")
+                               message: "인형 만들기를 눌러 사진 속 친구를 만나 보세요")
                 }
             }
             .overlay(alignment: .bottomTrailing) {
@@ -33,8 +34,8 @@ struct DollListView: View {
                     .padding(Spacing.m)
             }
             .background { AppBackground() }
-            .navigationTitle("인형 목록")
-            .notebookTabBar()
+            .cozyPageTitle("my fluff")
+            .cozyTabBar()
             .toolbar { NotificationsButton() }
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)

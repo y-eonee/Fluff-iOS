@@ -54,6 +54,7 @@ struct CozyHomeAction: View {
 
 struct CozyHomeTabs: View {
     @Binding var selection: AppTab
+    var onPaper = false
 
     private let tabs: [(AppTab, String, String)] = [
         (.dolls, "솜뭉치들", "cozy_dolls"), (.home, "내 방", "cozy_home"),
@@ -72,7 +73,7 @@ struct CozyHomeTabs: View {
                             .pretendard(selected ? .bold : .regular, CozyHomeStyle.tabLabel,
                                         tracking: CozyHomeStyle.tabTracking)
                             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(onPaper ? Color.a.brown : .white)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -80,10 +81,10 @@ struct CozyHomeTabs: View {
                     .frame(height: CozyHomeStyle.tabHeight)
                     .background {
                         RoundedRectangle(cornerRadius: CozyHomeStyle.tabRadius)
-                            .fill(.clear)
+                            .fill(onPaper ? (selected ? Color.a.pinkLight : Color.a.blueLight).opacity(0.65) : .clear)
                             .glassEffect(.regular.tint(CozyHomeStyle.tabFrost.opacity(0.20)).interactive(),
                                          in: RoundedRectangle(cornerRadius: CozyHomeStyle.tabRadius))
-                            .opacity(0.58)
+                            .opacity(onPaper ? 0.85 : 0.58)
                             .overlay {
                                 RoundedRectangle(cornerRadius: CozyHomeStyle.tabRadius)
                                     .fill(CozyHomeStyle.tabReflection)

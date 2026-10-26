@@ -6,21 +6,25 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .appFont(.headline)
-            .foregroundStyle(Color.app.ink)
+            .foregroundStyle(Color.a.creamText)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background { ASketchSurface(fill: Color.app.accent, radius: Radius.large) }
+            .background(Color.a.brown, in: RoundedRectangle(cornerRadius: Radius.large))
+            .overlay(RoundedRectangle(cornerRadius: Radius.large).strokeBorder(Color.white.opacity(0.28)))
+            .shadow(color: Color.a.brown.opacity(0.14), radius: Spacing.xs, y: Spacing.xxs)
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .appFont(.headline)
             .foregroundStyle(Color.app.ink)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background { ASketchSurface(fill: Color.app.surface, radius: Radius.large) }
-            .opacity(configuration.isPressed ? 0.7 : 1)
+            .background(Color.a.card, in: RoundedRectangle(cornerRadius: Radius.large))
+            .overlay(RoundedRectangle(cornerRadius: Radius.large).strokeBorder(Color.a.line.opacity(0.55)))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
     }
 }
 
@@ -69,8 +73,9 @@ struct FloatingCircleButton: View {
             }
             .foregroundStyle(Color.app.ink)
             .frame(width: 76, height: 76)
-            .background(isPrimary ? Color.app.accent : Color.app.surface, in: Circle())
-            .overlay(Circle().stroke(Color.app.ink.opacity(isPrimary ? 0 : 0.15)))
+            .glassEffect(.regular.tint(isPrimary ? Color.a.pinkLight.opacity(0.65) : Color.a.card.opacity(0.65)).interactive(), in: Circle())
+            .overlay(Circle().strokeBorder(CozyHomeStyle.glassHighlight))
+            .shadow(color: Color.a.brown.opacity(0.10), radius: Spacing.xs, y: Spacing.xxs)
         }
         .buttonStyle(.plain)
     }

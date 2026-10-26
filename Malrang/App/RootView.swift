@@ -17,20 +17,7 @@ struct RootView: View {
         if isSignedIn && nickname.isEmpty {
             NavigationStack { ProfileEditView(isCreating: true) }
         } else if isSignedIn {
-            TabView(selection: $appState.tab) {
-                Tab("인형 목록", systemImage: "teddybear", value: .dolls) {
-                    DollListView()
-                }
-                Tab("홈", systemImage: "house", value: .home) {
-                    HomeView()
-                }
-                Tab("친구", systemImage: "person.2", value: .friends) {
-                    FriendsView()
-                }
-                Tab("마이페이지", systemImage: "person.crop.circle", value: .mypage) {
-                    NavigationStack { MyPageView() }
-                }
-            }
+            MainTabs()
             .environment(appState)
             .task {
                 if items.isEmpty {

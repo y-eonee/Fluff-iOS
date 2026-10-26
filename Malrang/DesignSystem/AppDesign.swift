@@ -172,7 +172,7 @@ struct NotebookTabBar: View {
 /// 모눈종이 화면 바탕.
 struct AppBackground: View {
     var body: some View {
-        GridPaper()
+        Color.a.paper.ignoresSafeArea()
     }
 }
 
@@ -223,20 +223,22 @@ extension View {
         modifier(AppFont(style: style, weight: weight))
     }
 
-    /// 시안 A에서는 시스템 탭바 대신 수첩 모양 탭바를 이 화면 아래에 둔다.
-    func notebookTabBar() -> some View {
-        modifier(NotebookTabBarModifier())
+    /// 홈과 같은 글래스 탭바. 종이 배경에서는 갈색 라벨로 대비를 유지한다.
+    func cozyTabBar() -> some View {
+        modifier(CozyTabBarModifier())
     }
 }
 
-private struct NotebookTabBarModifier: ViewModifier {
+private struct CozyTabBarModifier: ViewModifier {
     @Environment(AppState.self) private var appState
 
     func body(content: Content) -> some View {
         content
             .toolbar(.hidden, for: .tabBar)
             .safeAreaInset(edge: .bottom) {
-                NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
+                CozyHomeTabs(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }), onPaper: true)
+                    .padding(.bottom, Spacing.xs)
+                    .background { LinearGradient(colors: [Color.a.paper.opacity(0), Color.a.paper], startPoint: .top, endPoint: .bottom).ignoresSafeArea(edges: .bottom) }
             }
     }
 }

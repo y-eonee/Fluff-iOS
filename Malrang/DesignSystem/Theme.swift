@@ -4,7 +4,7 @@ extension Color {
     /// 시안 A에서는 피그마 팔레트(갈색 #6B4A3E, 분홍 #F7B9C8, 파랑 #A6C5E2, 노랑 #FDE9A0, 크림 #FEF2CC, 종이 #FFFFF4)로 바뀐다.
     enum app {
         static var background: Color { Color.a.paper }
-        static var surface: Color { .white }
+        static var surface: Color { Color.a.card }
         static var ink: Color { Color.a.brown }
         static var inkSecondary: Color { Color.a.soft }
         static var accent: Color { Color.a.pink }
@@ -50,6 +50,8 @@ enum Radius {
 extension View {
     func cardStyle() -> some View {
         background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: 4)
+            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .strokeBorder(Color.a.line.opacity(0.13)))
+            .shadow(color: Color.app.ink.opacity(0.06), radius: Spacing.s, y: Spacing.xxs)
     }
 }
