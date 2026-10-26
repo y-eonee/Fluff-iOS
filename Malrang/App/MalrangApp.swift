@@ -12,10 +12,20 @@ struct MalrangApp: App {
         Font.registerCustomFonts()
     }
 
+    @ViewBuilder private var appContent: some View {
+        #if DEBUG
+        if let route = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--design-preview=") })?.split(separator: "=").last {
+            DesignPreview(route: String(route))
+        } else { RootView() }
+        #else
+        RootView()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
-                RootView()
+                appContent
                     .allowsHitTesting(!isShowingSplash)
                     .accessibilityHidden(isShowingSplash)
                 if isShowingSplash {
@@ -25,6 +35,11 @@ struct MalrangApp: App {
                 }
             }
             .task {
+                #if DEBUG
+                await PresetModelExporter.exportIfRequested()
+                await CozyModelExporter.exportIfRequested()
+                await CozyModelExporter.auditIfRequested()
+                #endif
                 do { try await Task.sleep(for: .seconds(1.2)) }
                 catch { return }
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) {
