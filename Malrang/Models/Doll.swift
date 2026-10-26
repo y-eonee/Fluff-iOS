@@ -17,6 +17,12 @@ final class Doll {
     var z = 0.0
     var danceRaw: String?
     var createdAt = Date()
+    var presetData: Data?
+
+    var presetConfiguration: PresetConfiguration? {
+        get { presetData.flatMap { try? JSONDecoder().decode(PresetConfiguration.self, from: $0) } }
+        set { presetData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
 
     init(name: String, shape: DollShape, filling: Filling, imageData: Data) {
         self.name = name
@@ -40,7 +46,7 @@ final class Doll {
     var image: UIImage { UIImage(data: imageData) ?? UIImage() }
 
     var state: DollState {
-        DollState(id: id, name: name, imageData: imageData, filling: filling, position: position, dance: dance)
+        DollState(id: id, name: name, imageData: imageData, filling: filling, position: position, dance: dance, preset: presetConfiguration)
     }
 }
 
@@ -52,18 +58,21 @@ struct DollState: Identifiable, Equatable {
     var filling: Filling
     var position: SIMD3<Float>
     var dance: DanceMove?
+    var preset: PresetConfiguration? = nil
 }
 
 /// 인형 모양. 커스텀(pillow)은 사진 누끼 모양 그대로 시접을 두른 인형이다.
-enum DollShape: String, CaseIterable {
-    case pillow, bear, star, cat
+nonisolated enum DollShape: String, CaseIterable, Codable {
+    case pillow, bear, star, cat, rabbit
+    static let presets: [DollShape] = [.rabbit, .bear, .cat]
 
     var label: String {
         switch self {
         case .pillow: "커스텀"
-        case .bear: "곰인형"
+        case .bear: "곰돌이"
         case .star: "별인형"
         case .cat: "고양이"
+        case .rabbit: "토끼"
         }
     }
 }

@@ -8,6 +8,7 @@ struct DollArtwork: View {
 
     var body: some View {
         switch shape {
+        case .rabbit: CottonArtwork(shape: .rabbit)
         case .bear: bear
         case .cat: cat
         case .star: star

@@ -11,7 +11,7 @@ enum SceneFactory {
     private static var models: [FurnitureKind: Entity?] = [:]
 
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
-    static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0) async -> Entity {
+    static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0, cozy: Bool = false, cutaway: Bool = false) async -> Entity {
         if models[item.kind] == nil {
             if let url = Bundle.main.url(forResource: item.kind.assetName, withExtension: "usdz") {
                 models[item.kind] = .some(try? await Entity(contentsOf: url))
@@ -22,6 +22,8 @@ enum SceneFactory {
         let entity: Entity
         if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
+        } else if cozy {
+            entity = await CozyFurniture.make(item, photoMaterial: material(item), usesWindowLighting: !onFloor, cutaway: cutaway)
         } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
             entity = illustration
         } else {
@@ -42,16 +44,23 @@ enum SceneFactory {
         }
         entity.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : (item.kind.hangsOnWall ? 0 : item.yaw), axis: [0, 1, 0])
         if item.isMirrored {
-            let visual = Entity()
-            for child in Array(entity.children) { visual.addChild(child) }
-            visual.scale.x = -1
-            entity.addChild(visual)
+            if cozy, item.kind == .bed, (models[item.kind] ?? nil) == nil {
+                // The procedural bed is symmetric. Reflect only its user artwork;
+                // negative scale on the fleece reverses its lighting handedness.
+                entity.findEntity(named: "custom-photo")?.scale.x = -1
+            } else {
+                let visual = Entity()
+                for child in Array(entity.children) { visual.addChild(child) }
+                visual.scale.x = -1
+                entity.addChild(visual)
+            }
         }
         // 원본 색상별 메시를 합쳐도 벽 사이의 빈 공간이 충돌 영역이 되지 않게 한다.
         let shapes: [ShapeResource]
         if item.kind == .wall {
-            shapes = [ShapeResource.generateBox(size: [0.04, 1.55, 2]).offsetBy(translation: [-1.02, 0.775, 0]),
-                      ShapeResource.generateBox(size: [2, 1.55, 0.04]).offsetBy(translation: [0, 0.775, -1.02])]
+            let height: Float = cozy ? CozyRoomShell.maximumHeight : 1.55
+            shapes = [ShapeResource.generateBox(size: [0.04, height, 2]).offsetBy(translation: [-1.02, height / 2, 0]),
+                      ShapeResource.generateBox(size: [2, height, 0.04]).offsetBy(translation: [0, height / 2, -1.02])]
         } else if item.kind == .floor {
             shapes = [ShapeResource.generateBox(size: [2, 0.145, 2]).offsetBy(translation: [0, -0.0725, 0])]
         } else {
@@ -63,6 +72,17 @@ enum SceneFactory {
     }
 
     static func doll(_ doll: DollState) async -> Entity {
+        if let preset = doll.preset {
+            let entity = Entity()
+            let visual = await PresetDollModel.make(preset)
+            let body = Entity(); body.name = "body"; body.position.y = dollHeight / 2
+            visual.position.y = -dollHeight / 2; body.addChild(visual); entity.addChild(body)
+            entity.name = "doll|\(doll.id)"; entity.position = doll.position
+            entity.orientation = simd_quatf(angle: .pi / 4, axis: [0, 1, 0])
+            entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.3, dollHeight, 0.2]).offsetBy(translation: [0, dollHeight / 2, 0])]))
+            if let dance = doll.dance { play(dance, on: entity) }
+            return entity
+        }
         let image = UIImage(data: doll.imageData)
         let aspect = Float((image?.size.width ?? 1) / max(image?.size.height ?? 1, 1))
         var material = UnlitMaterial(applyPostProcessToneMap: false)

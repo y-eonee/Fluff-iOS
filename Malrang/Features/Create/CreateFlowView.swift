@@ -9,11 +9,16 @@ final class DollDraft {
     var cutout: UIImage?
     /// 지우기·복원으로 다듬은 결과
     var editedCutout: UIImage?
-    var shape = DollShape.pillow
+    var shape = DollShape.cat
+    var preset = PresetConfiguration()
+    var usesPresetPhoto = false
+    var snapshot: UIImage?
     var filling = Filling.fluffy
     /// 비워 두면 플레이스홀더인 "귀염둥이"가 이름이 된다.
     var name = ""
     var faceScale: CGFloat = 1
+    var faceOffsetX: Float = 0
+    var faceOffsetY: Float = 0
     /// 확대해서 보여준 부분(사진 크기를 1로 본 비율). 인형에는 이 부분만 크게 들어간다.
     var cropRect: CGRect?
 
@@ -35,7 +40,7 @@ enum CreateStep: Hashable {
     case cutout, ready, customize, making, done
 }
 
-/// 사진 선택 → 이미지 편집 → 확인 → 모양·속재료 → 꿰매기 → 완성
+/// 갤러리 → 누끼 편집 → 인형 꾸미기 → 완성
 struct CreateFlowView: View {
     let onPlace: (Doll) -> Void
     @Environment(\.dismiss) private var dismiss
