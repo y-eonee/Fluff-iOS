@@ -1,0 +1,18 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="48.2" height="48.2" viewBox="0 0 48.2 48.2" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="&#236;&#149;&#140;&#235;&#166;&#188;">
+<rect x="1.1" y="1.1" width="46" height="46" rx="23" fill="#B4B4B4" fill-opacity="0.2"/>
+<rect x="1.1" y="1.1" width="46" height="46" rx="23" stroke="white" stroke-width="2.2"/>
+<g id="icon" clip-path="url(#clip0_0_19)">
+<g id="Vector">
+<path d="M16.5376 22.496V30.0584L14.647 32.5792H33.553L31.6624 30.0584V22.496C31.6624 20.4904 30.8656 18.5668 29.4474 17.1486C28.0292 15.7304 26.1057 14.9337 24.1 14.9337C22.0943 14.9337 20.1708 15.7304 18.7526 17.1486C17.3344 18.5668 16.5376 20.4904 16.5376 22.496Z" fill="white"/>
+<path d="M21.5792 35.1H26.6208M16.5376 30.0584V22.496C16.5376 20.4904 17.3344 18.5668 18.7526 17.1486C20.1708 15.7304 22.0943 14.9337 24.1 14.9337C26.1057 14.9337 28.0292 15.7304 29.4474 17.1486C30.8656 18.5668 31.6624 20.4904 31.6624 22.496V30.0584L33.553 32.5792H14.647L16.5376 30.0584Z" stroke-width="1.46667" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>
+</g>
+</g>
+<circle id="Ellipse" cx="35.1" cy="13.1" r="3.66602" fill="white"/>
+</g>
+<defs>
+<clipPath id="clip0_0_19">
+<rect width="22" height="22" fill="white" transform="translate(13.1 13.1)"/>
+</clipPath>
+</defs>
+</svg>

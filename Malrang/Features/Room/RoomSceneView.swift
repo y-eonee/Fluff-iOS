@@ -57,8 +57,11 @@ struct RoomSceneView: UIViewRepresentable {
     var hidesRoom = false
     /// 시안 A의 방 일러스트와 모양이 맞도록 원근을 줄이고 낮춘 카메라로 본다. 값은 카메라가 바라볼 높이(m)로, 방이 화면에서 놓일 세로 위치를 정한다.
     var illustrationTargetY: Float?
+    /// 홈 시안의 방 안을 바라보는 구도와 무광 입체 가구.
+    var isCozyRoom = false
     /// 첫 번째 인형 머리 위의 화면 좌표. 인형이 없으면 nil. 말풍선이 인형을 따라다니게 한다.
     var onDollScreen: (CGPoint?) -> Void = { _ in }
+    var onSceneReady: () -> Void = {}
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -115,7 +118,9 @@ struct RoomSceneView: UIViewRepresentable {
         private var shift = SIMD3<Float>.zero
         private weak var shiftPan: UIPanGestureRecognizer?
         private weak var dollPan: UIPanGestureRecognizer?
-        private lazy var cameraDirection = simd_normalize(SIMD3<Float>(1, parent.illustrationTargetY == nil ? 0.9 : 0.85, 1))
+        private lazy var cameraDirection = parent.isCozyRoom
+            ? simd_normalize(SIMD3<Float>(1.1, 1.1, 1.5))
+            : simd_normalize(SIMD3<Float>(1, parent.illustrationTargetY == nil ? 0.9 : 0.85, 1))
 
         private struct Drag {
             let entity: Entity
@@ -133,10 +138,18 @@ struct RoomSceneView: UIViewRepresentable {
             parent.placement?.snapshot = { [weak self] in self?.finishPlacement() ?? [:] }
             orbitYaw = parent.focusItem.map { $0.kind.isMovable && !$0.kind.hangsOnWall ? $0.yaw : 0 } ?? 0
             view.scene.addAnchor(root)
-            camera.camera.fieldOfViewInDegrees = parent.illustrationTargetY == nil ? 30 : 4
-            light.light.intensity = 2500
+            camera.camera.fieldOfViewInDegrees = (parent.isCozyRoom && parent.mode != .decorate) ? 42 : (parent.illustrationTargetY == nil ? 30 : 4)
+            light.light.intensity = parent.isCozyRoom ? 1250 : 2500
+            if parent.isCozyRoom {
+                if let device = MTLCreateSystemDefaultDevice(), let bloom = CozyBloom(device: device) {
+                    view.renderCallbacks.postProcess = { context in bloom.render(context) }
+                }
+                light.light.color = Palette.uiColor("#FFE8DE")
+                view.environment.background = .color(parent.mode == .decorate ? .clear : Palette.uiColor("#DDD1E6"))
+                view.environment.lighting.intensityExponent = 0.05
+            }
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 6, depthBias: 2)
-            light.look(at: .zero, from: [1.5, 3, 2], relativeTo: nil)
+            light.look(at: .zero, from: parent.isCozyRoom ? [-0.6, 3, 2] : [1.5, 3, 2], relativeTo: nil)
 
             // 화면 크기가 정해지거나 바뀌면 카메라 거리를 다시 맞춘다.
             updateSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
@@ -166,6 +179,9 @@ struct RoomSceneView: UIViewRepresentable {
                 [orbit, movePan, pinch].forEach(view.addGestureRecognizer)
             }
             if parent.focusItem == nil {
+                let rotation = UIRotationGestureRecognizer(target: self, action: #selector(handleRoomRotation))
+                rotation.delegate = self
+                view.addGestureRecognizer(rotation)
                 let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handleZoom))
                 let pan = UIPanGestureRecognizer(target: self, action: #selector(handleShift))
                 shiftPan = pan
@@ -222,16 +238,19 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func build(_ state: SceneState) async {
+            if parent.isCozyRoom, let environment = await CozyRoomLighting.environmentResource() {
+                view?.environment.lighting.resource = environment
+            }
             let content = Entity()
             if var item = state.focusItem {
                 (item.x, item.z) = (0, 0)
                 if !item.kind.hangsOnWall { item.yaw = 0 }
-                content.addChild(await SceneFactory.furniture(item, onFloor: true))
+                content.addChild(await SceneFactory.furniture(item, onFloor: true, cozy: parent.isCozyRoom))
                 let size = item.kind.size
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
             for item in state.items {
-                    let furniture = await SceneFactory.furniture(item, elevation: RoomLayout.furnitureHeight(item, in: state.items))
+                    let furniture = await SceneFactory.furniture(item, elevation: RoomLayout.furnitureHeight(item, in: state.items), cozy: parent.isCozyRoom, cutaway: parent.mode == .decorate)
                     if roomHidden { furniture.components.set(OpacityComponent(opacity: 0)) }
                     content.addChild(furniture)
                 }
@@ -240,13 +259,21 @@ struct RoomSceneView: UIViewRepresentable {
                     doll.position.y = RoomLayout.seat(at: [doll.position.x, doll.position.z], in: state.items).height
                     content.addChild(await SceneFactory.doll(doll))
                 }
-                let board = await SceneFactory.memoBoard()
-                if roomHidden { board.components.set(OpacityComponent(opacity: 0)) }
-                content.addChild(board)
+                if !parent.isCozyRoom {
+                    let board = await SceneFactory.memoBoard()
+                    if roomHidden { board.components.set(OpacityComponent(opacity: 0)) }
+                    content.addChild(board)
+                }
                 if let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
                     content.addChild(SceneFactory.selectionBox(selected))
                 }
-                aimCamera(at: [0, parent.illustrationTargetY ?? 0.45, 0], fitting: parent.illustrationTargetY == nil ? 3.3 : 3.55, height: parent.illustrationTargetY == nil ? 3.1 : 2.9)
+                if parent.isCozyRoom {
+                    if parent.mode == .decorate { aimCamera(at: [0, 0.55, 0], fitting: 3.3, height: 2.9) }
+                    else { aimCamera(at: [-0.255, 0.31, -0.18], fitting: 1.65, height: 3.0) }
+                    content.addChild(CozyRoomLighting.sunlight())
+                } else {
+                    aimCamera(at: [0, parent.illustrationTargetY ?? 0.45, 0], fitting: parent.illustrationTargetY == nil ? 3.3 : 3.55, height: parent.illustrationTargetY == nil ? 3.1 : 2.9)
+                }
             }
             guard !Task.isCancelled else { return }
             root.children.removeAll()
@@ -258,6 +285,7 @@ struct RoomSceneView: UIViewRepresentable {
 
             displayed = state
             configureAccessibility(content)
+            parent.onSceneReady()
         }
 
         private func finishPlacement() -> [UUID: SIMD3<Float>] {
@@ -371,8 +399,8 @@ struct RoomSceneView: UIViewRepresentable {
             guard let aim else { return }
             let target = aim.target + shift
             let distance = fitDistance / zoom
-            camera.camera.near = max(0.01, distance - 3)
-            camera.camera.far = distance + 3
+            camera.camera.near = parent.isCozyRoom ? 0.01 : max(0.01, distance - 3)
+            camera.camera.far = distance + 6
             // 좁은 화각에서는 카메라가 멀리 물러난다. 그림자 범위도 실제 방까지 닿아야 한다.
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: distance + 4, depthBias: 1)
 
@@ -420,7 +448,7 @@ struct RoomSceneView: UIViewRepresentable {
                 guard let view, let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
                 let location = pan.location(in: view), delta = pan.translation(in: view)
                 guard let hit = target(at: CGPoint(x: location.x - delta.x, y: location.y - delta.y)) else { return false }
-                return hit.isDoll && canDrag(hit)
+                return (hit.isDoll || parent.mode == .decorate) && canDrag(hit)
             }
             guard gestureRecognizer === shiftPan else { return true }
             guard zoom > 1, drag == nil else { return false }
@@ -433,6 +461,12 @@ struct RoomSceneView: UIViewRepresentable {
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
             if gestureRecognizer === dollPan || other === dollPan { return false }
             return true
+        }
+
+        @objc private func handleRoomRotation(_ gesture: UIRotationGestureRecognizer) {
+            cameraDirection = simd_act(simd_quatf(angle: -Float(gesture.rotation), axis: [0, 1, 0]), cameraDirection)
+            gesture.rotation = 0
+            placeCamera()
         }
 
         @objc private func handleOrbit(_ gesture: UIPanGestureRecognizer) {

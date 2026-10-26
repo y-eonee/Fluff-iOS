@@ -44,7 +44,7 @@ struct FurnitureCustomView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan)
+            RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan, isCozyRoom: true)
                 .renderedOnlyWhileVisible()
                 .overlay(alignment: .top) {
                     HintCapsule(text: isEditingPhoto ? "두 손가락으로 확대하고, 움직여서 자를 곳을 맞춰요" : "드래그해서 이리저리 돌려 보세요")

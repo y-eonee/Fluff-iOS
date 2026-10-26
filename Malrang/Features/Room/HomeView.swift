@@ -8,9 +8,8 @@ struct HomeView: View {
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var selectedDoll: Doll?
-    @State private var isHomeMenuOpen = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isCreating = false
+    @State private var isFocusing = false
     @State private var pendingDoll: Doll?
     @State private var isDecorating = false
     @State private var isShowingGuestbook = false
@@ -26,6 +25,7 @@ struct HomeView: View {
     @State private var feelCount = 0
     @State private var hold: RoomSceneView.Hold?
     @State private var toast: Toast?
+    @State private var isSceneReady = false
 
     private struct Toast: Equatable {
         let message: String
@@ -66,7 +66,9 @@ struct HomeView: View {
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
                             onFeel: { feelCount += 1 },
                             isTransparent: true,
-                            illustrationTargetY: 0.84
+                            illustrationTargetY: 0.84,
+                            isCozyRoom: true,
+                            onSceneReady: { isSceneReady = true }
                         )
                         .renderedOnlyWhileVisible(background: .clear)
                     }
@@ -75,21 +77,18 @@ struct HomeView: View {
                 .ignoresSafeArea()
             }
             .overlay(alignment: .top) { topOverlay }
-            .overlay { emptyState }
             .overlay {
-                if isHomeMenuOpen {
-                    Color.black.opacity(0.08)
-                        .ignoresSafeArea()
-                        .onTapGesture { closeHomeMenu() }
-                        .accessibilityLabel("홈 메뉴 닫기")
-                        .accessibilityAddTraits(.isButton)
+                if !isSceneReady, !appState.isShowingAR, multiRoom.session == nil {
+                    ProgressView("방을 준비하고 있어요")
+                        .padding(Spacing.m)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
                 }
             }
+            .overlay(alignment: .topTrailing) {
+                if placementStart == nil { roomActions }
+            }
             .safeAreaInset(edge: .bottom) { bottomBar }
-            .onChange(of: appState.tab) { closeHomeMenu() }
-            .onChange(of: placementStart != nil) { closeHomeMenu() }
-            .onDisappear { isHomeMenuOpen = false }
-            .background { GridPaper() }
+            .background(Color.a.pinkLight)
             .navigationTitle("내 방")
             .toolbar { toolbar }
             .toolbar(.hidden, for: .navigationBar)
@@ -108,6 +107,7 @@ struct HomeView: View {
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)
             }
+            .fullScreenCover(isPresented: $isFocusing) { FocusFlowView() }
             .sheet(isPresented: $isStartingMultiRoom) {
                 MultiRoomStartSheet()
             }
@@ -141,56 +141,54 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
     private var topOverlay: some View {
-        ZStack(alignment: .top) {
-            Image("a_awning")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
+        VStack(spacing: Spacing.s) {
             if placementStart == nil { headerA }
             topMessage
-                .padding(.top, placementStart == nil ? Spacing.xl + Spacing.m : 0)
         }
     }
 
-    /// 시안 A 상단: 마스킹테이프 위에 놓인 집 아이콘과 my room 제목, 알림. 피그마 좌표(390pt 기준)를 화면 맨 위부터 그대로 쓴다.
     private var headerA: some View {
-        ZStack(alignment: .topLeading) {
-            Image("a_tape_mint")
-                .rotationEffect(.degrees(-3.27))
-                .offset(x: 71.78 + 0.5, y: 61.62 + 3.4)
-            Image("a_tape_pink")
-                .rotationEffect(.degrees(11))
-                .offset(x: 150.9, y: 74)
-            Image("a_roof")
-                .offset(x: 22.2, y: 55.2)
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(Color.a.brown)
-                .frame(width: 37.5, height: 19.9)
-                .offset(x: 25.2, y: 67.3)
+        HStack(spacing: 0) {
+            Image("cozy_roof")
+                .accessibilityHidden(true)
             Text("my room")
-                .notCliche(34, relativeTo: .largeTitle)
-                .tracking(-1.36)
+                .notCliche(CozyHomeStyle.titleSize, relativeTo: .largeTitle)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                .tracking(CozyHomeStyle.titleTracking)
                 .foregroundStyle(Color.a.brown)
                 .fixedSize()
-                .offset(x: 74.6, y: 50)
+                .background { Image("cozy_tape").accessibilityHidden(true) }
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: Spacing.s)
             NavigationLink {
                 NotificationsView()
             } label: {
-                Image("a_bell")
-                    .resizable()
-                    .frame(width: 46, height: 46)
+                Image("cozy_bell")
+                    .frame(width: CozyHomeStyle.button, height: CozyHomeStyle.button)
             }
             .accessibilityLabel("알림함")
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 22)
-            .offset(y: 48)
         }
-        .frame(maxWidth: .infinity, maxHeight: 110, alignment: .topLeading)
-        .ignoresSafeArea()
+        .frame(height: CozyHomeStyle.headerHeight)
+        .padding(.horizontal, CozyHomeStyle.headerInset)
+        .padding(.top, Spacing.xxs)
+    }
+
+    private var roomActions: some View {
+        VStack(spacing: Spacing.xs) {
+            CozyHomeAction(asset: "cozy_create", label: "인형 만들기") { isCreating = true }
+                .accessibilityHint(dolls.isEmpty ? "첫 솜뭉치를 만들어 방에 놓아 보세요" : "사진으로 새 인형을 만들어요")
+            CozyHomeAction(asset: "cozy_decorate", label: "방 꾸미기") { isDecorating = true }
+            CozyHomeAction(asset: "cozy_guestbook", label: "방명록") { isShowingGuestbook = true }
+
+            Button { isFocusing = true } label: {
+                Image(systemName: "timer").font(.title2).foregroundStyle(.white)
+                    .frame(width: CozyHomeStyle.button, height: CozyHomeStyle.button)
+                    .glassEffect(.regular.interactive(), in: Circle())
+            }.accessibilityLabel("함께 집중하기")
+        }
+        .padding(.trailing, CozyHomeStyle.headerInset)
+        .padding(.top, CozyHomeStyle.headerHeight + Spacing.xl + Spacing.s)
     }
 
     @ViewBuilder
@@ -210,11 +208,6 @@ struct HomeView: View {
             .frame(minHeight: 44)
             .background(Color.app.ink, in: Capsule())
             .padding(.top, Spacing.xs)
-        } else if !placedDolls.isEmpty {
-            Text("인형을 눌러 만지고, 벽의 메모보드를 눌러 방명록을 봐요")
-                .appFont(.footnote)
-                .foregroundStyle(Color.app.inkSecondary)
-                .padding(.top, Spacing.xs)
         }
     }
 
@@ -231,14 +224,6 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private var emptyState: some View {
-        if dolls.isEmpty {
-            NoticeCard(symbol: "teddybear", title: "아직 방이 비어 있어요",
-                       message: "아래 인형 만들기 버튼으로 갤러리 속 사진을 인형으로 만들어 보세요")
-        }
-    }
-
-    @ViewBuilder
     private var bottomBar: some View {
         if placementStart != nil {
             CancelConfirmButtons(onCancel: cancelPlacement, onConfirm: finishPlacement)
@@ -248,61 +233,8 @@ struct HomeView: View {
         }
     }
 
-    /// 시안 A 하단: 구름 메뉴와 수첩 탭바.
     private var bottomBarA: some View {
-        VStack(spacing: Spacing.s) {
-            homeMenuButton
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.horizontal, Spacing.m)
-            NotebookTabBar(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
-        }
-    }
-
-    private var homeMenuButton: some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8)) {
-                isHomeMenuOpen.toggle()
-            }
-        } label: {
-            Image("a_fab").resizable().frame(width: 65, height: 65)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(isHomeMenuOpen ? "홈 메뉴 닫기" : "홈 메뉴 열기")
-        .accessibilityValue(isHomeMenuOpen ? "펼쳐짐" : "접힘")
-        .overlay(alignment: .bottomTrailing) {
-            if isHomeMenuOpen {
-                VStack(alignment: .trailing, spacing: Spacing.xs) {
-                    homeMenuAction("멀티 룸", symbol: "shareplay") { isStartingMultiRoom = true }
-                    homeMenuAction("방 꾸미기", symbol: "paintbrush") { isDecorating = true }
-                    homeMenuAction("인형 만들기", symbol: "teddybear") { isCreating = true }
-                }
-                .fixedSize()
-                .padding(.bottom, 65 + Spacing.s)
-                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-    }
-
-    private func homeMenuAction(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
-        Button {
-            closeHomeMenu()
-            action()
-        } label: {
-            Label(title, systemImage: symbol)
-                .appFont(.subheadline, .semiBold)
-                .foregroundStyle(Color.app.ink)
-                .padding(.horizontal, Spacing.m)
-                .frame(minHeight: 48)
-                .background {
-                    ASketchSurface(radius: 24)
-                }
-                .shadow(color: Color.app.ink.opacity(0.12), radius: Spacing.xs, y: Spacing.xxs)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func closeHomeMenu() {
-        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { isHomeMenuOpen = false }
+        CozyHomeTabs(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }))
     }
 
     private func beginPlacement() {

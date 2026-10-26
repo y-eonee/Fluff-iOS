@@ -23,6 +23,7 @@ struct DecorateView: View {
     @State var editingItem: RoomItem?
     @State var isConfirmingDiscard = false
     @State var isFull = false
+    @State var saveFailed = false
     @State var isBlocked = false
     @State var isShowingGuestbook = false
 
@@ -32,8 +33,9 @@ struct DecorateView: View {
 
     var body: some View {
         contentA
-        .background { GridPaper() }
+        .background(Color.a.paper)
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
+        .alert("꾸민 내용을 저장하지 못했어요", isPresented: $saveFailed) { Button("확인", role: .cancel) {} }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()

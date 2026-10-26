@@ -19,6 +19,7 @@ extension DecorateView {
                 onFeel: { feelCount += 1 },
                 isTransparent: true,
                 illustrationTargetY: 0.7,
+                isCozyRoom: true,
                 onDollScreen: { dollPoint = $0 }
             )
             .renderedOnlyWhileVisible(background: .clear)
@@ -168,8 +169,7 @@ extension DecorateView {
                             .sketchBox(radius: 27)
                     }
                     Button {
-                        try? modelContext.save()
-                        dismiss()
+                        do { try modelContext.save(); dismiss() } catch { saveFailed = true }
                     } label: {
                         Text("완료")
                             .pretendard(.bold, 17, tracking: -0.51)
