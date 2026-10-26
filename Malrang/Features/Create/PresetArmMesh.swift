@@ -2,11 +2,13 @@ import RealityKit
 
 /// Smoothly joined stuffed panels keep the shoulder and paw one editable surface.
 enum PresetArmMesh {
-    private static var cached: [Int: (MeshResource, MeshResource)] = [:]
+    private static var cached: [Int: (MeshResource, MeshResource?)] = [:]
 
-    static func make(side: Float, material: any Material) -> ModelEntity {
-        let key = side < 0 ? -1 : 1
-        let meshes: (MeshResource, MeshResource)
+    static func clearCache() { cached.removeAll() }
+
+    static func make(side: Float, material: any Material, includePile: Bool = true) -> ModelEntity {
+        let key = (side < 0 ? -1 : 1) * (includePile ? 1 : 2)
+        let meshes: (MeshResource, MeshResource?)
         if let value = cached[key] {
             meshes = value
         } else {
@@ -75,7 +77,7 @@ enum PresetArmMesh {
             mesh.textureCoordinates = .init(uv); mesh.primitives = .triangles(indices)
             let surface = try! MeshResource.generate(from: [mesh])
             var fibers: [SIMD3<Float>] = [], fiberNormals: [SIMD3<Float>] = [], triangles: [UInt32] = []
-            for i in stride(from: 0, to: points.count, by: 3) {
+            for i in stride(from: 0, to: includePile ? points.count : 0, by: 3) {
                 let p = (points[i] + points[i+1] + points[i+2]) / 3, n = normal(p)
                 let tangent = simd_normalize(simd_cross(n, abs(n.y) > 0.9 ? SIMD3<Float>(1,0,0) : SIMD3<Float>(0,1,0)))
                 let length: Float = 0.0007 + Float((i * 37) % 97) / 97 * 0.0007
@@ -85,11 +87,13 @@ enum PresetArmMesh {
             }
             var pile = MeshDescriptor(name: "arm-pile")
             pile.positions = .init(fibers); pile.normals = .init(fiberNormals); pile.primitives = .triangles(triangles)
-            meshes = (surface, try! MeshResource.generate(from: [pile])); cached[key] = meshes
+            meshes = (surface, includePile ? try! MeshResource.generate(from: [pile]) : nil); cached[key] = meshes
         }
         let arm = ModelEntity(mesh: meshes.0, materials: [material]); arm.name = "paw"
-        let fur = ModelEntity(mesh: meshes.1, materials: [material]); fur.name = "arm.short-pile"
-        fur.components.set(DynamicLightShadowComponent(castsShadow: false)); arm.addChild(fur)
+        if let pile = meshes.1 {
+            let fur = ModelEntity(mesh: pile, materials: [material]); fur.name = "arm.short-pile"
+            fur.components.set(DynamicLightShadowComponent(castsShadow: false)); arm.addChild(fur)
+        }
         return arm
     }
 }

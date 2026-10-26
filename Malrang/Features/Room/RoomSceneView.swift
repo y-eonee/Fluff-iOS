@@ -98,6 +98,7 @@ struct RoomSceneView: UIViewRepresentable {
         coordinator.stopRendering()
         view.renderCallbacks.postProcess = nil
         view.scene.anchors.removeAll()
+        view.environment.lighting.resource = nil
     }
 
     struct SceneState: Equatable {
@@ -235,6 +236,12 @@ struct RoomSceneView: UIViewRepresentable {
             parent.placement?.snapshot = nil
             parent.placement?.capture = nil
             parent.placement?.pan = nil
+            root.stopAllAnimations(recursive: true)
+            root.children.removeAll()
+            highlights.removeAll()
+            accessibleEntities.removeAll()
+            latest = nil; rendered = nil; displayed = nil
+            drag = nil
         }
 
         func render(_ state: SceneState) {
@@ -288,6 +295,7 @@ struct RoomSceneView: UIViewRepresentable {
                     content.addChild(furniture)
                 }
                 for var doll in state.dolls {
+                    guard !Task.isCancelled else { return }
                     // 가구 위에 있는 인형은 그 윗면에 서고, 가구가 치워졌으면 바닥으로 내려온다.
                     doll.position.y = RoomLayout.seat(at: [doll.position.x, doll.position.z], in: state.items).height
                     content.addChild(await SceneFactory.doll(doll))

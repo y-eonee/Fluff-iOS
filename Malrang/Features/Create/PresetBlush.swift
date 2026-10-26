@@ -2,6 +2,8 @@ import RealityKit
 import UIKit
 
 enum PresetBlush {
+    static func clearCache() { texture = nil }
+
     private static var texture: TextureResource?
 
     static func make(side: Float, headWidth: Float, yOffset: Float = 0) async -> ModelEntity? {

@@ -6,6 +6,7 @@ struct MalrangApp: App {
     @State private var friendStore = FriendStore(api: MockFriendAPI())
     @State private var multiRoom = MultiRoom()
     @State private var isShowingSplash = true
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init() {
@@ -14,7 +15,8 @@ struct MalrangApp: App {
 
     @ViewBuilder private var appContent: some View {
         #if DEBUG
-        if let route = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--design-preview=") })?.split(separator: "=").last {
+        if ProcessInfo.processInfo.arguments.contains("--memory-audit") { MemoryAuditView() }
+        else if let route = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--design-preview=") })?.split(separator: "=").last {
             DesignPreview(route: String(route))
         } else { RootView() }
         #else
@@ -45,6 +47,12 @@ struct MalrangApp: App {
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) {
                     isShowingSplash = false
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+                RenderMemory.clearCaches()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background { RenderMemory.clearCaches() }
             }
             .environment(friendStore)
             .environment(multiRoom)

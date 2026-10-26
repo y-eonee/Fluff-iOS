@@ -21,7 +21,7 @@ struct MakingStep: View {
                                guard finalSnapshot == nil else { return }
                                finalSnapshot = image
                                Task { await make() }
-                           })
+                           }).renderedOnlyWhileVisible(background: .clear)
         } else { CustomPhotoPreview(draft: draft) }
     }
 
@@ -62,7 +62,10 @@ struct MakingStep: View {
         ZStack {
             Color.app.ink.opacity(0.3).ignoresSafeArea()
             VStack(spacing: Spacing.m) {
-                artwork
+                Group {
+                    if let image = finalSnapshot ?? draft.snapshot { Image(uiImage: image).resizable().scaledToFit() }
+                    else { Image(systemName: "teddybear").font(.largeTitle) }
+                }
                     .frame(height: 100)
                     .saturation(0)
                     .opacity(0.6)

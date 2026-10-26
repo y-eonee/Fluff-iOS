@@ -41,8 +41,11 @@ struct PhotoPickStep: View {
             guard let selection else { return }
             isLoading = true
             defer { isLoading = false }
-            if let data = try? await selection.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-                draft.photo = CutoutService.normalized(image)
+            if let data = try? await selection.loadTransferable(type: Data.self), let image = await ImageDownsampling.load(data, maxPixel: 2048) {
+                guard !Task.isCancelled else { return }
+                draft.photo = image
+                draft.preset.face = nil
+                draft.clearPhotoCache()
                 draft.cutout = nil
                 draft.editedCutout = nil
                 draft.cropRect = nil

@@ -107,7 +107,7 @@ struct FocusFlowView: View {
                             let chosen = selection == doll.id
                             Button { selection = doll.id } label: {
                                 VStack(spacing: 4) {
-                                    dollArtwork(doll).frame(height: 93)
+                                    DollThumbnail(data: doll.imageData, maxPixel: 280).frame(height: 93)
                                     Text(doll.name).pretendard(.medium, 16)
                                 }.frame(maxWidth: .infinity).frame(height: 126)
                                     .background(chosen ? Color.white : FocusStyle.paper, in: RoundedRectangle(cornerRadius: 20))
@@ -142,6 +142,7 @@ struct FocusFlowView: View {
                         Group {
                             if let configuration = doll.presetConfiguration {
                                 PresetDollView(configuration: configuration, cameraDistance: 0.88, cameraTarget: 0.19)
+                                    .renderedOnlyWhileVisible(background: .clear)
                             } else { dollArtwork(doll) }
                         }.frame(height: 200)
                     }.frame(maxWidth: .infinity).frame(height: 339, alignment: .top)
@@ -189,8 +190,9 @@ struct FocusFlowView: View {
                     TimelineView(.animation(minimumInterval: 0.8, paused: session.paused || reduceMotion)) { time in
                         let pose: CottonArtwork.Pose = session.resting ? (happy ? .happy : .idle) : session.paused ? .working : (Int(time.date.timeIntervalSince1970) % 2 == 0 ? .working : .workingAlternate)
                         Group {
-                            if selected.presetConfiguration != nil {
-                                PresetDollView(configuration: selected.presetConfiguration!, cameraDistance: 0.84, cameraTarget: 0.18, focusScene: true, working: !session.resting, happy: happy, animating: !session.paused && !reduceMotion && scenePhase == .active)
+                            if !showingReward && !decoratingReward, let configuration = selected.presetConfiguration {
+                                PresetDollView(configuration: configuration, cameraDistance: 0.84, cameraTarget: 0.18, focusScene: true, working: !session.resting, happy: happy, animating: !session.paused && !reduceMotion && scenePhase == .active)
+                                    .renderedOnlyWhileVisible(background: .clear)
                             } else if selected.shapeRaw == "cat" { CottonArtwork(pose: pose) }
                             else { dollArtwork(selected) }
                         }

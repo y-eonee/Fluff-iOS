@@ -143,7 +143,7 @@ struct HomeView: View {
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)
             }
-            .fullScreenCover(isPresented: $isFocusing) { FocusFlowView(roomSnapshot: focusBackground) }
+            .fullScreenCover(isPresented: $isFocusing, onDismiss: { focusBackground = nil }) { FocusFlowView(roomSnapshot: focusBackground) }
             .sheet(isPresented: $isStartingMultiRoom) {
                 MultiRoomStartSheet()
             }

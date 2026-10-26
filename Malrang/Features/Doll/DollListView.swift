@@ -48,9 +48,7 @@ struct DollListView: View {
 
     private func card(_ doll: Doll) -> some View {
         VStack(spacing: Spacing.xs) {
-            Image(uiImage: doll.image)
-                .resizable()
-                .scaledToFit()
+            DollThumbnail(data: doll.imageData)
                 .frame(height: 140)
             Text(doll.name)
                 .appFont(.headline)

@@ -5,6 +5,8 @@ import Metal
 /// 고정된 홈 카메라에서도 실제 깊이와 가림이 생기는, 부위별로 분리된 가구.
 /// 저장 좌표·충돌 범위·앉는 높이는 기존 FurnitureKind와 함께 쓴다.
 enum CozyFurniture {
+    static func clearCache() { meshes.removeAll(); bakedModels.removeAll(); fabricColor = nil; fabricNormal = nil; contactShadow = nil; windowSky = nil }
+
     private static let fabricShader: CustomMaterial.SurfaceShader? = {
         guard let library = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary(),
               library.makeFunction(name: "cozyFabric") != nil else { return nil }

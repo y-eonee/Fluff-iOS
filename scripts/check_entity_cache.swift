@@ -27,6 +27,30 @@ struct CheckEntityCache {
         precondition(builds == 4, "Least recently used template must be evicted")
         _ = await cache.entity(for: "cat-with-photo", build: build)
         precondition(builds == 5, "Changed configuration must rebuild")
+        let budget = EntityTemplateCache<String>(capacity: 10, byteLimit: 10)
+        var budgetBuilds = 0
+        let make: @MainActor () async -> Entity = { budgetBuilds += 1; return Entity() }
+        _ = await budget.entity(for: "a", estimatedCost: 6, build: make)
+        _ = await budget.entity(for: "b", estimatedCost: 6, build: make)
+        precondition(budget.estimatedBytes == 6)
+        _ = await budget.entity(for: "a", estimatedCost: 6, build: make)
+        precondition(budgetBuilds == 3, "Byte pressure must evict even below count limit")
+        _ = await budget.entity(for: "oversized", estimatedCost: 20, build: make)
+        _ = await budget.entity(for: "oversized", estimatedCost: 20, build: make)
+        precondition(budgetBuilds == 5, "Oversized results must not be retained")
+        budget.removeAll()
+        precondition(budget.estimatedBytes == 0)
+        _ = await budget.entity(for: "a", estimatedCost: 6, build: make)
+        precondition(budgetBuilds == 6)
+        let pending = Task { await budget.entity(for: "pending", estimatedCost: 4) {
+            try? await Task.sleep(for: .milliseconds(50))
+            return Entity()
+        } }
+        await Task.yield()
+        budget.removeAll()
+        _ = await pending.value
+        precondition(budget.estimatedBytes == 0, "An in-flight build must not repopulate a purged cache")
+        print("PASS: byte budget, oversized bypass, purge and in-flight purge")
         print("PASS: coalesced builds, independent clones, LRU eviction, configuration changes")
     }
 }

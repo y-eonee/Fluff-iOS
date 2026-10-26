@@ -45,7 +45,19 @@ struct PresetDollView: UIViewRepresentable {
         context.coordinator.onPart = onPart
         context.coordinator.update(configuration, focusScene: focusScene, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
     }
-    static func dismantleUIView(_ view: ARView, coordinator: Coordinator) { coordinator.task?.cancel(); view.renderCallbacks.postProcess = nil; view.scene.anchors.removeAll() }
+    static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+        coordinator.task?.cancel()
+        coordinator.task = nil
+        coordinator.motion = nil
+        coordinator.model?.stopAllAnimations(recursive: true)
+        coordinator.model = nil
+        coordinator.anchor = nil
+        coordinator.configuration = nil
+        coordinator.renderedConfiguration = nil
+        coordinator.onPart = nil
+        view.renderCallbacks.postProcess = nil
+        view.scene.anchors.removeAll()
+    }
     final class Coordinator: NSObject {
         weak var view: ARView?
         var anchor: AnchorEntity?
@@ -104,9 +116,7 @@ struct PresetDollView: UIViewRepresentable {
                 guard !Task.isCancelled else { return }
                 model?.removeFromParent(); model = entity; anchor?.addChild(entity)
                 renderedConfiguration = value
-                if let data = value.face, let image = UIImage(data: data)?.cgImage {
-                    photoAspect = Float(image.width) / Float(image.height)
-                }
+                if let data = value.face { photoAspect = ImageDownsampling.aspectRatio(data) }
                 if focusScene {
                     let motion = FocusDollMotion(doll: entity, configuration: value)
                     self.motion = motion

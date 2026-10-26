@@ -35,9 +35,18 @@ final class DollDraft {
                           width: cropRect.width * width, height: cropRect.height * height).integral
         return cgImage.cropping(to: rect).map { UIImage(cgImage: $0) } ?? image
     }
-    @ObservationIgnored private var cachedPhoto: UIImage?
+    @ObservationIgnored private weak var cachedPhoto: UIImage?
     @ObservationIgnored private var cachedCrop: CGRect?
     @ObservationIgnored private var cachedPhotoData: Data?
+
+    func clearPhotoCache() {
+        cachedPhoto = nil; cachedCrop = nil; cachedPhotoData = nil
+    }
+
+    func releaseImages() {
+        photo = nil; cutout = nil; editedCutout = nil; snapshot = nil; preset.face = nil
+        clearPhotoCache()
+    }
 
     var presetPhotoData: Data? {
         let source = editable ?? photo
@@ -45,7 +54,7 @@ final class DollDraft {
         if cachedPhoto !== source || cachedCrop != cropRect {
             cachedPhoto = source
             cachedCrop = cropRect
-            cachedPhotoData = (finalCutout ?? source).pngData()
+            cachedPhotoData = CutoutService.normalized(finalCutout ?? source, maxSide: 1024).pngData()
         }
         return cachedPhotoData
     }
@@ -118,6 +127,7 @@ struct CreateFlowView: View {
         case .making:
             MakingStep(draft: draft, onLeave: { path.removeLast() }) { doll in
                 path = [.done(doll)]
+                draft.releaseImages()
             }
         case .done(let doll):
             DoneStep(doll: doll, onRestart: restart) {

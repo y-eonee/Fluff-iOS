@@ -64,7 +64,7 @@ enum PhotoSuitModel {
         // The seam is a shallow inset oval, not the thick circular rim of the earlier model.
         _ = oval("face.seam", part: .head, size: [0.247, 0.122, 0.018], at: [0, -0.032, 0.092], tint: "#D8D2CE")
         _ = oval("face.lining", part: .head, size: [0.242, 0.117, 0.021], at: [0, -0.031, 0.095], tint: "#F8F5F2")
-        if let data = configuration.face, let image = UIImage(data: data), let cg = image.cgImage,
+        if let data = configuration.face, let image = ImageDownsampling.image(data, maxPixel: 1024), let cg = image.cgImage,
            let texture = try? await TextureResource(image: cg, options: .init(semantic: .color)) {
             var photoMaterial = UnlitMaterial(); photoMaterial.color = .init(tint: .white, texture: .init(texture))
             if let mask = SceneFactory.opacityMask(of: image), let opacity = try? await TextureResource(image: mask, options: .init(semantic: .raw)) {

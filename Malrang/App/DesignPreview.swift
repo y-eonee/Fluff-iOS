@@ -36,10 +36,20 @@ final class DesignPreviewData {
             let renderer = ImageRenderer(content: CottonArtwork(shape: shape).frame(width: 240, height: 253))
             let doll = Doll(name: name, shape: shape, filling: .fluffy, imageData: renderer.uiImage?.pngData() ?? Data())
             doll.presetConfiguration = PresetConfiguration(shape: shape)
+            if ProcessInfo.processInfo.arguments.contains("--memory-audit") {
+                doll.id = UUID(uuidString: "00000000-0000-0000-0000-00000000000\(shape == .cat ? 1 : shape == .bear ? 2 : 3)")!
+                doll.isPlaced = true
+                doll.position = [shape == .cat ? 0 : shape == .bear ? -0.35 : 0.35, 0, 0]
+            }
             container.mainContext.insert(doll)
             if shape == .cat { session.select(doll.id) }
         }
-        RoomItem.starterRoom.forEach(container.mainContext.insert)
+        for (index, item) in RoomItem.starterRoom.enumerated() {
+            if ProcessInfo.processInfo.arguments.contains("--memory-audit") {
+                item.id = UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", index))!
+            }
+            container.mainContext.insert(item)
+        }
         try? container.mainContext.save()
         if ["running", "rest", "reward"].contains(route) {
             session.start(at: .now.addingTimeInterval(route == "running" ? -1122 : -1501))

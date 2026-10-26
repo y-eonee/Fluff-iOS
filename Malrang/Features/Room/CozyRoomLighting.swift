@@ -2,6 +2,7 @@ import RealityKit
 import UIKit
 
 enum CozyRoomLighting {
+    static func clearCache() { environment = nil }
     private static var environment: EnvironmentResource?
 
     static func environmentResource() async -> EnvironmentResource? {

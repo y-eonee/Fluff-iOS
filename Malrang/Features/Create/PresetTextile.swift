@@ -3,6 +3,8 @@ import UIKit
 
 /// Low-contrast minky pile; kept separate from the room's coarse woven fabric.
 enum PresetTextile {
+    static func clearCache() { cached = nil }
+
     private static var cached: (color: TextureResource, normal: TextureResource)?
 
     static func textures() async -> (color: TextureResource, normal: TextureResource)? {

@@ -8,6 +8,12 @@ enum SceneFactory {
     static let dollHeight: Float = 0.45
 
     /// 불러온 USDZ 모델(없으면 nil). 장면을 다시 그릴 때마다 파일을 찾지 않도록 기억해 둔다.
+    static func clearCache() {
+        furnitureCache.removeAll()
+        models.removeAll()
+        memoArtwork = nil
+    }
+
     private static var models: [FurnitureKind: Entity?] = [:]
 
     private struct FurnitureKey: Equatable {
@@ -17,12 +23,12 @@ enum SceneFactory {
         var cozy: Bool
         var cutaway: Bool
     }
-    private static let furnitureCache = EntityTemplateCache<FurnitureKey>(capacity: 24)
+    private static let furnitureCache = EntityTemplateCache<FurnitureKey>(capacity: 24, byteLimit: 96 * 1024 * 1024)
 
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
     static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0, cozy: Bool = false, cutaway: Bool = false) async -> Entity {
         let key = FurnitureKey(item: item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
-        return await furnitureCache.entity(for: key) {
+        return await furnitureCache.entity(for: key, estimatedCost: 8 * 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0)) {
             await buildFurniture(item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
         }
     }
@@ -90,7 +96,7 @@ enum SceneFactory {
     static func doll(_ doll: DollState) async -> Entity {
         if let preset = doll.preset {
             let entity = Entity()
-            let visual = await PresetDollModel.make(preset)
+            let visual = await PresetDollModel.make(preset, detail: .room)
             let body = Entity(); body.name = "body"; body.position.y = dollHeight / 2
             visual.position.y = -dollHeight / 2; body.addChild(visual); entity.addChild(body)
             entity.name = "doll|\(doll.id)"; entity.position = doll.position
@@ -99,7 +105,7 @@ enum SceneFactory {
             if let dance = doll.dance { play(dance, on: entity) }
             return entity
         }
-        let image = UIImage(data: doll.imageData)
+        let image = ImageDownsampling.image(doll.imageData, maxPixel: 1024)
         let aspect = Float((image?.size.width ?? 1) / max(image?.size.height ?? 1, 1))
         var material = UnlitMaterial(applyPostProcessToneMap: false)
         material.faceCulling = .none
@@ -297,7 +303,7 @@ enum SceneFactory {
         var material = UnlitMaterial(applyPostProcessToneMap: false)
         material.faceCulling = .none
         material.color = .init(tint: Palette.uiColor(item.colorName ?? item.kind.defaultColorName))
-        if withPhoto, let data = item.photoData, let cgImage = UIImage(data: data)?.cgImage,
+        if withPhoto, let data = item.photoData, let cgImage = ImageDownsampling.image(data, maxPixel: 1024)?.cgImage,
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
             // 맞추기에서 사진 밖으로 나가는 부분은 흰 여백으로 보인다.
             let sampler = MTLSamplerDescriptor()

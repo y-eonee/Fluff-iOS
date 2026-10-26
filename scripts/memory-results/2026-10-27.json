@@ -1,0 +1,173 @@
+{
+  "date": "2026-10-27",
+  "device": "iPhone 17 Pro",
+  "os": "iOS 26.6.2",
+  "configuration": "Debug",
+  "baselineCommit": "b94521e",
+  "metric": "task_vm_info.phys_footprint / 1048576 (MiB)",
+  "scenario": "Synthetic in-memory data: 3 placed dolls; home, photo editor, focus; 8 seconds visible and 3 seconds released, repeated 3 times. Final cache purge uses a simulated memory warning. One run per build; sampled maxima, not continuous peaks.",
+  "before": [
+    {
+      "stage": "start",
+      "footprintMiB": 30.21949005126953
+    },
+    {
+      "stage": "1-home-ui",
+      "footprintMiB": 902.9388580322266
+    },
+    {
+      "stage": "1-released-home-ui",
+      "footprintMiB": 781.548210144043
+    },
+    {
+      "stage": "1-photo-cat",
+      "footprintMiB": 721.4232559204102
+    },
+    {
+      "stage": "1-released-photo-cat",
+      "footprintMiB": 663.1888580322266
+    },
+    {
+      "stage": "1-running",
+      "footprintMiB": 740.1576309204102
+    },
+    {
+      "stage": "1-released-running",
+      "footprintMiB": 671.7982559204102
+    },
+    {
+      "stage": "2-home-ui",
+      "footprintMiB": 876.4545059204102
+    },
+    {
+      "stage": "2-released-home-ui",
+      "footprintMiB": 806.7826309204102
+    },
+    {
+      "stage": "2-photo-cat",
+      "footprintMiB": 726.7045059204102
+    },
+    {
+      "stage": "2-released-photo-cat",
+      "footprintMiB": 668.5482559204102
+    },
+    {
+      "stage": "2-running",
+      "footprintMiB": 742.4232559204102
+    },
+    {
+      "stage": "2-released-running",
+      "footprintMiB": 676.5326309204102
+    },
+    {
+      "stage": "3-home-ui",
+      "footprintMiB": 872.3138809204102
+    },
+    {
+      "stage": "3-released-home-ui",
+      "footprintMiB": 801.6263809204102
+    },
+    {
+      "stage": "3-photo-cat",
+      "footprintMiB": 724.4701309204102
+    },
+    {
+      "stage": "3-released-photo-cat",
+      "footprintMiB": 667.4701309204102
+    },
+    {
+      "stage": "3-running",
+      "footprintMiB": 734.1107559204102
+    },
+    {
+      "stage": "3-released-running",
+      "footprintMiB": 673.6107559204102
+    },
+    {
+      "stage": "after-memory-warning",
+      "footprintMiB": 673.6107559204102
+    }
+  ],
+  "after": [
+    {
+      "stage": "start",
+      "footprintMiB": 16.45386505126953
+    },
+    {
+      "stage": "1-home-ui",
+      "footprintMiB": 801.0169143676758
+    },
+    {
+      "stage": "1-released-home-ui",
+      "footprintMiB": 737.3137893676758
+    },
+    {
+      "stage": "1-photo-cat",
+      "footprintMiB": 680.673210144043
+    },
+    {
+      "stage": "1-released-photo-cat",
+      "footprintMiB": 622.501335144043
+    },
+    {
+      "stage": "1-running",
+      "footprintMiB": 700.0169830322266
+    },
+    {
+      "stage": "1-released-running",
+      "footprintMiB": 638.5169830322266
+    },
+    {
+      "stage": "2-home-ui",
+      "footprintMiB": 836.4701080322266
+    },
+    {
+      "stage": "2-released-home-ui",
+      "footprintMiB": 776.1263580322266
+    },
+    {
+      "stage": "2-photo-cat",
+      "footprintMiB": 693.0169830322266
+    },
+    {
+      "stage": "2-released-photo-cat",
+      "footprintMiB": 636.5326080322266
+    },
+    {
+      "stage": "2-running",
+      "footprintMiB": 706.3451080322266
+    },
+    {
+      "stage": "2-released-running",
+      "footprintMiB": 638.9544830322266
+    },
+    {
+      "stage": "3-home-ui",
+      "footprintMiB": 836.7201080322266
+    },
+    {
+      "stage": "3-released-home-ui",
+      "footprintMiB": 776.4076080322266
+    },
+    {
+      "stage": "3-photo-cat",
+      "footprintMiB": 692.9857330322266
+    },
+    {
+      "stage": "3-released-photo-cat",
+      "footprintMiB": 635.1576080322266
+    },
+    {
+      "stage": "3-running",
+      "footprintMiB": 700.1263580322266
+    },
+    {
+      "stage": "3-released-running",
+      "footprintMiB": 637.3919830322266
+    },
+    {
+      "stage": "after-memory-warning",
+      "footprintMiB": 637.3919830322266
+    }
+  ]
+}

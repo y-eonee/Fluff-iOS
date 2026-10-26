@@ -3,6 +3,14 @@ import UIKit
 
 /// Individually named, editable 3D body parts. No billboard is used for the preset body.
 enum PresetDollModel {
+    enum Detail: Equatable { case full, room }
+
+    static func clearCache() {
+        cache.removeAll()
+        geometry.removeAll()
+        cachedRoundPile = nil
+    }
+
     private static var geometry: [String: MeshResource] = [:]
     private static func mesh(_ key: String, build: () -> MeshResource) -> MeshResource {
         if let value = geometry[key] { return value }
@@ -205,8 +213,11 @@ enum PresetDollModel {
     }
 
     /// Fine pile follows the curved limbs and ears, rather than leaving smooth spheres.
-    private static let cachedRoundPile = buildRoundPile()
-    private static func roundPile() -> MeshResource? { cachedRoundPile }
+    private static var cachedRoundPile: MeshResource?
+    private static func roundPile() -> MeshResource? {
+        if cachedRoundPile == nil { cachedRoundPile = buildRoundPile() }
+        return cachedRoundPile
+    }
     private static func buildRoundPile() -> MeshResource? {
         var vertices: [SIMD3<Float>] = []
         var indices: [UInt32] = []
@@ -231,16 +242,19 @@ enum PresetDollModel {
     private struct ModelKey: Equatable {
         var configuration: PresetConfiguration
         var happy: Bool
+        var detail: Detail
     }
-    private static let cache = EntityTemplateCache<ModelKey>(capacity: 8)
+    private static let cache = EntityTemplateCache<ModelKey>(capacity: 8, byteLimit: 64 * 1024 * 1024)
 
-    static func make(_ configuration: PresetConfiguration, happy: Bool = false) async -> Entity {
-        await cache.entity(for: ModelKey(configuration: configuration, happy: happy)) {
-            await build(configuration, happy: happy)
+    static func make(_ configuration: PresetConfiguration, happy: Bool = false, detail: Detail = .full) async -> Entity {
+        // Conservative reservation includes decoded color/alpha textures and procedural geometry.
+        let cost = (detail == .full ? 12 : 4) * 1024 * 1024 + (configuration.face == nil ? 0 : 12 * 1024 * 1024) + (configuration.face?.count ?? 0)
+        return await cache.entity(for: ModelKey(configuration: configuration, happy: happy, detail: detail), estimatedCost: cost) {
+            await build(configuration, happy: happy, detail: detail)
         }
     }
 
-    private static func build(_ configuration: PresetConfiguration, happy: Bool) async -> Entity {
+    private static func build(_ configuration: PresetConfiguration, happy: Bool, detail: Detail) async -> Entity {
         if configuration.isPhotoSuit == true { return await PhotoSuitModel.make(configuration) }
         let root = Entity()
         let textile = await PresetTextile.textures()
@@ -264,7 +278,7 @@ enum PresetDollModel {
             m.sheen = .init(tint: UIColor(white: 0.12, alpha: 1))
             return m
         }
-        let limbPile = roundPile()
+        let limbPile = detail == .full ? roundPile() : nil
         var groups: [DollPart: Entity] = [:]
         let armX: Float = configuration.shape == .cat ? 0.062 : 0.075
         let armY: Float = configuration.shape == .cat ? 0.087 : 0.112
@@ -299,7 +313,7 @@ enum PresetDollModel {
         let headWidth: Float = configuration.shape == .rabbit ? 0.116 : 0.128
         let head = ModelEntity(mesh: headMesh(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale), materials: [material(color(.head, fur))])
         head.name = "head.fur"; groups[.head]!.addChild(head)
-        if let pile = headFibers(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale) {
+        if detail == .full, let pile = headFibers(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale) {
             let fibers = ModelEntity(mesh: pile, materials: [material(color(.head, fur), cloth: false)])
             fibers.name = "head.short-pile"
             fibers.components.set(DynamicLightShadowComponent(castsShadow: false)); groups[.head]!.addChild(fibers)
@@ -348,7 +362,7 @@ enum PresetDollModel {
             _ = ball("button", .torso, [0.015, 0.015, 0.009], [x, 0.010, 0.071], "#FFF2D9")
         }
         for part in [DollPart.leftArm, .rightArm] {
-            let arm = PresetArmMesh.make(side: part == .leftArm ? -1 : 1, material: material(color(part, fur)))
+            let arm = PresetArmMesh.make(side: part == .leftArm ? -1 : 1, material: material(color(part, fur)), includePile: detail == .full)
             groups[part]!.addChild(arm)
             if happy { groups[part]!.position.y += 0.06 }
         }
@@ -364,10 +378,10 @@ enum PresetDollModel {
                 }
             }
         }
-        if let data = configuration.face, let image = UIImage(data: data)?.cgImage,
+        if let data = configuration.face, let uiImage = ImageDownsampling.image(data, maxPixel: detail == .full ? 1024 : 512), let image = uiImage.cgImage,
            let texture = try? await TextureResource(image: image, options: .init(semantic: .color)) {
             var faceMaterial = UnlitMaterial(); faceMaterial.color = .init(tint: .white, texture: .init(texture))
-            if let uiImage = UIImage(data: data), let mask = SceneFactory.opacityMask(of: uiImage),
+            if let mask = SceneFactory.opacityMask(of: uiImage),
                let opacity = try? await TextureResource(image: mask, options: .init(semantic: .raw)) {
                 faceMaterial.blending = .transparent(opacity: .init(scale: 1, texture: .init(opacity)))
                 faceMaterial.opacityThreshold = 0.1
@@ -434,7 +448,7 @@ enum PresetDollModel {
             groups[.head]!.addChild(PresetEmbroidery.line(stem, radius: 0.0013, material: thread, name: "mouth.center-thread"))
         }
         // Fibers are visual detail; the underlying head handles selection and collisions.
-        for group in root.children {
+        for group in root.children where detail == .full {
             for child in group.children where child.name != "head.short-pile" {
                 child.generateCollisionShapes(recursive: false)
             }
