@@ -7,6 +7,7 @@ struct PresetDollView: UIViewRepresentable {
     var cameraDistance: Float = 0.95
     var cameraTarget: Float = 0.22
     var cameraYaw: Float = 0
+    var focusScene = false
     var working = false
     var happy = false
     var animating = true
@@ -15,6 +16,7 @@ struct PresetDollView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
+        view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
         view.environment.background = .color(.clear); view.isOpaque = false
         view.environment.lighting.intensityExponent = -1.0
         if let device = MTLCreateSystemDefaultDevice(), let bloom = CozyBloom(device: device, preset: true) {
@@ -41,41 +43,74 @@ struct PresetDollView: UIViewRepresentable {
     }
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.onPart = onPart
-        context.coordinator.update(configuration, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
+        context.coordinator.update(configuration, focusScene: focusScene, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
     }
-    static func dismantleUIView(_ view: ARView, coordinator: Coordinator) { coordinator.task?.cancel(); view.scene.anchors.removeAll() }
+    static func dismantleUIView(_ view: ARView, coordinator: Coordinator) { coordinator.task?.cancel(); view.renderCallbacks.postProcess = nil; view.scene.anchors.removeAll() }
     final class Coordinator: NSObject {
         weak var view: ARView?
         var anchor: AnchorEntity?
         var model: Entity?
         var configuration: PresetConfiguration?
+        var renderedConfiguration: PresetConfiguration?
+        var photoAspect: Float = 1
+        var motion: FocusDollMotion?
+        var focusScene = false
         var working = false
         var happy = false
         var animating = true
         var onPart: ((DollPart) -> Void)?
         var task: Task<Void, Never>?
-        func update(_ value: PresetConfiguration, working: Bool, happy: Bool, animating: Bool, snapshot: ((UIImage) -> Void)?) {
-            guard configuration != value || self.working != working || self.happy != happy || self.animating != animating else { return }
-            configuration = value; self.working = working; self.happy = happy; self.animating = animating
+        func update(_ value: PresetConfiguration, focusScene: Bool, working: Bool, happy: Bool, animating: Bool, snapshot: ((UIImage) -> Void)?) {
+            guard configuration != value || self.focusScene != focusScene || self.working != working || self.happy != happy || self.animating != animating else { return }
+            if focusScene, self.focusScene, renderedConfiguration == value, let motion {
+                self.working = working; self.happy = happy; self.animating = animating
+                motion.update(working: working, happy: happy, animating: animating)
+                return
+            }
+            // Photo gestures only change UVs. Keep the dense plush model and its lighting alive.
+            if var previous = renderedConfiguration, let model, value.isPhotoSuit != true,
+               self.working == working, self.happy == happy, self.animating == animating {
+                previous.faceScale = value.faceScale
+                previous.faceOffsetX = value.faceOffsetX
+                previous.faceOffsetY = value.faceOffsetY
+                if previous == value, value.face != nil,
+                   let face = model.findEntity(named: "face.user-photo") as? ModelEntity {
+                    configuration = value
+                    renderedConfiguration = value
+                    let mesh = PresetFaceMesh.photo(aspect: photoAspect,
+                        zoom: value.faceScale, offsetX: value.faceOffsetX ?? 0, offsetY: value.faceOffsetY ?? 0,
+                        radiusX: 0.081 * value.openingScale, radiusY: 0.072 * value.openingScale)
+                    face.model?.mesh = mesh
+                    (model.findEntity(named: "face.lining") as? ModelEntity)?.model?.mesh = mesh
+                    task?.cancel()
+                    if let snapshot {
+                        task = Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(600))
+                            guard !Task.isCancelled else { return }
+                            view?.snapshot(saveToHDR: false) { image in if let image { snapshot(image) } }
+                        }
+                    }
+                    return
+                }
+            }
+            configuration = value; self.focusScene = focusScene; self.working = working; self.happy = happy; self.animating = animating
             task?.cancel()
             task = Task { @MainActor in
-                let entity = await PresetDollModel.make(value, happy: happy)
+                if model != nil {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard !Task.isCancelled else { return }
+                }
+                let entity = await PresetDollModel.make(value, happy: focusScene ? false : happy)
                 guard !Task.isCancelled else { return }
                 model?.removeFromParent(); model = entity; anchor?.addChild(entity)
-                if working {
-                    var wood = PhysicallyBasedMaterial(); wood.baseColor.tint = Palette.uiColor("#EBD4AE"); wood.roughness = 0.9
-                    let bench = ModelEntity(mesh: .generateBox(size: [0.32, 0.025, 0.13], cornerRadius: 0.012), materials: [wood])
-                    bench.position = [0, 0.09, 0.12]; entity.addChild(bench)
-                    for x: Float in [-0.12, 0.12] {
-                        let leg = ModelEntity(mesh: .generateCylinder(height: 0.08, radius: 0.013), materials: [wood]); leg.position = [x, 0.04, 0.12]; entity.addChild(leg)
-                    }
-                    let cushion = await CozyFurniture.make(RoomItemState(id: UUID(), kind: .flowerCushion, x: 0, z: 0), photoMaterial: wood, usesWindowLighting: false)
-                    cushion.scale = .init(repeating: 0.35); cushion.position = [0.015, 0.105, 0.13]; entity.addChild(cushion)
+                renderedConfiguration = value
+                if let data = value.face, let image = UIImage(data: data)?.cgImage {
+                    photoAspect = Float(image.width) / Float(image.height)
                 }
-                if working, animating, let arm = entity.findEntity(named: DollPart.leftArm.rawValue) {
-                    var to = arm.transform; to.rotation = simd_quatf(angle: -0.5, axis: [1, 0, 0]); to.translation.y += 0.02
-                    let motion = FromToByAnimation<Transform>(from: arm.transform, to: to, duration: 0.6, timing: .easeInOut, bindTarget: .transform, repeatMode: .autoReverse)
-                    if let animation = try? AnimationResource.generate(with: motion) { arm.playAnimation(animation.repeat()) }
+                if focusScene {
+                    let motion = FocusDollMotion(doll: entity, configuration: value)
+                    self.motion = motion
+                    motion.update(working: self.working, happy: self.happy, animating: self.animating)
                 }
                 if let snapshot {
                     try? await Task.sleep(for: .milliseconds(600))

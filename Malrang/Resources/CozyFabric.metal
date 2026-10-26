@@ -4,18 +4,24 @@ using namespace metal;
 
 kernel void cozyExtractLight(texture2d<float, access::read> source [[texture(0)]],
                              texture2d<float, access::write> target [[texture(1)]], uint2 p [[thread_position_in_grid]]) {
-    if (p.x >= source.get_width() || p.y >= source.get_height()) return;
-    float3 color = source.read(p).rgb;
+    if (p.x >= target.get_width() || p.y >= target.get_height()) return;
+    uint2 q = p * 2;
+    uint2 edge = uint2(source.get_width() - 1, source.get_height() - 1);
+    float4 averaged = (source.read(min(q, edge)) + source.read(min(q + uint2(1, 0), edge))
+                     + source.read(min(q + uint2(0, 1), edge)) + source.read(min(q + uint2(1, 1), edge))) * 0.25;
+    float3 color = averaged.rgb;
     float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
     target.write(float4(color * smoothstep(0.62, 0.95, luminance), 1), p);
 }
 
 kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0)]],
-                               texture2d<float, access::read> glow [[texture(1)]],
+                               texture2d<float, access::sample> glow [[texture(1)]],
                                texture2d<float, access::write> target [[texture(2)]], uint2 p [[thread_position_in_grid]]) {
     if (p.x >= source.get_width() || p.y >= source.get_height()) return;
     float4 color = source.read(p);
-    color.rgb += glow.read(p).rgb * 0.075;
+    constexpr sampler linearClamp(coord::normalized, address::clamp_to_edge, filter::linear);
+    float2 uv = (float2(p) + 0.5) / float2(source.get_width(), source.get_height());
+    color.rgb += glow.sample(linearClamp, uv).rgb * 0.075;
     target.write(color, p);
 }
 
@@ -105,16 +111,22 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
 // Premultiplied highlights keep the transparent preset preview free of dark halos.
 kernel void plushExtractLight(texture2d<float, access::read> source [[texture(0)]],
                               texture2d<float, access::write> target [[texture(1)]], uint2 p [[thread_position_in_grid]]) {
-    if (p.x >= source.get_width() || p.y >= source.get_height()) return;
-    float4 c = source.read(p);
+    if (p.x >= target.get_width() || p.y >= target.get_height()) return;
+    uint2 q = p * 2;
+    uint2 edge = uint2(source.get_width() - 1, source.get_height() - 1);
+    float4 averaged = (source.read(min(q, edge)) + source.read(min(q + uint2(1, 0), edge))
+                     + source.read(min(q + uint2(0, 1), edge)) + source.read(min(q + uint2(1, 1), edge))) * 0.25;
+    float4 c = averaged;
     float strength = smoothstep(0.68, 0.98, dot(c.rgb, float3(0.2126, 0.7152, 0.0722)));
     target.write(float4(c.rgb * c.a, c.a) * strength, p);
 }
 kernel void plushCompositeLight(texture2d<float, access::read> source [[texture(0)]],
-                                texture2d<float, access::read> glow [[texture(1)]],
+                                texture2d<float, access::sample> glow [[texture(1)]],
                                 texture2d<float, access::write> target [[texture(2)]], uint2 p [[thread_position_in_grid]]) {
     if (p.x >= source.get_width() || p.y >= source.get_height()) return;
-    float4 c = source.read(p), bloom = glow.read(p);
+    constexpr sampler linearClamp(coord::normalized, address::clamp_to_edge, filter::linear);
+    float2 uv = (float2(p) + 0.5) / float2(source.get_width(), source.get_height());
+    float4 c = source.read(p), bloom = glow.sample(linearClamp, uv);
     // Preserve coverage at fine fur edges; expanding alpha creates a white rim.
     float3 rgb = c.rgb + bloom.rgb * 0.045 * c.a;
     target.write(float4(rgb, c.a), p);

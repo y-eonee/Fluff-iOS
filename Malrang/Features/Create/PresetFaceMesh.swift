@@ -1,9 +1,9 @@
 import RealityKit
 
-/// Fixed oval opening: moving or zooming the photo changes UVs, never the hood silhouette.
+/// Opening size changes the hood and rim together; photo zoom only changes UVs.
 enum PresetFaceMesh {
-    static func insideOpening(_ point: SIMD3<Float>) -> Bool {
-        point.z > 0 && pow(point.x / 0.082, 2) + pow((point.y + 0.008) / 0.073, 2) < 1
+    static func insideOpening(_ point: SIMD3<Float>, scale: Float = 1) -> Bool {
+        point.z > 0 && pow(point.x / (0.082 * scale), 2) + pow((point.y + 0.008) / (0.073 * scale), 2) < 1
     }
 
     static func photo(aspect: Float, zoom: Float, offsetX: Float, offsetY: Float, radiusX: Float = 0.081, radiusY: Float = 0.072) -> MeshResource {
@@ -32,7 +32,7 @@ enum PresetFaceMesh {
         return try! MeshResource.generate(from: [mesh])
     }
 
-    static func rim() -> MeshResource {
+    static func rim(scale: Float = 1) -> MeshResource {
         var points: [SIMD3<Float>] = []
         var uv: [SIMD2<Float>] = []
         var triangles: [UInt32] = []
@@ -41,8 +41,8 @@ enum PresetFaceMesh {
             let u = Float(segment) / Float(segments), a = u * 2 * Float.pi
             for side in 0...sides {
                 let v = Float(side) / Float(sides), b = v * 2 * Float.pi
-                points.append([cos(a) * (0.085 + cos(b) * 0.009),
-                               -0.008 + sin(a) * (0.076 + cos(b) * 0.009),
+                points.append([cos(a) * (0.085 * scale + cos(b) * 0.009),
+                               -0.008 + sin(a) * (0.076 * scale + cos(b) * 0.009),
                                0.094 + sin(b) * 0.010])
                 uv.append([u, v])
                 if segment < segments && side < sides {

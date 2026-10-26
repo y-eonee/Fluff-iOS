@@ -188,6 +188,9 @@ extension DecorateView {
                     .fill(Color.a.card)
                     .overlay(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14, style: .continuous)
                         .stroke(Color.a.line, lineWidth: 1.1))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10).stroke(Color.a.pinkLight, style: StrokeStyle(lineWidth: 1.4, dash: [4, 3])).padding(8)
+                    }
                     .ignoresSafeArea(edges: .bottom)
             }
         }

@@ -10,6 +10,10 @@ struct HomeView: View {
     @State private var selectedDoll: Doll?
     @State private var isCreating = false
     @State private var isFocusing = false
+    @State private var deskPoint: CGPoint?
+    @State private var focusBackground: UIImage?
+    @State private var openingFocus = false
+    @State private var lastLookTranslation = CGSize.zero
     @State private var pendingDoll: Doll?
     @State private var isDecorating = false
     @State private var isShowingGuestbook = false
@@ -47,7 +51,7 @@ struct HomeView: View {
             ZStack {
                 Group {
                     // 3D 화면 두 개를 동시에 그리면 위에 뜬 쪽이 그려지지 않아서, AR이나 멀티 룸을 쓰는 동안 방을 내린다.
-                    if appState.isShowingAR || multiRoom.session != nil {
+                    if appState.isShowingAR || multiRoom.session != nil || isCreating || isFocusing || isDecorating {
                         Color.app.background
                     } else {
                         RoomSceneView(
@@ -64,24 +68,56 @@ struct HomeView: View {
                             onHoldDoll: { hold = $0 },
                             onMoveDoll: moveDoll,
                             onTapBoard: { if placementStart == nil { isShowingGuestbook = true } },
+                            onTapItem: { id in
+                                guard placementStart == nil,
+                                      let id, items.first(where: { $0.id == id })?.kind == .desk else { return }
+                                openFocus()
+                            },
                             onFeel: { feelCount += 1 },
                             isTransparent: true,
                             illustrationTargetY: 0.84,
                             isCozyRoom: true,
-                            onSceneReady: { isSceneReady = true }
+                            onSceneReady: { isSceneReady = true },
+                            onDeskScreen: { deskPoint = $0 }
                         )
                         .renderedOnlyWhileVisible(background: .clear)
                     }
                 }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 8)
+                        .onChanged { value in
+                            let previous = lastLookTranslation
+                            lastLookTranslation = value.translation
+                            roomPlacement.look(by: CGSize(width: value.translation.width - previous.width,
+                                                          height: value.translation.height - previous.height))
+                        }
+                        .onEnded { _ in lastLookTranslation = .zero },
+                    including: placementStart == nil ? .all : .none
+                )
                 .overlay { holdTooltip }
+                .overlay {
+                    if placementStart == nil, !isFocusing, let deskPoint {
+                        Button(action: openFocus) {
+                            Circle().strokeBorder(.white, style: StrokeStyle(lineWidth: 2, dash: [7, 6]))
+                                .frame(width: 88, height: 88).contentShape(Circle())
+                        }.buttonStyle(.plain).position(deskPoint)
+                            .accessibilityLabel("책상에서 함께 집중하기")
+                            .accessibilityHint("함께 집중할 솜뭉치를 선택해요")
+                    }
+                }
                 .ignoresSafeArea()
             }
             .overlay(alignment: .top) { topOverlay }
             .overlay {
                 if !isSceneReady, !appState.isShowingAR, multiRoom.session == nil {
-                    ProgressView("방을 준비하고 있어요")
-                        .padding(Spacing.m)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+                    VStack(spacing: Spacing.s) {
+                        ProgressView().tint(Color.a.brown)
+                        Text("포근한 방을 준비하고 있어요").appFont(.footnote)
+                    }
+                    .foregroundStyle(Color.a.brown)
+                    .padding(Spacing.l)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(CozyHomeStyle.glassHighlight))
                 }
             }
             .overlay(alignment: .topTrailing) {
@@ -107,7 +143,7 @@ struct HomeView: View {
             .sheet(item: $selectedDoll) { doll in
                 DollActionSheet(doll: doll)
             }
-            .fullScreenCover(isPresented: $isFocusing) { FocusFlowView() }
+            .fullScreenCover(isPresented: $isFocusing) { FocusFlowView(roomSnapshot: focusBackground) }
             .sheet(isPresented: $isStartingMultiRoom) {
                 MultiRoomStartSheet()
             }
@@ -134,6 +170,16 @@ struct HomeView: View {
         }
     }
 
+    private func openFocus() {
+        guard !openingFocus, !isFocusing else { return }
+        openingFocus = true
+        roomPlacement.captureImage { image in
+            focusBackground = image
+            openingFocus = false
+            isFocusing = true
+        }
+    }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
@@ -150,15 +196,14 @@ struct HomeView: View {
 
     private var headerA: some View {
         HStack(spacing: 0) {
-            Image("cozy_roof")
+            Image("cozy_roof").renderingMode(.template).foregroundStyle(.white)
                 .accessibilityHidden(true)
             Text("my room")
                 .notCliche(CozyHomeStyle.titleSize, relativeTo: .largeTitle)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .tracking(CozyHomeStyle.titleTracking)
-                .foregroundStyle(Color.a.brown)
+                .foregroundStyle(.white)
                 .fixedSize()
-                .background { Image("cozy_tape").accessibilityHidden(true) }
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: Spacing.s)
             NavigationLink {
@@ -181,11 +226,6 @@ struct HomeView: View {
             CozyHomeAction(asset: "cozy_decorate", label: "방 꾸미기") { isDecorating = true }
             CozyHomeAction(asset: "cozy_guestbook", label: "방명록") { isShowingGuestbook = true }
 
-            Button { isFocusing = true } label: {
-                Image(systemName: "timer").font(.title2).foregroundStyle(.white)
-                    .frame(width: CozyHomeStyle.button, height: CozyHomeStyle.button)
-                    .glassEffect(.regular.interactive(), in: Circle())
-            }.accessibilityLabel("함께 집중하기")
         }
         .padding(.trailing, CozyHomeStyle.headerInset)
         .padding(.top, CozyHomeStyle.headerHeight + Spacing.xl + Spacing.s)

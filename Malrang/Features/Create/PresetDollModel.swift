@@ -3,6 +3,14 @@ import UIKit
 
 /// Individually named, editable 3D body parts. No billboard is used for the preset body.
 enum PresetDollModel {
+    private static var geometry: [String: MeshResource] = [:]
+    private static func mesh(_ key: String, build: () -> MeshResource) -> MeshResource {
+        if let value = geometry[key] { return value }
+        let value = build()
+        geometry[key] = value
+        return value
+    }
+
     static func roundedEar(width: Float, height: Float, depth: Float) -> MeshResource {
         let rows = 32, columns = 48
         var positions: [SIMD3<Float>] = []
@@ -33,7 +41,8 @@ enum PresetDollModel {
         return (try? MeshResource.generate(from: [mesh])) ?? .generateSphere(radius: width / 2)
     }
     // Elliptical sewn panels give the apron a flared hem instead of a box silhouette.
-    private static func apronMesh() -> MeshResource {
+    private static func apronMesh() -> MeshResource { mesh("apronMesh", build: build_apronMesh) }
+    private static func build_apronMesh() -> MeshResource {
         var points: [SIMD3<Float>] = []
         var uv: [SIMD2<Float>] = []
         var triangles: [UInt32] = []
@@ -57,7 +66,8 @@ enum PresetDollModel {
         return (try? MeshResource.generate(from: [mesh])) ?? .generateSphere(radius: 0.065)
     }
 
-    private static func footMesh() -> MeshResource {
+    private static func footMesh() -> MeshResource { mesh("footMesh", build: build_footMesh) }
+    private static func build_footMesh() -> MeshResource {
         func rounded(_ value: Float, power: Float) -> Float {
             (value < 0 ? -1 : 1) * pow(abs(value), power)
         }
@@ -85,7 +95,8 @@ enum PresetDollModel {
         return try! MeshResource.generate(from: [mesh])
     }
 
-    private static func pocketMesh() -> MeshResource {
+    private static func pocketMesh() -> MeshResource { mesh("pocketMesh", build: build_pocketMesh) }
+    private static func build_pocketMesh() -> MeshResource {
         var contour: [SIMD3<Float>] = [[-0.035, 0.025, 0], [0.035, 0.025, 0], [0.035, -0.007, 0]]
         for i in 0...12 {
             let a = Float(i) / 12 * Float.pi / 2
@@ -120,7 +131,11 @@ enum PresetDollModel {
         return (try? MeshResource.generate(from: [mesh])) ?? .generatePlane(width: 0.07, height: 0.05)
     }
 
-    private static func headMesh(width: Float, photoOpening: Bool) -> MeshResource {
+    private static func headMesh(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource {
+        if openingScale != 1 { return buildHead(width: width, photoOpening: photoOpening, openingScale: openingScale) }
+        return mesh("head-\(width)-\(photoOpening)-\(openingScale)") { buildHead(width: width, photoOpening: photoOpening, openingScale: openingScale) }
+    }
+    private static func buildHead(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource {
         var points: [SIMD3<Float>] = []
         var uv: [SIMD2<Float>] = []
         var normals: [SIMD3<Float>] = []
@@ -144,7 +159,7 @@ enum PresetDollModel {
             triangles = stride(from: 0, to: triangles.count, by: 3).flatMap { i -> [UInt32] in
                 let face = Array(triangles[i..<i + 3])
                 let center = (points[Int(face[0])] + points[Int(face[1])] + points[Int(face[2])]) / 3
-                return PresetFaceMesh.insideOpening(center) ? [] : face
+                return PresetFaceMesh.insideOpening(center, scale: openingScale) ? [] : face
             }
         }
         var mesh = MeshDescriptor(name: "stuffed-head-cheeks")
@@ -152,7 +167,15 @@ enum PresetDollModel {
         mesh.positions = .init(points); mesh.textureCoordinates = .init(uv); mesh.primitives = .triangles(triangles)
         return (try? MeshResource.generate(from: [mesh])) ?? .generateSphere(radius: 0.13)
     }
-    private static func headFibers(width: Float, photoOpening: Bool) -> MeshResource? {
+    private static func headFibers(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource? {
+        if openingScale != 1 { return buildHeadFibers(width: width, photoOpening: photoOpening, openingScale: openingScale) }
+        let key = "fibers-\(width)-\(photoOpening)-\(openingScale)"
+        if let value = geometry[key] { return value }
+        let value = buildHeadFibers(width: width, photoOpening: photoOpening, openingScale: openingScale)
+        geometry[key] = value
+        return value
+    }
+    private static func buildHeadFibers(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource? {
         var points: [SIMD3<Float>] = []
         var triangles: [UInt32] = []
         var fiberNormals: [SIMD3<Float>] = []
@@ -161,7 +184,7 @@ enum PresetDollModel {
             let y = 1 - 2 * (Float(i) + 0.5) / Float(count)
             let a = Float(i) * 2.3999632
             let p = PresetHeadSurface.point(latitude: y, angle: a, width: width)
-            if photoOpening && PresetFaceMesh.insideOpening(p) { continue }
+            if photoOpening && PresetFaceMesh.insideOpening(p, scale: openingScale) { continue }
             let n = PresetHeadSurface.normal(latitude: y, angle: a, width: width)
             let tangent = simd_normalize(simd_cross(n, abs(n.y) > 0.9 ? SIMD3<Float>(1, 0, 0) : SIMD3<Float>(0, 1, 0)))
             let other = simd_cross(n, tangent)
@@ -182,7 +205,9 @@ enum PresetDollModel {
     }
 
     /// Fine pile follows the curved limbs and ears, rather than leaving smooth spheres.
-    private static func roundPile() -> MeshResource? {
+    private static let cachedRoundPile = buildRoundPile()
+    private static func roundPile() -> MeshResource? { cachedRoundPile }
+    private static func buildRoundPile() -> MeshResource? {
         var vertices: [SIMD3<Float>] = []
         var indices: [UInt32] = []
         for i in 0..<5000 {
@@ -203,7 +228,19 @@ enum PresetDollModel {
         return try? MeshResource.generate(from: [mesh])
     }
 
+    private struct ModelKey: Equatable {
+        var configuration: PresetConfiguration
+        var happy: Bool
+    }
+    private static let cache = EntityTemplateCache<ModelKey>(capacity: 8)
+
     static func make(_ configuration: PresetConfiguration, happy: Bool = false) async -> Entity {
+        await cache.entity(for: ModelKey(configuration: configuration, happy: happy)) {
+            await build(configuration, happy: happy)
+        }
+    }
+
+    private static func build(_ configuration: PresetConfiguration, happy: Bool) async -> Entity {
         if configuration.isPhotoSuit == true { return await PhotoSuitModel.make(configuration) }
         let root = Entity()
         let textile = await PresetTextile.textures()
@@ -260,9 +297,9 @@ enum PresetDollModel {
         }
         func color(_ part: DollPart, _ fallback: String) -> String { configuration.part(part).color ?? fallback }
         let headWidth: Float = configuration.shape == .rabbit ? 0.116 : 0.128
-        let head = ModelEntity(mesh: headMesh(width: headWidth, photoOpening: configuration.face != nil), materials: [material(color(.head, fur))])
+        let head = ModelEntity(mesh: headMesh(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale), materials: [material(color(.head, fur))])
         head.name = "head.fur"; groups[.head]!.addChild(head)
-        if let pile = headFibers(width: headWidth, photoOpening: configuration.face != nil) {
+        if let pile = headFibers(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale) {
             let fibers = ModelEntity(mesh: pile, materials: [material(color(.head, fur), cloth: false)])
             fibers.name = "head.short-pile"
             fibers.components.set(DynamicLightShadowComponent(castsShadow: false)); groups[.head]!.addChild(fibers)
@@ -338,17 +375,19 @@ enum PresetDollModel {
             let photoMesh = PresetFaceMesh.photo(aspect: Float(image.width) / Float(image.height),
                                                 zoom: configuration.faceScale,
                                                 offsetX: configuration.faceOffsetX ?? 0,
-                                                offsetY: configuration.faceOffsetY ?? 0)
+                                                offsetY: configuration.faceOffsetY ?? 0,
+                                                radiusX: 0.081 * configuration.openingScale,
+                                                radiusY: 0.072 * configuration.openingScale)
             let backing = ModelEntity(mesh: photoMesh, materials: [material("#FFF4E7")])
             backing.name = "face.lining"; backing.position.z = -0.001; groups[.head]!.addChild(backing)
             let face = ModelEntity(mesh: photoMesh, materials: [faceMaterial])
             face.name = "face.user-photo"; groups[.head]!.addChild(face)
-            let rim = ModelEntity(mesh: PresetFaceMesh.rim(), materials: [material(color(.head, fur))])
+            let rim = ModelEntity(mesh: PresetFaceMesh.rim(scale: configuration.openingScale), materials: [material(color(.head, fur))])
             rim.name = "face.padded-opening"; groups[.head]!.addChild(rim)
             for i in 0..<80 {
                 let a = Float(i) / 80 * 2 * Float.pi
                 let stitch = ball("face.seam", .head, [0.0014, 0.0025, 0.0015],
-                                  [cos(a) * 0.086, -0.008 + sin(a) * 0.077, 0.104], "#F1DEC8")
+                                  [cos(a) * 0.086 * configuration.openingScale, -0.008 + sin(a) * 0.077 * configuration.openingScale, 0.104], "#F1DEC8")
                 stitch.orientation = simd_quatf(angle: a, axis: [0, 0, 1])
             }
         } else {

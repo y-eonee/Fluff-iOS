@@ -24,14 +24,16 @@ nonisolated final class CozyBloom {
 
     func render(_ context: ARView.PostProcessContext) {
         let source = context.sourceColorTexture
-        if highlights?.width != source.width || highlights?.height != source.height {
+        let width = max(1, (source.width + 1) / 2)
+        let height = max(1, (source.height + 1) / 2)
+        if highlights?.width != width || highlights?.height != height {
             let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
-                width: source.width, height: source.height, mipmapped: false)
+                width: width, height: height, mipmapped: false)
             descriptor.usage = [.shaderRead, .shaderWrite]
             descriptor.storageMode = .private
             highlights = device.makeTexture(descriptor: descriptor)
             softened = device.makeTexture(descriptor: descriptor)
-            blur = MPSImageGaussianBlur(device: device, sigma: Float(source.width) / 150)
+            blur = MPSImageGaussianBlur(device: device, sigma: Float(width) / 150)
             blur?.edgeMode = .clamp
         }
         guard let highlights, let softened, let blur else {
@@ -50,7 +52,8 @@ nonisolated final class CozyBloom {
         encoder.setComputePipelineState(pipeline)
         for (index, texture) in textures.enumerated() { encoder.setTexture(texture, index: index) }
         let width = pipeline.threadExecutionWidth
-        encoder.dispatchThreads(MTLSize(width: context.sourceColorTexture.width, height: context.sourceColorTexture.height, depth: 1),
+        guard let target = textures.last else { encoder.endEncoding(); return }
+        encoder.dispatchThreads(MTLSize(width: target.width, height: target.height, depth: 1),
             threadsPerThreadgroup: MTLSize(width: width, height: min(8, pipeline.maxTotalThreadsPerThreadgroup / width), depth: 1))
         encoder.endEncoding()
     }

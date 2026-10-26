@@ -17,6 +17,13 @@ struct RoomSceneView: UIViewRepresentable {
     /// 완료 버튼이 화면에 남아 있는 실제 배치 좌표를 가져오는 UIKit 연결점.
     final class Placement {
         fileprivate var snapshot: (() -> [UUID: SIMD3<Float>])?
+        fileprivate var capture: ((@escaping (UIImage?) -> Void) -> Void)?
+        fileprivate var pan: ((CGSize) -> Void)?
+        func look(by delta: CGSize) { pan?(delta) }
+        func captureImage(_ completion: @escaping (UIImage?) -> Void) {
+            guard let capture else { completion(nil); return }
+            capture(completion)
+        }
 
         func finish() -> [UUID: SIMD3<Float>] { snapshot?() ?? [:] }
     }
@@ -62,6 +69,7 @@ struct RoomSceneView: UIViewRepresentable {
     /// 첫 번째 인형 머리 위의 화면 좌표. 인형이 없으면 nil. 말풍선이 인형을 따라다니게 한다.
     var onDollScreen: (CGPoint?) -> Void = { _ in }
     var onSceneReady: () -> Void = {}
+    var onDeskScreen: (CGPoint?) -> Void = { _ in }
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -73,6 +81,7 @@ struct RoomSceneView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
+        view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
         view.environment.background = .color(isTransparent ? .clear : UIColor(Color.app.background))
         view.backgroundColor = .clear
         context.coordinator.attach(to: view)
@@ -83,6 +92,12 @@ struct RoomSceneView: UIViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.render(SceneState(items: items, dolls: dolls, focusItem: focusItem, selectedItemID: selectedItemID))
         context.coordinator.play(touch)
+    }
+
+    static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+        coordinator.stopRendering()
+        view.renderCallbacks.postProcess = nil
+        view.scene.anchors.removeAll()
     }
 
     struct SceneState: Equatable {
@@ -136,6 +151,11 @@ struct RoomSceneView: UIViewRepresentable {
         func attach(to view: ARView) {
             self.view = view
             parent.placement?.snapshot = { [weak self] in self?.finishPlacement() ?? [:] }
+            parent.placement?.pan = { [weak self] delta in self?.moveCamera(by: CGPoint(x: delta.width, y: delta.height)) }
+            parent.placement?.capture = { [weak view] completion in
+                guard let view else { completion(nil); return }
+                view.snapshot(saveToHDR: false, completion: completion)
+            }
             orbitYaw = parent.focusItem.map { $0.kind.isMovable && !$0.kind.hangsOnWall ? $0.yaw : 0 } ?? 0
             view.scene.addAnchor(root)
             camera.camera.fieldOfViewInDegrees = (parent.isCozyRoom && parent.mode != .decorate) ? 42 : (parent.illustrationTargetY == nil ? 30 : 4)
@@ -145,7 +165,7 @@ struct RoomSceneView: UIViewRepresentable {
                     view.renderCallbacks.postProcess = { context in bloom.render(context) }
                 }
                 light.light.color = Palette.uiColor("#FFE8DE")
-                view.environment.background = .color(parent.mode == .decorate ? .clear : Palette.uiColor("#DDD1E6"))
+                view.environment.background = .color(parent.mode == .decorate ? .clear : Palette.uiColor("#FFFFF4"))
                 view.environment.lighting.intensityExponent = 0.05
             }
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 6, depthBias: 2)
@@ -156,6 +176,7 @@ struct RoomSceneView: UIViewRepresentable {
                 MainActor.assumeIsolated {
                     self?.fitCamera()
                     self?.reportDollScreen()
+                    self?.reportDeskScreen()
                     self?.updateAccessibilityFrames()
                 }
             }
@@ -184,6 +205,7 @@ struct RoomSceneView: UIViewRepresentable {
                 view.addGestureRecognizer(rotation)
                 let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handleZoom))
                 let pan = UIPanGestureRecognizer(target: self, action: #selector(handleShift))
+                pan.maximumNumberOfTouches = 1
                 shiftPan = pan
                 [pinch, pan].forEach {
                     $0.delegate = self
@@ -203,6 +225,16 @@ struct RoomSceneView: UIViewRepresentable {
                 // 바로 끌 때는 pan, 잠시 눌렀다가 끌 때는 long press가 같은 이동 처리를 쓴다.
                 view.addGestureRecognizer(pan)
             }
+        }
+
+        func stopRendering() {
+            renderTask?.cancel()
+            renderTask = nil
+            updateSubscription?.cancel()
+            updateSubscription = nil
+            parent.placement?.snapshot = nil
+            parent.placement?.capture = nil
+            parent.placement?.pan = nil
         }
 
         func render(_ state: SceneState) {
@@ -250,6 +282,7 @@ struct RoomSceneView: UIViewRepresentable {
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
             for item in state.items {
+                    guard !Task.isCancelled else { return }
                     let furniture = await SceneFactory.furniture(item, elevation: RoomLayout.furnitureHeight(item, in: state.items), cozy: parent.isCozyRoom, cutaway: parent.mode == .decorate)
                     if roomHidden { furniture.components.set(OpacityComponent(opacity: 0)) }
                     content.addChild(furniture)
@@ -269,7 +302,7 @@ struct RoomSceneView: UIViewRepresentable {
                 }
                 if parent.isCozyRoom {
                     if parent.mode == .decorate { aimCamera(at: [0, 0.55, 0], fitting: 3.3, height: 2.9) }
-                    else { aimCamera(at: [-0.255, 0.31, -0.18], fitting: 1.65, height: 3.0) }
+                    else { aimCamera(at: [-0.10, 0.36, -0.18], fitting: 1.90, height: 3.0) }
                     content.addChild(CozyRoomLighting.sunlight())
                 } else {
                     aimCamera(at: [0, parent.illustrationTargetY ?? 0.45, 0], fitting: parent.illustrationTargetY == nil ? 3.3 : 3.55, height: parent.illustrationTargetY == nil ? 3.1 : 2.9)
@@ -335,6 +368,14 @@ struct RoomSceneView: UIViewRepresentable {
                         if self.parent.mode == .home && self.parent.canMoveDolls { self.parent.onPickDoll(parsed.id) }
                         else { self.parent.onTapDoll(parsed.id) }
                     }
+                } else if parent.mode == .home,
+                          let parsed = Self.parse(entity.name), !parsed.isDoll,
+                          item(parsed.id)?.kind == .desk {
+                    element.accessibilityLabel = "책상, 함께 집중하기"
+                    element.activate = { [weak self] in
+                        guard let self, !self.parent.canMoveDolls else { return }
+                        self.parent.onTapItem(parsed.id)
+                    }
                 } else { return nil }
                 return (entity, element)
             }
@@ -343,15 +384,22 @@ struct RoomSceneView: UIViewRepresentable {
             updateAccessibilityFrames()
         }
 
+        private var lastAccessibilityUpdate = Date.distantPast
         private func updateAccessibilityFrames() {
+            let now = Date.now
+            guard now.timeIntervalSince(lastAccessibilityUpdate) >= 0.15 else { return }
+            lastAccessibilityUpdate = now
             guard let view else { return }
             for (entity, element) in accessibleEntities {
-                let bounds = entity.visualBounds(relativeTo: nil)
+                let size: SIMD3<Float>
+                if let parsed = Self.parse(entity.name) {
+                    size = parsed.isDoll ? [0.3, SceneFactory.dollHeight, 0.3] : (item(parsed.id)?.kind.size ?? [0.3, 0.3, 0.3])
+                } else { size = [0.4, 0.4, 0.08] }
                 var points: [CGPoint] = []
                 for x: Float in [-1, 1] {
                     for y: Float in [-1, 1] {
                         for z: Float in [-1, 1] {
-                            let corner = bounds.center + bounds.extents * SIMD3(x, y, z) / 2
+                            let corner = entity.convert(position: SIMD3<Float>(0, size.y / 2, 0) + size * SIMD3(x, y, z) / 2, to: nil)
                             if let point = view.project(corner) { points.append(point) }
                         }
                     }
@@ -375,9 +423,24 @@ struct RoomSceneView: UIViewRepresentable {
             fittedSize = view.bounds.size
             let aspect = Float(view.bounds.width / view.bounds.height)
             let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
-            let distance = max(aim.width / 2 / (tanHalf * aspect), aim.height / 2 / tanHalf)
+            let horizontal = aim.width / 2 / (tanHalf * aspect)
+            let vertical = aim.height / 2 / tanHalf
+            let distance = max(horizontal, vertical)
             fitDistance = distance
             placeCamera()
+        }
+
+        private var lastDeskPoint: CGPoint?
+        private func reportDeskScreen() {
+            guard let view, let desk = latest?.items.first(where: { $0.kind == .desk }),
+                  let entity = root.findEntity(named: "item|\(desk.id)"),
+                  let point = view.project(entity.convert(position: [0.05, (FurnitureKind.desk.seatHeight ?? 0.47) + 0.04, 0.15], to: nil)) else {
+                if lastDeskPoint != nil { lastDeskPoint = nil; parent.onDeskScreen(nil) }
+                return
+            }
+            if let last = lastDeskPoint, hypot(last.x - point.x, last.y - point.y) < 1 { return }
+            lastDeskPoint = point
+            parent.onDeskScreen(point)
         }
 
         private func reportDollScreen() {
@@ -414,11 +477,16 @@ struct RoomSceneView: UIViewRepresentable {
             placeCamera()
         }
 
-        /// 확대한 상태에서 쓸면 방의 다른 쪽을 볼 수 있다.
+        /// 홈에서는 확대하지 않아도 한 손가락으로 둘러본다.
         @objc private func handleShift(_ gesture: UIPanGestureRecognizer) {
-            guard let view, zoom > 1, drag == nil, view.bounds.height > 0 else { return }
+            guard let view, (zoom > 1 || (parent.mode == .home && !parent.canMoveDolls)), drag == nil, view.bounds.height > 0 else { return }
             let move = gesture.translation(in: view)
             gesture.setTranslation(.zero, in: view)
+            moveCamera(by: move)
+        }
+
+        private func moveCamera(by move: CGPoint) {
+            guard let view, view.bounds.height > 0, drag == nil else { return }
             let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
             let metersPerPoint = 2 * fitDistance / zoom * tanHalf / Float(view.bounds.height)
             let root2 = Float(0.5).squareRoot()
@@ -427,7 +495,8 @@ struct RoomSceneView: UIViewRepresentable {
             let dx = Float(move.x) * metersPerPoint
             let dy = Float(move.y) * metersPerPoint
             shift += away * dy - right * dx
-            shift = simd_clamp(shift, SIMD3(repeating: -1), SIMD3(repeating: 1))
+            let limit: Float = parent.mode == .home ? 0.30 : 1
+            shift = simd_clamp(shift, SIMD3(repeating: -limit), SIMD3(repeating: limit))
             placeCamera()
         }
 
@@ -442,8 +511,12 @@ struct RoomSceneView: UIViewRepresentable {
 
         // MARK: 제스처
 
-        /// 확대했을 때만 한 손가락으로 방을 옮긴다. 인형이나 가구를 집어 든 동안에는 옮기지 않는다.
+        /// 둘러보기와 인형 배치가 같은 드래그를 처리하지 않게 한다.
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            if gestureRecognizer is UILongPressGestureRecognizer {
+                guard let view, let hit = target(at: gestureRecognizer.location(in: view)) else { return false }
+                return canDrag(hit)
+            }
             if gestureRecognizer === dollPan {
                 guard let view, let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }
                 let location = pan.location(in: view), delta = pan.translation(in: view)
@@ -451,7 +524,8 @@ struct RoomSceneView: UIViewRepresentable {
                 return (hit.isDoll || parent.mode == .decorate) && canDrag(hit)
             }
             guard gestureRecognizer === shiftPan else { return true }
-            guard zoom > 1, drag == nil else { return false }
+            if parent.mode == .home && parent.placement != nil && !parent.canMoveDolls { return false }
+            guard (zoom > 1 || (parent.mode == .home && !parent.canMoveDolls)), drag == nil else { return false }
             if let view, let hit = target(at: gestureRecognizer.location(in: view)), canDrag(hit) {
                 return false
             }
@@ -514,8 +588,9 @@ struct RoomSceneView: UIViewRepresentable {
                 if let hit = target(at: point), !hit.isDoll { parent.onTapItem(hit.id) } else { parent.onTapItem(nil) }
                 return
             }
-            if let hit = target(at: point), hit.isDoll {
-                parent.onTapDoll(hit.id)
+            if let hit = target(at: point) {
+                if hit.isDoll { parent.onTapDoll(hit.id) }
+                else if parent.mode == .home { parent.onTapItem(hit.id) }
             }
         }
 
@@ -743,11 +818,12 @@ extension View {
 private struct VisibleOnly: ViewModifier {
     let background: Color
     @State private var isVisible = false
+    @Environment(\.scenePhase) private var scenePhase
 
     func body(content: Content) -> some View {
         ZStack {
             background
-            if isVisible { content }
+            if isVisible && scenePhase == .active { content }
         }
         .onAppear { isVisible = true }
         .onDisappear { isVisible = false }

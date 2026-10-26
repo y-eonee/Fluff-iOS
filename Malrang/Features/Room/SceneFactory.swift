@@ -10,8 +10,24 @@ enum SceneFactory {
     /// 불러온 USDZ 모델(없으면 nil). 장면을 다시 그릴 때마다 파일을 찾지 않도록 기억해 둔다.
     private static var models: [FurnitureKind: Entity?] = [:]
 
+    private struct FurnitureKey: Equatable {
+        var item: RoomItemState
+        var onFloor: Bool
+        var elevation: Float
+        var cozy: Bool
+        var cutaway: Bool
+    }
+    private static let furnitureCache = EntityTemplateCache<FurnitureKey>(capacity: 24)
+
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
     static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0, cozy: Bool = false, cutaway: Bool = false) async -> Entity {
+        let key = FurnitureKey(item: item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
+        return await furnitureCache.entity(for: key) {
+            await buildFurniture(item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
+        }
+    }
+
+    private static func buildFurniture(_ item: RoomItemState, onFloor: Bool, elevation: Float, cozy: Bool, cutaway: Bool) async -> Entity {
         if models[item.kind] == nil {
             if let url = Bundle.main.url(forResource: item.kind.assetName, withExtension: "usdz") {
                 models[item.kind] = .some(try? await Entity(contentsOf: url))

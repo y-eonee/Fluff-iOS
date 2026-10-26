@@ -28,6 +28,9 @@ nonisolated struct PresetConfiguration: Codable, Equatable {
     var parts: [String: Part] = [:]
     var face: Data?
     var faceScale: Float = 1
+    /// Optional for compatibility with previously saved dolls.
+    var faceOpeningScale: Float?
+    var openingScale: Float { min(1.1, max(0.8, faceOpeningScale ?? 1)) }
     var faceOffsetX: Float?
     var faceOffsetY: Float?
     var isPhotoSuit: Bool?
