@@ -23,14 +23,13 @@ struct GuestbookEntry: Identifiable {
 
 struct AppNotification: Identifiable {
     enum Kind: CaseIterable {
-        case friendRequest, guestbook, like, multiRoomInvite
+        case friendRequest, guestbook, like
 
         var tag: String {
             switch self {
             case .friendRequest: "요청"
             case .guestbook: "방명록"
             case .like: "좋아요"
-            case .multiRoomInvite: "초대"
             }
         }
 
@@ -39,7 +38,6 @@ struct AppNotification: Identifiable {
             case .friendRequest: "person.badge.plus"
             case .guestbook: "pencil.line"
             case .like: "heart.fill"
-            case .multiRoomInvite: "house"
             }
         }
     }

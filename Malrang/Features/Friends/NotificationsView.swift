@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// 알림함: 친구 요청, 방명록, 좋아요, 멀티 룸 초대
+/// 알림함: 친구 요청, 방명록, 좋아요
 struct NotificationsView: View {
     @Environment(FriendStore.self) private var store
     @State private var isLoaded = false
     @State private var didFail = false
-    @State private var isShowingMultiRoomNotice = false
     @State private var filter: AppNotification.Kind?
 
     private var shown: [AppNotification] {
@@ -44,11 +43,6 @@ struct NotificationsView: View {
         }
         .navigationTitle("알림함")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("멀티 룸은 준비 중이에요", isPresented: $isShowingMultiRoomNotice) {
-            Button("확인", role: .cancel) {}
-        } message: {
-            Text("곧 친구와 같은 방에서 함께 놀 수 있어요")
-        }
         .task {
             do {
                 try await store.loadNotifications()
@@ -80,9 +74,6 @@ struct NotificationsView: View {
                 .fixedSize()
             case .like:
                 EmptyView()
-            case .multiRoomInvite:
-                Button("들어가기") { isShowingMultiRoomNotice = true }
-                    .buttonStyle(.bordered)
             }
         }
         .padding(.vertical, Spacing.xxs)

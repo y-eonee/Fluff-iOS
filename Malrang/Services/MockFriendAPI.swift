@@ -79,7 +79,6 @@ final class MockFriendAPI: FriendAPI {
             AppNotification(kind: .friendRequest, from: strangers[0], message: "소율님이 친구 요청을 보냈어요"),
             AppNotification(kind: .guestbook, from: friendList[2], message: "하늘이님이 방명록을 남겼어요"),
             AppNotification(kind: .like, from: friendList[1], message: "민서님이 내 방에 좋아요를 눌렀어요"),
-            AppNotification(kind: .multiRoomInvite, from: friendList[1], message: "민서님이 멀티 룸에 초대했어요"),
         ]
     }
 

@@ -4,7 +4,6 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
-    @Environment(MultiRoom.self) private var multiRoom
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var selectedDoll: Doll?
@@ -17,7 +16,6 @@ struct HomeView: View {
     @State private var pendingDoll: Doll?
     @State private var isDecorating = false
     @State private var isShowingGuestbook = false
-    @State private var isStartingMultiRoom = false
     /// 배치 모드일 때 시작 위치. 취소하면 여기로 되돌린다. nil이면 배치 모드가 아니다.
     @State private var placementStart: [UUID: SIMD3<Float>]?
     @State private var roomPlacement = RoomSceneView.Placement()
@@ -50,8 +48,8 @@ struct HomeView: View {
             // 3D 화면은 상단바·탭바가 사라져도 크기가 변하지 않게 화면 전체에 깐다.
             ZStack {
                 Group {
-                    // 3D 화면 두 개를 동시에 그리면 위에 뜬 쪽이 그려지지 않아서, AR이나 멀티 룸을 쓰는 동안 방을 내린다.
-                    if appState.isShowingAR || multiRoom.session != nil || isCreating || isFocusing || isDecorating {
+                    // 3D 화면 두 개를 동시에 그리면 위에 뜬 쪽이 그려지지 않아서, AR이나 다른 3D 화면을 쓰는 동안 방을 내린다.
+                    if appState.isShowingAR || isCreating || isFocusing || isDecorating {
                         Color.app.background
                     } else {
                         RoomSceneView(
@@ -109,7 +107,7 @@ struct HomeView: View {
             }
             .overlay(alignment: .top) { topOverlay }
             .overlay {
-                if !isSceneReady, !appState.isShowingAR, multiRoom.session == nil {
+                if !isSceneReady, !appState.isShowingAR {
                     VStack(spacing: Spacing.s) {
                         ProgressView().tint(Color.a.brown)
                         Text("포근한 방을 준비하고 있어요").appFont(.footnote)
@@ -144,9 +142,6 @@ struct HomeView: View {
                 DollActionSheet(doll: doll)
             }
             .fullScreenCover(isPresented: $isFocusing, onDismiss: { focusBackground = nil }) { FocusFlowView(roomSnapshot: focusBackground) }
-            .sheet(isPresented: $isStartingMultiRoom) {
-                MultiRoomStartSheet()
-            }
             .fullScreenCover(isPresented: $isCreating, onDismiss: {
                 if let doll = pendingDoll {
                     pendingDoll = nil
@@ -354,7 +349,6 @@ struct HomeView: View {
     HomeView()
         .environment(AppState())
         .environment(FriendStore(api: MockFriendAPI()))
-        .environment(MultiRoom())
         .modelContainer(.preview)
 }
 
@@ -362,6 +356,5 @@ struct HomeView: View {
     HomeView()
         .environment(AppState())
         .environment(FriendStore(api: MockFriendAPI()))
-        .environment(MultiRoom())
         .modelContainer(for: [Doll.self, RoomItem.self], inMemory: true)
 }

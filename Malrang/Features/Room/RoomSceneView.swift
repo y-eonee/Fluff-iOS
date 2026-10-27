@@ -33,8 +33,6 @@ struct RoomSceneView: UIViewRepresentable {
     var mode = Mode.view
     /// 값이 있으면 방 없이 이 가구 하나만 가운데에 보여준다
     var focusItem: RoomItemState?
-    /// 값이 바뀌면 그 인형이 말랑하게 눌린다 (멀티 룸에서 누가 만졌을 때)
-    var touch: DollTouch?
     var onTapDoll: (UUID) -> Void = { _ in }
     /// 내 방(home)에서는 새 인형을 배치하는 동안에만 인형을 끌 수 있다.
     var canMoveDolls = true
@@ -91,7 +89,6 @@ struct RoomSceneView: UIViewRepresentable {
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.parent = self
         context.coordinator.render(SceneState(items: items, dolls: dolls, focusItem: focusItem, selectedItemID: selectedItemID))
-        context.coordinator.play(touch)
     }
 
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
@@ -506,15 +503,6 @@ struct RoomSceneView: UIViewRepresentable {
             let limit: Float = parent.mode == .home ? 0.30 : 1
             shift = simd_clamp(shift, SIMD3(repeating: -limit), SIMD3(repeating: limit))
             placeCamera()
-        }
-
-        private var lastTouch: DollTouch?
-
-        func play(_ touch: DollTouch?) {
-            guard let touch, touch != lastTouch else { return }
-            lastTouch = touch
-            guard let doll = root.findEntity(named: "doll|\(touch.dollID)") else { return }
-            Task { await SceneFactory.squish(doll) }
         }
 
         // MARK: 제스처

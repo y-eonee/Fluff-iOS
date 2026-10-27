@@ -9,7 +9,6 @@ struct RootView: View {
     @AppStorage("didMatchHomeReferenceComposition") private var didMatchHomeReferenceComposition = false
     @AppStorage("didAlignLegacyCozyRoom") private var didAlignLegacyCozyRoom = false
     @Environment(\.modelContext) private var modelContext
-    @Environment(MultiRoom.self) private var multiRoom
     @Query private var items: [RoomItem]
     @State private var appState = AppState()
 
@@ -109,10 +108,6 @@ struct RootView: View {
                     if (try? modelContext.save()) != nil { didAlignLegacyCozyRoom = true }
                 }
             }
-            .task { await multiRoom.observeSessions() }
-            .fullScreenCover(isPresented: Binding(get: { multiRoom.session != nil }, set: { if !$0 { multiRoom.leave() } })) {
-                MultiRoomView()
-            }
         } else {
             OnboardingView { isSignedIn = true }
         }
@@ -122,6 +117,5 @@ struct RootView: View {
 #Preview {
     RootView()
         .environment(FriendStore(api: MockFriendAPI()))
-        .environment(MultiRoom())
         .modelContainer(.preview)
 }

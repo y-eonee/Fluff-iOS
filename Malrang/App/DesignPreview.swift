@@ -82,7 +82,7 @@ struct DesignPreview: View {
                 NavigationStack { DecorateView(selectedID: (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first { $0.kind == .desk }?.id) }
             }
             else { FocusFlowView(session: fixture.session, showMain: route == "main", showReward: route == "reward") }
-        }.modelContainer(fixture.container).environment(AppState()).environment(MultiRoom()).environment(FriendStore(api: MockFriendAPI()))
+        }.modelContainer(fixture.container).environment(AppState()).environment(FriendStore(api: MockFriendAPI()))
     }
 }
 

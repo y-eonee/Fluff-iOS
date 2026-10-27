@@ -3,8 +3,6 @@ import SwiftUI
 /// 말랑이 체험 화면
 struct SquishyView: View {
     let doll: DollState
-    /// 누를 때마다 불린다. 멀티 룸에서 다른 사람에게 알릴 때 쓴다.
-    var onTouch: () -> Void = {}
 
     var body: some View {
         VStack(spacing: Spacing.l) {
@@ -12,7 +10,7 @@ struct SquishyView: View {
                 .appFont(.footnote)
                 .foregroundStyle(Color.app.inkSecondary)
             Spacer()
-            SquishyDoll(doll: doll, onTouch: onTouch)
+            SquishyDoll(doll: doll)
             Spacer()
             Text("꾹 누르면 조물조물, 문지르면 쓰담쓰담")
                 .appFont(.footnote)
@@ -30,7 +28,6 @@ struct SquishyView: View {
 /// 처음에는 화살표가 위에서 가리켜서 만져 보게 한다. 춤을 적용한 인형은 춤추면서 눌린다.
 struct SquishyDoll: View {
     let doll: DollState
-    var onTouch: () -> Void = {}
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("soundOn") private var soundOn = true
@@ -93,7 +90,6 @@ struct SquishyDoll: View {
                     isTouching = true
                     lastStrokePoint = value.location
                     pressCount += 1
-                    onTouch()
                     if soundOn { doll.filling.playSound() }
                     withAnimation(.spring(duration: 0.12)) { press = 1 }
                     withAnimation(.spring) { hasTouched = true }

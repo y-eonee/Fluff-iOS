@@ -4,7 +4,6 @@ import SwiftUI
 @main
 struct MalrangApp: App {
     @State private var friendStore = FriendStore(api: MockFriendAPI())
-    @State private var multiRoom = MultiRoom()
     @State private var isShowingSplash = true
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -55,7 +54,6 @@ struct MalrangApp: App {
                 if phase == .background { RenderMemory.clearCaches() }
             }
             .environment(friendStore)
-            .environment(multiRoom)
             .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
             .tint(Color.app.ink)
             .preferredColorScheme(.light)
