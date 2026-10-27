@@ -36,6 +36,7 @@ struct RoomSceneView: UIViewRepresentable {
     var onTapDoll: (UUID) -> Void = { _ in }
     /// 내 방(home)에서는 새 인형을 배치하는 동안에만 인형을 끌 수 있다.
     var canMoveDolls = true
+    var allowsDollWandering = false
     var movingDollID: UUID?
     var placement: Placement?
     var onPickDoll: (UUID) -> Void = { _ in }
@@ -120,6 +121,7 @@ struct RoomSceneView: UIViewRepresentable {
         private let lift: Float = 0.06
         private var aim: (target: SIMD3<Float>, width: Float, height: Float)?
         private var fittedSize = CGSize.zero
+        private var wander: RoomDollWander?
         private var updateSubscription: (any Cancellable)?
         private var orbitYaw: Float = 0
         private var lastDollPoint: CGPoint?
@@ -170,8 +172,14 @@ struct RoomSceneView: UIViewRepresentable {
             light.look(at: .zero, from: parent.isCozyRoom ? [-0.6, 3, 2] : [1.5, 3, 2], relativeTo: nil)
 
             // 화면 크기가 정해지거나 바뀌면 카메라 거리를 다시 맞춘다.
-            updateSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
+            updateSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in
                 MainActor.assumeIsolated {
+                    if let self {
+                        self.wander?.update(delta: event.deltaTime, running: self.parent.allowsDollWandering
+                            && self.parent.mode == .home && !self.parent.canMoveDolls && self.drag == nil
+                            && !UIAccessibility.isReduceMotionEnabled
+                            && UIApplication.shared.applicationState == .active)
+                    }
                     self?.fitCamera()
                     self?.reportDollScreen()
                     self?.reportDeskScreen()
@@ -226,6 +234,7 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         func stopRendering() {
+            wander = nil
             renderTask?.cancel()
             renderTask = nil
             updateSubscription?.cancel()
@@ -314,6 +323,7 @@ struct RoomSceneView: UIViewRepresentable {
                 }
             }
             guard !Task.isCancelled else { return }
+            wander = nil
             root.children.removeAll()
             highlights = []
             content.orientation = simd_quatf(angle: orbitYaw, axis: [0, 1, 0])
@@ -321,6 +331,7 @@ struct RoomSceneView: UIViewRepresentable {
             root.addChild(camera)
             root.addChild(light)
 
+            if parent.mode == .home { wander = RoomDollWander(content: content, states: state.dolls, items: state.items) }
             displayed = state
             configureAccessibility(content)
             parent.onSceneReady()

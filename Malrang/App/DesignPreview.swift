@@ -36,10 +36,13 @@ final class DesignPreviewData {
             let renderer = ImageRenderer(content: CottonArtwork(shape: shape).frame(width: 240, height: 253))
             let doll = Doll(name: name, shape: shape, filling: .fluffy, imageData: renderer.uiImage?.pngData() ?? Data())
             doll.presetConfiguration = PresetConfiguration(shape: shape)
-            if ProcessInfo.processInfo.arguments.contains("--memory-audit") {
+            if ProcessInfo.processInfo.arguments.contains("--memory-audit") || route == "walking" {
                 doll.id = UUID(uuidString: "00000000-0000-0000-0000-00000000000\(shape == .cat ? 1 : shape == .bear ? 2 : 3)")!
                 doll.isPlaced = true
                 doll.position = [shape == .cat ? 0 : shape == .bear ? -0.35 : 0.35, 0, 0]
+                if route == "walking" {
+                    doll.position = shape == .cat ? [-0.4, 0, 0.84] : shape == .bear ? [0.15, 0, -0.8] : [-0.41, 0.39, 0.18]
+                }
             }
             container.mainContext.insert(doll)
             if shape == .cat { session.select(doll.id) }
@@ -76,7 +79,7 @@ struct DesignPreview: View {
             else if route == "create-entry" { CreateFlowView { _ in } }
             else if ["create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
                 NavigationStack { DollCustomizeStepA(draft: draft) {} }
-            } else if route == "home-ui" { NavigationStack { HomeView() } }
+            } else if ["home-ui", "walking"].contains(route) { NavigationStack { HomeView() } }
             else if route == "decorate" { NavigationStack { DecorateView() } }
             else if route == "decorate-selected" {
                 NavigationStack { DecorateView(selectedID: (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first { $0.kind == .desk }?.id) }

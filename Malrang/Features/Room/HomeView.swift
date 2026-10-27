@@ -60,6 +60,7 @@ struct HomeView: View {
                                 if placementStart == nil { selectedDoll = dolls.first { $0.id == id } }
                             },
                             canMoveDolls: placementStart != nil,
+                            allowsDollWandering: selectedDoll == nil && !openingFocus && !isShowingGuestbook,
                             movingDollID: lastMovedID,
                             placement: roomPlacement,
                             onPickDoll: { lastMovedID = $0 },
