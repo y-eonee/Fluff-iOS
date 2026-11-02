@@ -7,7 +7,6 @@ struct ProfileEditView: View {
     var isCreating = false
     @AppStorage("nickname") private var nickname = ""
     @AppStorage("avatarData") private var avatarData = Data()
-    @AppStorage("friendCode") private var friendCode = ""
     @AppStorage("isSignedIn") private var isSignedIn = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,12 +16,12 @@ struct ProfileEditView: View {
     @State private var pickerItem: PhotosPickerItem?
     private let maxLength = 10
 
-    private var trimmed: String { draftName.trimmingCharacters(in: .whitespaces) }
+    private var trimmed: String { draftName.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         VStack(spacing: Spacing.l) {
             if isCreating {
-                Text("친구들에게 보여질 모습을 정해주세요")
+                Text("내 방에서 사용할 프로필을 정해주세요")
                     .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
@@ -32,6 +31,8 @@ struct ProfileEditView: View {
                     .appFont(.headline)
                 HStack {
                     TextField("", text: $draftName, prompt: Text("닉네임을 입력해주세요").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
+                        .submitLabel(isCreating ? .go : .done)
+                        .onSubmit { if !trimmed.isEmpty { save() } }
                         .onChange(of: draftName) {
                             if draftName.count > maxLength { draftName = String(draftName.prefix(maxLength)) }
                         }
@@ -43,7 +44,7 @@ struct ProfileEditView: View {
                 .frame(minHeight: 52)
                 .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous).stroke(Color.app.ink.opacity(0.15)))
-                Text("친구에게 보이는 이름이에요 · 최대 \(maxLength)자")
+                Text("내 방에서 사용할 이름이에요 · 최대 \(maxLength)자")
                     .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
@@ -114,11 +115,11 @@ struct ProfileEditView: View {
         try? modelContext.delete(model: DecorPhoto.self)
         nickname = ""
         avatarData = Data()
-        friendCode = ""
         isSignedIn = false
     }
 
     private func save() {
+        guard !trimmed.isEmpty else { return }
         nickname = trimmed
         avatarData = draftAvatar
         if !isCreating { dismiss() }
@@ -143,7 +144,7 @@ struct ProfileAvatar: View {
             }
         }
         .frame(width: size, height: size)
-        .background(Color.app.pastelSky)
+        .background(Color.mib.bg.mintSoft)
         .clipShape(Circle())
         .accessibilityHidden(true)
     }

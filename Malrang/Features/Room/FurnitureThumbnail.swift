@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 원본 일러스트의 입체 면을 렌더링한 목록용 이미지.
+/// 방 안의 CozyFurniture와 같은 모델을 렌더링한 목록용 이미지.
 struct FurnitureThumbnail: View {
     let kind: FurnitureKind
 
@@ -8,7 +8,7 @@ struct FurnitureThumbnail: View {
         Image("furniture_\(kind.rawValue)")
             .resizable()
             .scaledToFit()
-            .frame(height: Spacing.xl * 2)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             .accessibilityHidden(true)
     }

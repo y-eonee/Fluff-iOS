@@ -135,7 +135,7 @@ enum RoomLayout {
     /// 그 자리에서 인형이 올라설 높이와, 올라선 가구
     static func seat(at point: SIMD2<Float>, in items: [RoomItemState]) -> (height: Float, item: RoomItemState?) {
         let candidates = items.filter { item in
-            guard item.kind.seatHeight != nil else { return false }
+            guard item.kind.allowsDollPlacement else { return false }
             let box = footprint(item)
             return point.x >= box.min.x && point.x <= box.max.x && point.y >= box.min.y && point.y <= box.max.y
         }
@@ -143,8 +143,18 @@ enum RoomLayout {
         return (top?.kind.seatHeight ?? 0, top)
     }
 
+    static func canPlaceDoll(at point: SIMD2<Float>, in items: [RoomItemState]) -> Bool {
+        !items.contains { item in
+            guard item.kind.blocksFloor && !item.kind.allowsDollPlacement else { return false }
+            let offset = point - SIMD2(item.x, item.z)
+            let local = SIMD2(cos(item.yaw) * offset.x - sin(item.yaw) * offset.y,
+                              sin(item.yaw) * offset.x + cos(item.yaw) * offset.y)
+            return abs(local.x) <= item.kind.size.x / 2 + 0.08 && abs(local.y) <= item.kind.size.z / 2 + 0.08
+        }
+    }
+
     /// 새 가구를 겹치지 않게 놓을 첫 빈자리
-    static func freeSpot(for kind: FurnitureKind, among items: [RoomItemState]) -> SIMD2<Float>? {
+    static func freeSpot(for kind: FurnitureKind, among items: [RoomItemState], yaw: Float = 0) -> SIMD2<Float>? {
         if kind.hangsOnWall {
             let hung = items.filter { $0.kind.hangsOnWall }
             let gap = kind.size.z / 2 + 0.01
@@ -157,8 +167,8 @@ enum RoomLayout {
         let steps = stride(from: -half, through: half, by: grid * 2)
         for z in steps.reversed() {
             for x in steps {
-                let point = snapped([x, z], for: kind)
-                let candidate = RoomItemState(id: UUID(), kind: kind, x: point.x, z: point.y)
+                let point = snapped([x, z], for: kind, yaw: yaw)
+                let candidate = RoomItemState(id: UUID(), kind: kind, x: point.x, z: point.y, yaw: yaw)
                 if !overlaps(candidate, in: items) { return point }
             }
         }
@@ -166,7 +176,7 @@ enum RoomLayout {
     }
 
     /// 새 인형을 둘 기본 위치: 가구와 다른 인형에서 떨어진 앞쪽 바닥의 빈 곳
-    static func dollSpot(avoiding items: [RoomItemState], dolls: [SIMD3<Float>]) -> SIMD3<Float> {
+    static func dollSpot(avoiding items: [RoomItemState], dolls: [SIMD3<Float>]) -> SIMD3<Float>? {
         for z in stride(from: Float(0.75), through: -0.5, by: -0.25) {
             for x in stride(from: Float(-0.5), through: 0.5, by: 0.25) {
                 let point = SIMD2(x, z)
@@ -179,6 +189,6 @@ enum RoomLayout {
                 if !isBlocked && !isCrowded { return [x, 0, z] }
             }
         }
-        return [0, 0, 0.75]
+        return nil
     }
 }

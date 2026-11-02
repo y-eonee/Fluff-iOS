@@ -58,7 +58,7 @@ struct CozyHomeTabs: View {
 
     private let tabs: [(AppTab, String, String)] = [
         (.dolls, "솜뭉치들", "cozy_dolls"), (.home, "내 방", "cozy_home"),
-        (.friends, "친구", "cozy_friends"), (.mypage, "마이", "cozy_my")
+        (.mypage, "마이", "cozy_my")
     ]
 
     var body: some View {

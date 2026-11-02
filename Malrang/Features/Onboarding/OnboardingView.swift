@@ -28,6 +28,7 @@ struct OnboardingView: View {
                     }
                 }
                 .accessibilityHidden(true)
+                .allowsHitTesting(false)
 
                 VStack(spacing: compact ? Spacing.m : Spacing.l) {
                     Spacer(minLength: Spacing.m)
@@ -45,11 +46,11 @@ struct OnboardingView: View {
                         Button(action: onStart) {
                             Label("Apple로 시작하기", systemImage: "apple.logo")
                         }
-                        .buttonStyle(LoginButtonStyle())
+                        .buttonStyle(D1PrimaryStyle())
                         Button(action: onStart) {
                             Label("카카오로 시작하기", systemImage: "message.fill")
                         }
-                        .buttonStyle(LoginButtonStyle(isPrimary: false))
+                        .buttonStyle(D1SecondaryStyle())
                     }
                 }
                 .frame(maxWidth: 420)
@@ -59,26 +60,6 @@ struct OnboardingView: View {
         }
         .foregroundStyle(Color.a.brown)
         .background { FluffBackdrop() }
-    }
-}
-
-private struct LoginButtonStyle: ButtonStyle {
-    var isPrimary = true
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.custom("Pretendard-SemiBold", size: 17, relativeTo: .headline))
-            .foregroundStyle(Color.a.brown)
-            .padding(.horizontal, Spacing.m)
-            .padding(.vertical, Spacing.m)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .background {
-                RoundedRectangle(cornerRadius: Radius.large, style: .continuous)
-                    .fill(isPrimary ? Color.a.pinkLight : Color.a.yellowLight)
-            }
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
-            .opacity(configuration.isPressed ? 0.75 : 1)
     }
 }
 

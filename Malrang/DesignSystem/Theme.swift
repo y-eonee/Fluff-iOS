@@ -1,13 +1,13 @@
 import SwiftUI
 
 extension Color {
-    /// 시안 A에서는 피그마 팔레트(갈색 #6B4A3E, 분홍 #F7B9C8, 파랑 #A6C5E2, 노랑 #FDE9A0, 크림 #FEF2CC, 종이 #FFFFF4)로 바뀐다.
+    /// 공통 UI는 Figma MIB 역할 토큰을 사용한다. 파스텔은 콘텐츠용 이전 팔레트다.
     enum app {
-        static var background: Color { Color.a.paper }
-        static var surface: Color { Color.a.card }
-        static var ink: Color { Color.a.brown }
-        static var inkSecondary: Color { Color.a.soft }
-        static var accent: Color { Color.a.pink }
+        static var background: Color { Color.mib.bg.screen }
+        static var surface: Color { Color.mib.bg.surface }
+        static var ink: Color { Color.mib.text.primary }
+        static var inkSecondary: Color { Color.mib.text.secondary }
+        static var accent: Color { Color.mib.action.primary }
         static var pastelYellow: Color { Color.a.yellow }
         static var pastelMint: Color { Color.a.cream }
         static var pastelSky: Color { Color.a.blue }
@@ -51,7 +51,6 @@ extension View {
     func cardStyle() -> some View {
         background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.a.line.opacity(0.13)))
-            .shadow(color: Color.app.ink.opacity(0.06), radius: Spacing.s, y: Spacing.xxs)
+                .strokeBorder(Color.mib.line.default))
     }
 }

@@ -250,7 +250,9 @@ enum PresetDollModel {
         // Conservative reservation includes decoded color/alpha textures and procedural geometry.
         let cost = (detail == .full ? 12 : 4) * 1024 * 1024 + (configuration.face == nil ? 0 : 12 * 1024 * 1024) + (configuration.face?.count ?? 0)
         return await cache.entity(for: ModelKey(configuration: configuration, happy: happy, detail: detail), estimatedCost: cost) {
-            await build(configuration, happy: happy, detail: detail)
+            let model = await build(configuration, happy: happy, detail: detail)
+            DollBackSeams.add(to: model)
+            return model
         }
     }
 

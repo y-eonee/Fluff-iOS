@@ -8,10 +8,10 @@ struct CreationProgress: View {
         HStack(spacing: Spacing.xs) {
             ForEach(titles.indices, id: \.self) { index in
                 VStack(spacing: Spacing.xs) {
-                    Capsule().fill(index <= step ? Color.a.brown : Color.a.brown.opacity(0.12))
+                    Capsule().fill(index <= step ? Color.mib.action.primary : Color.mib.bg.sunken)
                         .frame(height: 6)
                     Text(titles[index]).appFont(.caption2, index == step ? .bold : .regular)
-                        .foregroundStyle(index == step ? Color.a.brown : Color.a.soft)
+                        .foregroundStyle(index == step ? Color.mib.action.primary : Color.mib.text.secondary)
                 }.frame(maxWidth: .infinity)
             }
         }.padding(.horizontal, Spacing.l).padding(.vertical, Spacing.s)

@@ -21,11 +21,11 @@ struct DecorateView: View {
     @State var selectedID: UUID?
     @State var rotationFailCount = 0
     @State var editingItem: RoomItem?
+    @State var photoItem: RoomItem?
     @State var isConfirmingDiscard = false
     @State var isFull = false
     @State var saveFailed = false
     @State var isBlocked = false
-    @State var isShowingGuestbook = false
 
     var hasChanges: Bool {
         original != nil && (original != items.map(\.state) || dolls.contains { originalDolls[$0.id] != $0.position })
@@ -33,16 +33,14 @@ struct DecorateView: View {
 
     var body: some View {
         contentA
-        .background(Color.a.paper)
+        .background(Color.mib.bg.screen)
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         .alert("꾸민 내용을 저장하지 못했어요", isPresented: $saveFailed) { Button("확인", role: .cancel) {} }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
-        .toolbar {
-            toolbarA
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .onChange(of: items.map(\.state)) { old, _ in
             if isApplyingHistory {
                 isApplyingHistory = false
@@ -61,8 +59,8 @@ struct DecorateView: View {
         .navigationDestination(item: $editingItem) { item in
             FurnitureCustomView(item: item)
         }
-        .navigationDestination(isPresented: $isShowingGuestbook) {
-            GuestbookView(ownerID: "me", title: "내 방명록", canWrite: false)
+        .navigationDestination(item: $photoItem) { item in
+            FurnitureCustomView(item: item, initialStyle: .photo)
         }
         .onAppear {
             if original == nil {
@@ -85,7 +83,7 @@ struct DecorateView: View {
     var holdTooltip: some View {
         if let hold {
             let seat = RoomLayout.seat(at: [hold.position.x, hold.position.z], in: items.map(\.state)).item
-            HintCapsule(text: "옮기는 중 · \(seat?.kind.label ?? "바닥")")
+            D1Bubble(text: "옮기는 중 · \(seat?.kind.label ?? "바닥")")
                 .fixedSize()
                 .position(x: hold.screen.x, y: hold.screen.y)
                 .allowsHitTesting(false)

@@ -12,7 +12,10 @@ struct FurnitureCustomView: View {
     @State private var style: Style
     @State private var pickerItem: PhotosPickerItem?
     @State private var photoScale: Double
-    private let original: RoomItemState
+    @State private var original: RoomItemState
+    @State private var choosingPhoto = false
+    @State private var saveFailed = false
+    private let initialStyle: Style?
     @State private var undoStack: [PhotoEdit] = []
     @State private var lastRemembered = Date.distantPast
 
@@ -35,11 +38,12 @@ struct FurnitureCustomView: View {
 
     private var isEditingPhoto: Bool { style == .photo && item.photoData != nil }
 
-    init(item: RoomItem) {
+    init(item: RoomItem, initialStyle: Style? = nil) {
         self.item = item
-        _style = State(initialValue: item.photoData != nil ? .photo : (item.colorName != nil ? .color : .basic))
+        self.initialStyle = initialStyle
+        _style = State(initialValue: initialStyle ?? (item.photoData != nil ? .photo : (item.colorName != nil ? .color : .basic)))
         _photoScale = State(initialValue: item.photoScale)
-        original = item.state
+        _original = State(initialValue: item.state)
     }
 
     var body: some View {
@@ -47,28 +51,21 @@ struct FurnitureCustomView: View {
             RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan, isCozyRoom: true)
                 .renderedOnlyWhileVisible()
                 .overlay(alignment: .top) {
-                    HintCapsule(text: isEditingPhoto ? "두 손가락으로 확대하고, 움직여서 자를 곳을 맞춰요" : "드래그해서 이리저리 돌려 보세요")
-                        .padding(.top, Spacing.xs)
+                    D1Bubble(text: isEditingPhoto ? "두 손가락으로 확대하고, 움직여서 자를 곳을 맞춰요" : "드래그해서 이리저리 돌려 보세요")
+                        .padding(.horizontal, 22).padding(.top, 8)
                 }
                 .overlay(alignment: .topTrailing) {
                     if style == .photo {
-                        Button(action: undo) {
-                            Image(systemName: "arrow.uturn.backward")
-                                .appFont(.title3)
-                                .frame(width: 44, height: 44)
-                                .background(Color.app.surface, in: Circle())
-                        }
-                        .foregroundStyle(Color.app.ink)
-                        .disabled(undoStack.isEmpty)
-                        .accessibilityLabel("되돌리기")
-                        .padding(Spacing.s)
+                        D1IconButton(icon: "undo", label: "되돌리기", action: undo)
+                            .disabled(undoStack.isEmpty).opacity(undoStack.isEmpty ? 0.4 : 1).padding(8)
                     }
                 }
             VStack(spacing: Spacing.m) {
-                Picker("꾸미기 방식", selection: $style) {
-                    ForEach(Style.allCases, id: \.self) { Text($0.rawValue) }
+                HStack(spacing: 8) {
+                    ForEach(Style.allCases, id: \.self) { option in
+                        D1Choice(title: option.rawValue, selected: style == option, fillsWidth: true) { style = option }.frame(maxWidth: .infinity)
+                    }
                 }
-                .pickerStyle(.segmented)
                 Group {
                     switch style {
                     case .basic:
@@ -77,30 +74,34 @@ struct FurnitureCustomView: View {
                             .foregroundStyle(Color.app.inkSecondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     case .color:
-                        ItemColorPicker(item: item)
+                        ScrollView { FurnitureColorChoices(item: item).padding(.vertical, 8) }
                     case .photo:
-                        if item.photoData != nil { photoEditor } else { photoGrid }
+                        if item.photoData != nil && !choosingPhoto { photoEditor } else { photoGrid }
                     }
                 }
-                .frame(height: style == .color ? 340 : 220)
-                CancelConfirmButtons(
-                    onCancel: {
-                        item.restore(original)
-                        dismiss()
-                    },
-                    onConfirm: { dismiss() }
-                )
+                .frame(height: 220)
+                HStack(spacing: 10) {
+                    Button("취소") { item.restore(original); saveAndDismiss() }.buttonStyle(D1SecondaryStyle())
+                    Button("완료", action: saveAndDismiss).buttonStyle(D1PrimaryStyle())
+                }
             }
-            .padding(Spacing.m)
-            .background(Color.app.surface, in: UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous))
+            .padding(.horizontal, 22).padding(.vertical, 16)
+            .background(Color.mib.bg.surface, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
         }
-        .background { AppBackground() }
+        .background(Color.mib.bg.screen)
+        .toolbar(.visible, for: .navigationBar)
+        .tint(Color.mib.action.primary)
+        .foregroundStyle(Color.mib.text.primary)
         .navigationTitle("\(item.kind.label) 꾸미기")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if item.kind.isMovable {
                 Button("삭제", systemImage: "trash", role: .destructive, action: delete)
             }
+        }
+        .alert("사진 변경을 저장하지 못했어요", isPresented: $saveFailed) { Button("확인", role: .cancel) {} }
+        .task(id: initialStyle) {
+            if let initialStyle { style = initialStyle }
         }
         .onChange(of: style) {
             if style == .basic {
@@ -122,13 +123,15 @@ struct FurnitureCustomView: View {
 
     private var photoGrid: some View {
         ScrollView {
+            if item.photoData != nil {
+                Button("사진 변경 취소") { choosingPhoto = false }.buttonStyle(FocusCompactButton()).padding(.bottom, 8)
+            }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Image(systemName: "plus")
-                        .appFont(.title)
+                    D1Icon(name: "plus")
                         .foregroundStyle(Color.app.ink)
                         .frame(maxWidth: .infinity, minHeight: 96)
-                        .background(Color.app.background, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
+                        .background(Color.app.background, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .accessibilityLabel("갤러리에서 사진 추가")
                 ForEach(photos) { photo in
@@ -151,27 +154,22 @@ struct FurnitureCustomView: View {
 
     private var photoEditor: some View {
         HStack(alignment: .top, spacing: Spacing.m) {
-            thumbnail(item.photoData ?? Data())
-                .frame(width: 120)
-                .overlay(alignment: .topTrailing) {
-                    Button("사진 빼기", systemImage: "xmark.circle.fill") {
-                        remember()
-                        item.photoData = nil
-                    }
-                        .labelStyle(.iconOnly)
-                        .appFont(.title3)
-                        .foregroundStyle(Color.app.ink, Color.app.surface)
-                        .frame(width: 44, height: 44)
-                }
+            VStack(spacing: 8) {
+                thumbnail(item.photoData ?? Data())
+                Button("사진 바꾸기") { choosingPhoto = true }.buttonStyle(FocusCompactButton())
+                Button("사진 빼기") {
+                    remember(); item.photoData = nil; choosingPhoto = false
+                }.pretendard(.medium, 13).foregroundStyle(Color.mib.semantic.error).frame(minHeight: 44)
+            }.frame(width: 120)
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     HStack(spacing: Spacing.xs) {
-                        Chip(title: "채우기", isSelected: item.photoFit == 0, isCompact: true) { setFit(0) }
-                        Chip(title: "맞추기", isSelected: item.photoFit == 1, isCompact: true) { setFit(1) }
+                        D1Choice(title: "채우기", selected: item.photoFit == 0, fillsWidth: true) { setFit(0) }
+                        D1Choice(title: "맞추기", selected: item.photoFit == 1, fillsWidth: true) { setFit(1) }
                     }
                     Text("확대")
                         .appFont(.headline)
-                    Slider(value: $photoScale, in: 1...3) { isEditing in
+                    Slider(value: Binding(get: { photoScale }, set: { photoScale = $0; item.photoScale = $0 }), in: 1...3) { isEditing in
                         if isEditing { remember() } else { item.photoScale = photoScale }
                     }
                 }
@@ -189,9 +187,9 @@ struct FurnitureCustomView: View {
                         Label("회전", systemImage: "rotate.right")
                     }
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(FocusCompactButton())
                 .labelStyle(.titleAndIcon)
-                .appFont(.footnote)
+                .pretendard(.medium, 13)
             }
         }
         .foregroundStyle(Color.app.ink)
@@ -203,7 +201,7 @@ struct FurnitureCustomView: View {
             .scaledToFill()
             .frame(minWidth: 0, maxWidth: .infinity)
             .frame(height: 96)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     /// 되돌리기용으로 지금 사진 상태를 저장한다.
@@ -229,6 +227,7 @@ struct FurnitureCustomView: View {
         item.photoOffsetX = last.offsetX
         item.photoOffsetY = last.offsetY
         photoScale = last.scale
+        choosingPhoto = false
     }
 
     /// 프레임에 맞추는 방식을 바꾸면 확대와 자른 위치를 처음으로 돌린다.
@@ -257,6 +256,7 @@ struct FurnitureCustomView: View {
 
     private func apply(_ data: Data) {
         remember()
+        choosingPhoto = false
         item.photoData = data
         item.photoScale = 1
         item.photoFit = 0
@@ -265,6 +265,11 @@ struct FurnitureCustomView: View {
         item.photoOffsetX = 0
         item.photoOffsetY = 0
         photoScale = 1
+    }
+
+    private func saveAndDismiss() {
+        do { try modelContext.save(); dismiss() }
+        catch { saveFailed = true }
     }
 
     /// 지운 가구 위에 있던 인형은 바닥으로 내린다.

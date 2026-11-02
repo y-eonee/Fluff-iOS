@@ -5,7 +5,7 @@ import Metal
 /// 고정된 홈 카메라에서도 실제 깊이와 가림이 생기는, 부위별로 분리된 가구.
 /// 저장 좌표·충돌 범위·앉는 높이는 기존 FurnitureKind와 함께 쓴다.
 enum CozyFurniture {
-    static func clearCache() { meshes.removeAll(); bakedModels.removeAll(); fabricColor = nil; fabricNormal = nil; contactShadow = nil; windowSky = nil }
+    static func clearCache() { meshes.removeAll(); bakedModels.removeAll(); fabricColor = nil; fabricNormal = nil; contactShadow = nil; windowSky = nil; windowSkyPhase = nil }
 
     private static let fabricShader: CustomMaterial.SurfaceShader? = {
         guard let library = MTLCreateSystemDefaultDevice()?.makeDefaultLibrary(),
@@ -18,12 +18,13 @@ enum CozyFurniture {
     private static var fabricNormal: TextureResource?
     private static var contactShadow: UnlitMaterial?
     private static var windowSky: UnlitMaterial?
+    private static var windowSkyPhase: RoomDaylight.Phase?
 
     static func make(_ item: RoomItemState, photoMaterial: any Material, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false) async -> Entity {
         if fabricColor == nil { fabricColor = await texture("CozyFabricColor", semantic: .color) }
         if fabricNormal == nil { fabricNormal = await texture("CozyFabricNormal", semantic: .normal) }
         if contactShadow == nil { contactShadow = await shadowMaterial() }
-        if item.kind == .wall, windowSky == nil { windowSky = await skyMaterial() }
+        if item.kind == .wall { windowSky = await skyMaterial() }
         let root = Entity()
         let s = item.kind.size
         let main = item.colorName ?? defaultColor(for: item.kind)
@@ -44,7 +45,7 @@ enum CozyFurniture {
             return Self.material(hex, usesWindowLighting: usesWindowLighting,
                                  textureRepeat: item.kind == .floor ? 16 : scale / 1.5,
                                  softness: softness, surfaceScale: scale,
-                                 surfaceGlow: part.hasPrefix("window") ? 0.75 : (item.kind == .lamp && part == "shade" ? 0.45 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : 0)),
+                                 surfaceGlow: part.hasPrefix("window") ? 0.75 : (item.kind == .lamp && part == "shade" ? -0.65 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : 0)),
                                  isFiber: part.hasSuffix(".pile"))
         }
         func box(_ name: String, _ size: SIMD3<Float>, _ at: SIMD3<Float>, _ color: String,
@@ -292,6 +293,7 @@ enum CozyFurniture {
             box("mat", [s.x * 0.76, s.y * 0.77, 0.009], [0, s.y / 2, 0.031], "#FFF0DF", radius: 0.004)
             for x: Float in [-0.032, 0.032] { ball("heart", [0.083, 0.10, 0.018], [x, s.y * 0.54, 0.041], "#E9A0B2") }
             let tip = ModelEntity(mesh: .generateBox(size: [0.083, 0.083, 0.012], cornerRadius: 0.012), materials: [material("#E9A0B2")])
+            tip.name = "heart.tip"
             tip.position = [0, s.y * 0.44, 0.041]
             tip.orientation = simd_quatf(angle: .pi / 4, axis: [0, 0, 1])
             root.addChild(tip)
@@ -302,13 +304,18 @@ enum CozyFurniture {
             shade.name = "shade"
             shade.position.y = 0.125
             root.addChild(shade)
+
+        }
+        }
+        // Baked furniture also needs a live light; the mesh alone cannot illuminate the desk.
+        if item.kind == .lamp {
             let glow = PointLight()
+            glow.name = "desk-lamp-light"
             glow.light.color = Palette.uiColor("#FFE3A9")
-            glow.light.intensity = 16
-            glow.light.attenuationRadius = 0.65
+            glow.light.intensity = 0
+            glow.light.attenuationRadius = 1.5
             glow.position = [0, 0.19, 0]
             root.addChild(glow)
-        }
         }
         if item.kind == .wall {
             for child in root.children where child.name.hasPrefix("window.") {
@@ -323,12 +330,28 @@ enum CozyFurniture {
             shadow.components.set(DynamicLightShadowComponent(castsShadow: false))
             root.addChild(shadow)
         }
+        if item.kind == .frame, item.photoData != nil {
+            // Baked frames also contain the original heart artwork. Remove that artwork,
+            // keeping named frame/mat meshes and any grouping entities intact.
+            func removeArtwork(_ entity: Entity) {
+                for child in Array(entity.children) {
+                    if child.name.hasPrefix("heart") || (child.name.isEmpty && child.components[ModelComponent.self] != nil) { child.removeFromParent() }
+                    else { removeArtwork(child) }
+                }
+            }
+            removeArtwork(root)
+        }
         if item.photoData != nil, item.kind != .wall {
             let isWall = item.kind.hangsOnWall
             let size: SIMD2<Float> = isWall ? [s.x * 0.76, s.y * 0.77] : [s.x * 0.9, s.z * 0.85]
             let photo = ModelEntity(mesh: .generatePlane(width: size.x, height: size.y), materials: [photoMaterial])
             photo.name = "custom-photo"
-            if isWall { photo.position = [0, s.y / 2, s.z / 2 + 0.015] }
+            if isWall {
+                let front = item.kind == .frame
+                    ? (root.findEntity(named: "mat")?.visualBounds(relativeTo: root).max.z ?? 0.0355) + 0.001
+                    : s.z / 2 + 0.015
+                photo.position = [0, s.y / 2, front]
+            }
             else {
                 photo.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
                 photo.position = [0, (item.kind.seatHeight ?? 0.01) + 0.002, 0]
@@ -381,14 +404,14 @@ enum CozyFurniture {
             custom.baseColor = .init(tint: Palette.uiColor(hex))
             if let fabricColor { custom.baseColor.texture = .init(fabricColor) }
             if let fabricNormal { custom.normal = .init(texture: .init(fabricNormal)) }
-            custom.custom.value = [surfaceScale, softness, surfaceGlow, isFiber ? 1 : 0]
+            custom.custom.value = [surfaceScale, softness, surfaceGlow, isFiber ? -2 : 1]
             custom.faceCulling = .none
             return custom
         }
         return material
     }
 
-    private static func defaultColor(for kind: FurnitureKind) -> String {
+    static func defaultColor(for kind: FurnitureKind) -> String {
         switch kind {
         case .wall: "#FFE8DB"
         case .floor: "#E5D4FC"
@@ -400,14 +423,22 @@ enum CozyFurniture {
         }
     }
 
-    private static func skyMaterial() async -> UnlitMaterial? {
+    static func skyMaterial(at date: Date = .now, profile: RoomDaylight? = nil) async -> UnlitMaterial? {
+        let daylight = profile ?? RoomDaylight.at(date)
+        if windowSkyPhase == daylight.phase, let windowSky { return windowSky }
+        windowSkyPhase = daylight.phase
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         let image = UIGraphicsImageRenderer(size: CGSize(width: 256, height: 512), format: format).image { renderer in
             let context = renderer.cgContext
-            let colors = ["#BBA3D5", "#D7AECF", "#F8D8C8"].map { Palette.uiColor($0).cgColor }
+            let colors = daylight.sky.map { Palette.uiColor($0).cgColor }
             if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0, 0.6, 1]) {
                 context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: 512), options: [])
+            }
+            Palette.uiColor(daylight.phase == .night ? "#EDE9CE" : "#FFE3B0").setFill()
+            context.fillEllipse(in: CGRect(x: 170, y: daylight.phase == .sunset ? 330 : 50, width: 42, height: 42))
+            if daylight.phase == .night {
+                for i in 0..<14 { context.fillEllipse(in: CGRect(x: (i * 71) % 250, y: 20 + (i * 83) % 380, width: 2, height: 2)) }
             }
             for (x, y, scale) in [(18.0, 125.0, 0.7), (148.0, 215.0, 1.0), (40.0, 325.0, 1.2)] {
                 context.saveGState()
@@ -419,7 +450,7 @@ enum CozyFurniture {
                 }
                 context.addPath(cloud)
                 context.clip()
-                if let light = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [Palette.uiColor("#FFF1C7").cgColor, Palette.uiColor("#EDB2BB").cgColor] as CFArray, locations: [0, 1]) {
+                if let light = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [Palette.uiColor(daylight.phase == .night ? "#8995B0" : "#FFF1C7").cgColor, Palette.uiColor(daylight.phase == .night ? "#52617F" : "#EDB2BB").cgColor] as CFArray, locations: [0, 1]) {
                     context.drawLinearGradient(light, start: CGPoint(x: 0, y: -17), end: CGPoint(x: 0, y: 30), options: [])
                 }
                 context.restoreGState()
@@ -429,7 +460,7 @@ enum CozyFurniture {
                 context.saveGState()
                 context.addEllipse(in: rect)
                 context.clip()
-                if let foliage = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [Palette.uiColor("#CCD1A0").cgColor, Palette.uiColor("#6E8D72").cgColor] as CFArray, locations: [0, 1]) {
+                if let foliage = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [Palette.uiColor(daylight.phase == .night ? "#52665D" : "#CCD1A0").cgColor, Palette.uiColor(daylight.phase == .night ? "#293D3A" : "#6E8D72").cgColor] as CFArray, locations: [0, 1]) {
                     context.drawRadialGradient(foliage, startCenter: CGPoint(x: rect.midX - 14, y: rect.minY + 20), startRadius: 1, endCenter: CGPoint(x: rect.midX, y: rect.midY), endRadius: 55, options: [.drawsAfterEndLocation])
                 }
                 context.restoreGState()
@@ -439,6 +470,7 @@ enum CozyFurniture {
               let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) else { return nil }
         var material = UnlitMaterial(applyPostProcessToneMap: false)
         material.color = .init(tint: .white, texture: .init(texture))
+        windowSky = material
         return material
     }
 

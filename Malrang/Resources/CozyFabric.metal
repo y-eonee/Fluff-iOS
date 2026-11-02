@@ -47,7 +47,10 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
         + params.textures().base_color().sample(fabricSampler, local.xz * 0.43).rgb * half(weights.y)
         + params.textures().base_color().sample(fabricSampler, local.xy * 0.43).rgb * half(weights.z);
     fiber *= clamp(1.0h + (tufts - 0.92h) * half(softness * 1.8), 0.92h, 1.04h);
-    float fiberMesh = params.uniforms().custom_parameter().w;
+    float encodedLight = params.uniforms().custom_parameter().w;
+    float fiberMesh = encodedLight < 0.0 ? 1.0 : 0.0;
+    float daylight = encodedLight < 0.0 ? -encodedLight - 1.0 : encodedLight;
+    half3 daylightTint = params.textures().custom().sample(fabricSampler, float2(0.5)).rgb;
     fiber = mix(fiber, half3(0.92h), half(fiberMesh));
     params.surface().set_base_color(tint * fiber);
     float3 detail = float3(realitykit::unpack_normal(params.textures().normal().sample(fabricSampler, uv).rgb));
@@ -104,8 +107,10 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
         * half(softness) * (1.0h - saturate(glow * 1.2h));
     half3 wallFill = tint * fiber * half3(0.12h, 0.046h, 0.024h) * half(leftWall);
     half3 bounce = tint * fiber * half3(1.0h, 0.57h, 0.33h) * half(wallBounce + reflectedBand + ceilingBounce + backBand + lowerBackBand);
-    params.surface().set_emissive_color(sunlight + bounce + velvet + clothFill + wallFill
-        + tint * fiber * half3(1.0h, 0.72h, 0.38h) * half(params.uniforms().custom_parameter().z));
+    float surfaceGlow = params.uniforms().custom_parameter().z;
+    half3 lampGlow = half3(1.0h, 0.78h, 0.40h) * half(max(-surfaceGlow, 0.0) * (1.0 - daylight));
+    params.surface().set_emissive_color(lampGlow + (sunlight + bounce + velvet + clothFill + wallFill) * half(daylight) * daylightTint
+        + tint * fiber * half3(1.0h, 0.72h, 0.38h) * half(max(surfaceGlow, 0.0) * daylight) * daylightTint);
 }
 
 // Premultiplied highlights keep the transparent preset preview free of dark halos.

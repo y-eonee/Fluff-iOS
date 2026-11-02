@@ -2,15 +2,15 @@ import CoreText
 import SwiftUI
 
 extension Color {
-    /// 시안 A(피그마 1안)의 색. 손그림 느낌의 갈색 선과 크림색 종이 바탕을 쓴다.
+    /// 기존 호출부의 호환 이름. 공통 UI 역할은 MIB로 연결하고 장식·콘텐츠 색은 유지한다.
     enum a {
-        static let paper = Color(hex: 0xFFFFF4)
-        static let card = Color(hex: 0xFFF9F2)
-        static let brown = Color(hex: 0x6B4A3E)
-        static let line = Color(hex: 0x8E6A5C)
-        static let soft = Color(hex: 0x8A6A5E)
+        static let paper = Color.mib.bg.screen
+        static let card = Color.mib.bg.surface
+        static let brown = Color.mib.text.primary
+        static let line = Color.mib.line.default
+        static let soft = Color.mib.text.secondary
         static let cream = Color(hex: 0xFEF2CC)
-        static let creamText = Color(hex: 0xFFF6EE)
+        static let creamText = Color.mib.text.onPrimary
         static let pink = Color(hex: 0xF7B9C8)
         static let pinkLight = Color(hex: 0xFBDDE4)
         static let blue = Color(hex: 0xA6C5E2)
@@ -18,7 +18,7 @@ extension Color {
         static let yellow = Color(hex: 0xFDE9A0)
         static let yellowLight = Color(hex: 0xFCEBC0)
         static let mint = Color(hex: 0xCDEBD9)
-        static let danger = Color(hex: 0xB5475F)
+        static let danger = Color("danger")
         static let dangerLine = Color(hex: 0xC9576F)
         static let dangerFill = Color(hex: 0xFFF1F3)
     }
@@ -106,7 +106,6 @@ struct NotebookTabBar: View {
     private let items = [
         Item(tab: .dolls, title: "솜뭉치들", asset: nil),
         Item(tab: .home, title: "내 방", asset: "a_tab_home"),
-        Item(tab: .friends, title: "친구", asset: "a_tab_friends"),
         Item(tab: .mypage, title: "마이", asset: "a_tab_my"),
     ]
 

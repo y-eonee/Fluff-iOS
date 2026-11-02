@@ -28,7 +28,7 @@ enum FurnitureKind: String, CaseIterable {
         case .desk: "책상"
         case .shelf: "선반"
         case .chair: "의자"
-        case .sofa: "소파"
+        case .sofa: "라운지 의자"
         case .rugRound: "원형 러그"
         case .rugSquare: "사각 러그"
         case .plant: "화분"
@@ -111,11 +111,12 @@ enum FurnitureKind: String, CaseIterable {
         case .floor, .desk, .sofa, .rugRound, .rugSquare: size.x / size.z
         case .bed: size.x / size.z
         case .chair: 1.5
-        case .shelf, .plant, .frame, .lamp, .flowerCushion: size.x / size.y
+        case .frame: (size.x * 0.76) / (size.y * 0.77)
+        case .shelf, .plant, .lamp, .flowerCushion: size.x / size.y
         }
     }
 
-    /// 인형을 올려둘 수 있는 윗면 높이. nil이면 올려둘 수 없다.
+    /// 가구 윗면의 물리적 높이. 인형 배치 가능 여부는 allowsDollPlacement로 판단한다.
     var seatHeight: Float? {
         switch self {
         case .bed: 0.39
@@ -127,6 +128,10 @@ enum FurnitureKind: String, CaseIterable {
         default: nil
         }
     }
+
+    /// The lounge chair is a placement surface; bed/desk/window/frame are activity entry points.
+    var hasHomeInteraction: Bool { [.bed, .desk, .wall, .frame].contains(self) }
+    var allowsDollPlacement: Bool { seatHeight != nil && !hasHomeInteraction }
 
     var isMovable: Bool { self != .wall && self != .floor }
 

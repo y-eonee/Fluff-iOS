@@ -105,41 +105,14 @@ enum SceneFactory {
             if let dance = doll.dance { play(dance, on: entity) }
             return entity
         }
-        let image = ImageDownsampling.image(doll.imageData, maxPixel: 1024)
-        let aspect = Float((image?.size.width ?? 1) / max(image?.size.height ?? 1, 1))
-        var material = UnlitMaterial(applyPostProcessToneMap: false)
-        material.faceCulling = .none
-        if let image, let cgImage = image.cgImage,
-           let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)),
-           let maskImage = opacityMask(of: image),
-           let mask = try? await TextureResource(image: maskImage, options: .init(semantic: .raw)) {
-            material.color = .init(tint: .white, texture: .init(texture))
-            material.blending = .transparent(opacity: .init(scale: 1, texture: .init(mask)))
-            material.opacityThreshold = 0.5
-        }
-        let plane = ModelEntity(mesh: .generatePlane(width: dollHeight * aspect, height: dollHeight), materials: [material])
-        plane.position.y = dollHeight / 2
-        plane.name = "body"
-
-        var shadowMaterial = UnlitMaterial(color: .black)
-        shadowMaterial.blending = .transparent(opacity: 0.15)
-        let shadow = ModelEntity(mesh: .generateCylinder(height: 0.002, radius: dollHeight * aspect * 0.4), materials: [shadowMaterial])
-        shadow.position.y = 0.002
-
         let entity = Entity()
-        entity.addChild(shadow)
-        entity.addChild(plane)
-        // 카메라가 (+x, +z) 쪽에서 보므로 인형 앞면을 그쪽으로 돌린다.
+        let body = Entity(); body.name = "body"; body.position.y = dollHeight / 2
+        let visual = await PlushCutoutModel.make(doll.imageData)
+        visual.position.y = -dollHeight / 2; body.addChild(visual); entity.addChild(body)
+        entity.name = "doll|\(doll.id)"; entity.position = doll.position
         entity.orientation = simd_quatf(angle: .pi / 4, axis: [0, 1, 0])
-        entity.position = doll.position
-        entity.name = "doll|\(doll.id)"
-        // 두께 없는 이미지 면 대신 몸통 전체를 잡을 수 있는 터치 영역을 둔다.
-        let body = ShapeResource.generateBox(size: [dollHeight * aspect, dollHeight, 0.06])
-            .offsetBy(translation: [0, dollHeight / 2, 0])
-        entity.components.set(CollisionComponent(shapes: [body]))
-        if let dance = doll.dance {
-            play(dance, on: entity)
-        }
+        entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.3, dollHeight, 0.15]).offsetBy(translation: [0, dollHeight / 2, 0])]))
+        if let dance = doll.dance { play(dance, on: entity) }
         return entity
     }
 

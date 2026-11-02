@@ -7,6 +7,7 @@ struct RootView: View {
     @AppStorage("didRestoreIllustrationShelf") private var didRestoreIllustrationShelf = false
     @AppStorage("didApplyCozyRoomLayout") private var didApplyCozyRoomLayout = false
     @AppStorage("didMatchHomeReferenceComposition") private var didMatchHomeReferenceComposition = false
+    @AppStorage("didAddReferenceLoungeChair") private var didAddReferenceLoungeChair = false
     @AppStorage("didAlignLegacyCozyRoom") private var didAlignLegacyCozyRoom = false
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [RoomItem]
@@ -107,6 +108,24 @@ struct RootView: View {
                     }
                     if (try? modelContext.save()) != nil { didAlignLegacyCozyRoom = true }
                 }
+                if !didAddReferenceLoungeChair {
+                    let currentRoom = (try? modelContext.fetch(FetchDescriptor<RoomItem>())) ?? items
+                    if currentRoom.contains(where: { $0.kind == .sofa }) {
+                        didAddReferenceLoungeChair = true
+                    } else if let chair = RoomItem.starterRoom.first(where: { $0.kind == .sofa }) {
+                        let existing = currentRoom.map(\.state)
+                        if !RoomLayout.overlaps(chair.state, in: existing) {
+                            modelContext.insert(chair)
+                        } else if let spot = RoomLayout.freeSpot(for: .sofa, among: existing, yaw: Float(chair.yaw)) {
+                            chair.x = Double(spot.x); chair.z = Double(spot.y)
+                            modelContext.insert(chair)
+                        }
+                        if (try? modelContext.save()) != nil,
+                           (try? modelContext.fetch(FetchDescriptor<RoomItem>()))?.contains(where: { $0.kind == .sofa }) == true {
+                            didAddReferenceLoungeChair = true
+                        }
+                    }
+                }
             }
         } else {
             OnboardingView { isSignedIn = true }
@@ -116,6 +135,5 @@ struct RootView: View {
 
 #Preview {
     RootView()
-        .environment(FriendStore(api: MockFriendAPI()))
         .modelContainer(.preview)
 }

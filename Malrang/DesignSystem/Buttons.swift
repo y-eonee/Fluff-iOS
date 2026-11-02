@@ -5,13 +5,11 @@ struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .appFont(.headline)
-            .foregroundStyle(Color.a.creamText)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .background(Color.a.brown, in: RoundedRectangle(cornerRadius: Radius.large))
-            .overlay(RoundedRectangle(cornerRadius: Radius.large).strokeBorder(Color.white.opacity(0.28)))
-            .shadow(color: Color.a.brown.opacity(0.14), radius: Spacing.xs, y: Spacing.xxs)
-            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
+            .pretendard(.bold, 20)
+            .foregroundStyle(Color.mib.text.onPrimary)
+            .frame(maxWidth: .infinity, minHeight: 60)
+            .contentShape(Rectangle())
+            .background(isEnabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 30))
     }
 }
 
@@ -19,12 +17,12 @@ struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .appFont(.headline)
-            .foregroundStyle(Color.app.ink)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .background(Color.a.card, in: RoundedRectangle(cornerRadius: Radius.large))
-            .overlay(RoundedRectangle(cornerRadius: Radius.large).strokeBorder(Color.a.line.opacity(0.55)))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .pretendard(.bold, 20)
+            .foregroundStyle(Color.mib.text.primary)
+            .frame(maxWidth: .infinity, minHeight: 60)
+            .contentShape(Rectangle())
+            .background(Color.a.card, in: RoundedRectangle(cornerRadius: 30))
+            .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(Color.mib.line.selected, lineWidth: 1.4))
     }
 }
 
@@ -73,9 +71,8 @@ struct FloatingCircleButton: View {
             }
             .foregroundStyle(Color.app.ink)
             .frame(width: 76, height: 76)
-            .glassEffect(.regular.tint(isPrimary ? Color.a.pinkLight.opacity(0.65) : Color.a.card.opacity(0.65)).interactive(), in: Circle())
+            .glassEffect(.regular.tint(isPrimary ? Color.mib.bg.mintSoft.opacity(0.65) : Color.mib.bg.surface.opacity(0.65)).interactive(), in: Circle())
             .overlay(Circle().strokeBorder(CozyHomeStyle.glassHighlight))
-            .shadow(color: Color.a.brown.opacity(0.10), radius: Spacing.xs, y: Spacing.xxs)
         }
         .buttonStyle(.plain)
     }
@@ -122,10 +119,10 @@ struct Chip: View {
             .frame(maxWidth: isCompact ? .infinity : nil)
             .padding(.horizontal, isCompact ? Spacing.xxs : Spacing.s)
             .frame(minHeight: 44)
-            .background(isSelected ? Color.app.accent : Color.app.surface,
+            .background(isSelected ? Color.mib.bg.mintSoft : Color.mib.bg.surface,
                         in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
-                .stroke(isSelected ? Color.app.ink : Color.app.ink.opacity(0.15)))
+                .stroke(isSelected ? Color.mib.line.selected : Color.mib.line.default))
         }
         .buttonStyle(.plain)
     }

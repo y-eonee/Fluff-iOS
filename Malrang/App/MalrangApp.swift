@@ -3,18 +3,27 @@ import SwiftUI
 
 @main
 struct MalrangApp: App {
-    @State private var friendStore = FriendStore(api: MockFriendAPI())
     @State private var isShowingSplash = true
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init() {
         Font.registerCustomFonts()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--reset-onboarding-preview") {
+            UserDefaults.standard.removePersistentDomain(forName: "fluff.onboarding-preview")
+        }
+        #endif
     }
 
     @ViewBuilder private var appContent: some View {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--memory-audit") { MemoryAuditView() }
+        if ProcessInfo.processInfo.arguments.contains("--export-furniture-thumbnails") {
+            FurnitureThumbnailExporter().frame(width: 512, height: 384)
+        } else if ProcessInfo.processInfo.arguments.contains("--onboarding-preview") {
+            RootView().defaultAppStorage(UserDefaults(suiteName: "fluff.onboarding-preview")!).modelContainer(.preview)
+        }
+        else if ProcessInfo.processInfo.arguments.contains("--memory-audit") { MemoryAuditView() }
         else if let route = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--design-preview=") })?.split(separator: "=").last {
             DesignPreview(route: String(route))
         } else { RootView() }
@@ -37,6 +46,7 @@ struct MalrangApp: App {
             }
             .task {
                 #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--furniture-audit") { await FurnitureInteractionAudit.run() }
                 await PresetModelExporter.exportIfRequested()
                 await CozyModelExporter.exportIfRequested()
                 await CozyModelExporter.auditIfRequested()
@@ -53,9 +63,8 @@ struct MalrangApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { RenderMemory.clearCaches() }
             }
-            .environment(friendStore)
             .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
-            .tint(Color.app.ink)
+            .tint(Color.app.accent)
             .preferredColorScheme(.light)
         }
         .modelContainer(for: [Doll.self, RoomItem.self, DecorPhoto.self])

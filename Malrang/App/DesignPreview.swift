@@ -36,7 +36,7 @@ final class DesignPreviewData {
             let renderer = ImageRenderer(content: CottonArtwork(shape: shape).frame(width: 240, height: 253))
             let doll = Doll(name: name, shape: shape, filling: .fluffy, imageData: renderer.uiImage?.pngData() ?? Data())
             doll.presetConfiguration = PresetConfiguration(shape: shape)
-            if ProcessInfo.processInfo.arguments.contains("--memory-audit") || route == "walking" {
+            if ProcessInfo.processInfo.arguments.contains("--memory-audit") || route == "walking" || route == "home-ui" {
                 doll.id = UUID(uuidString: "00000000-0000-0000-0000-00000000000\(shape == .cat ? 1 : shape == .bear ? 2 : 3)")!
                 doll.isPlaced = true
                 doll.position = [shape == .cat ? 0 : shape == .bear ? -0.35 : 0.35, 0, 0]
@@ -53,12 +53,27 @@ final class DesignPreviewData {
             }
             container.mainContext.insert(item)
         }
+        if route == "frame-photo" {
+            let pictures = [Self.framePhoto("PHOTO A", first: .systemTeal, second: .systemOrange), Self.framePhoto("PHOTO B", first: .systemIndigo, second: .systemPink)]
+            for data in pictures { container.mainContext.insert(DecorPhoto(data: data)) }
+            let frames = try? container.mainContext.fetch(FetchDescriptor<RoomItem>())
+            frames?.first(where: { $0.kind == .frame })?.photoData = pictures[0]
+        }
         try? container.mainContext.save()
-        if ["running", "rest", "reward"].contains(route) {
-            session.start(at: .now.addingTimeInterval(route == "running" ? -1122 : -1501))
+        if ["running", "rest", "paused", "pet", "exit"].contains(route) {
+            session.start(at: .now.addingTimeInterval(["running", "paused", "exit"].contains(route) ? -1122 : -1501))
             session.tick()
+            if route == "paused" { session.togglePause() }
         }
     }
+    private static func framePhoto(_ title: String, first: UIColor, second: UIColor) -> Data {
+        UIGraphicsImageRenderer(size: CGSize(width: 240, height: 320)).image { context in
+            first.setFill(); context.fill(CGRect(x: 0, y: 0, width: 120, height: 320))
+            second.setFill(); context.fill(CGRect(x: 120, y: 0, width: 120, height: 320))
+            (title as NSString).draw(at: CGPoint(x: 24, y: 130), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 32), .foregroundColor: UIColor.white])
+        }.pngData()!
+    }
+
 }
 
 struct DesignPreview: View {
@@ -80,12 +95,15 @@ struct DesignPreview: View {
             else if ["create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
                 NavigationStack { DollCustomizeStepA(draft: draft) {} }
             } else if ["home-ui", "walking"].contains(route) { NavigationStack { HomeView() } }
+            else if route == "frame-photo", let frame = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .frame }) {
+                NavigationStack { FurnitureCustomView(item: frame, initialStyle: .photo) }
+            }
             else if route == "decorate" { NavigationStack { DecorateView() } }
             else if route == "decorate-selected" {
                 NavigationStack { DecorateView(selectedID: (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first { $0.kind == .desk }?.id) }
             }
-            else { FocusFlowView(session: fixture.session, showMain: route == "main", showReward: route == "reward") }
-        }.modelContainer(fixture.container).environment(AppState()).environment(FriendStore(api: MockFriendAPI()))
+            else { FocusFlowView(session: fixture.session, showMain: route == "main") }
+        }.modelContainer(fixture.container).environment(AppState())
     }
 }
 

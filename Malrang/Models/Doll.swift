@@ -9,7 +9,7 @@ final class Doll {
     var name: String
     var shapeRaw: String
     var fillingRaw: String
-    /// 프리셋과 합성이 끝난 인형 이미지 (친구에게도 이것만 공유)
+    /// 프리셋과 합성이 끝난 인형 이미지
     @Attribute(.externalStorage) var imageData: Data
     var isPlaced = false
     var x = 0.0
@@ -18,6 +18,7 @@ final class Doll {
     var danceRaw: String?
     var createdAt = Date()
     var presetData: Data?
+    var restingBedID: UUID?
 
     var presetConfiguration: PresetConfiguration? {
         get { presetData.flatMap { try? JSONDecoder().decode(PresetConfiguration.self, from: $0) } }
@@ -46,11 +47,11 @@ final class Doll {
     var image: UIImage { UIImage(data: imageData) ?? UIImage() }
 
     var state: DollState {
-        DollState(id: id, name: name, imageData: imageData, filling: filling, position: position, dance: dance, preset: presetConfiguration)
+        DollState(id: id, name: name, imageData: imageData, filling: filling, position: position, dance: dance, preset: presetConfiguration, restingBedID: restingBedID)
     }
 }
 
-/// 3D 장면과 친구 목업이 함께 쓰는 인형 값
+/// 3D 장면에서 사용하는 인형 값
 struct DollState: Identifiable, Equatable {
     let id: UUID
     var name: String
@@ -59,6 +60,7 @@ struct DollState: Identifiable, Equatable {
     var position: SIMD3<Float>
     var dance: DanceMove?
     var preset: PresetConfiguration? = nil
+    var restingBedID: UUID? = nil
 }
 
 /// 인형 모양. 커스텀(pillow)은 사진 누끼 모양 그대로 시접을 두른 인형이다.

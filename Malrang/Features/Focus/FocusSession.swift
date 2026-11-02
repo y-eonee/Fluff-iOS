@@ -1,6 +1,15 @@
 import Foundation
 import Observation
 
+enum StudyActivity: String, Codable, CaseIterable, Identifiable {
+    case study, read, task
+    var id: Self { self }
+    var title: String { switch self { case .study: "공부하기"; case .read: "책 읽기"; case .task: "과제하기" } }
+    var ongoing: String { switch self { case .study: "공부"; case .read: "독서"; case .task: "과제" } }
+    var recommendedMinutes: Int { switch self { case .study: 25; case .read: 45; case .task: 60 } }
+    var icon: String { rawValue }
+}
+
 /// Dates, rather than timer ticks, keep focus accurate across backgrounding and relaunch.
 @Observable
 final class FocusSession {
@@ -13,8 +22,9 @@ final class FocusSession {
         var seconds: TimeInterval = 0
         var checkpoint: Date?
         var daily: [String: TimeInterval] = [:]
-        var rewardIDs: [UUID] = []
-        var completedMinutes = 0
+        // Optional fields keep existing saved timers and study history readable.
+        var activity: StudyActivity?
+        var companionSeconds: [String: TimeInterval]?
     }
     private(set) var record: Record
     private let defaults: UserDefaults
@@ -22,6 +32,9 @@ final class FocusSession {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         record = defaults.data(forKey: key).flatMap { try? JSONDecoder().decode(Record.self, from: $0) } ?? Record()
+        if record.companionSeconds == nil {
+            record.companionSeconds = record.dollID.map { [$0.uuidString: record.daily.values.reduce(0, +)] } ?? [:]
+        }
         tick()
     }
     var active: Bool { record.phase != .ready }
@@ -32,8 +45,17 @@ final class FocusSession {
     var progress: Double { min(1, record.seconds / max(1, duration)) }
     func today(at date: Date = .now) -> TimeInterval { record.daily[dayKey(date), default: 0] }
     func minutes(on date: Date) -> Int { Int(record.daily[dayKey(date), default: 0] / 60) }
-    func select(_ id: UUID) { record.dollID = id; save() }
+    var activity: StudyActivity { record.activity ?? .study }
+    var goalProgress: Double { min(1, today() / 3600) }
+    func total(with id: UUID) -> TimeInterval { record.companionSeconds?[id.uuidString] ?? 0 }
+    func select(_ id: UUID) { guard !active else { return }; record.dollID = id; save() }
+    func selectActivity(_ activity: StudyActivity) {
+        guard !active else { return }
+        record.activity = activity
+        configure(focus: activity.recommendedMinutes, rest: activity == .task ? 10 : 5)
+    }
     func configure(focus: Int, rest: Int) {
+        guard !active else { return }
         record.focusMinutes = min(180, max(1, focus)); record.restMinutes = min(60, max(1, rest)); save()
     }
     func start(at date: Date = .now) {
@@ -66,8 +88,6 @@ final class FocusSession {
         record.seconds += credit; record.checkpoint = date
         if remaining <= 0 {
             if record.phase == .focusing {
-                record.completedMinutes = record.focusMinutes
-                record.rewardIDs.append(UUID())
                 record.phase = .resting
                 record.seconds = min(TimeInterval(record.restMinutes * 60), elapsed - credit)
                 if record.seconds >= TimeInterval(record.restMinutes * 60) {
@@ -77,8 +97,10 @@ final class FocusSession {
         }
         save()
     }
-    func claim(_ id: UUID) { record.rewardIDs.removeAll { $0 == id }; save() }
     private func creditTime(from start: Date, seconds: TimeInterval) {
+        if let id = record.dollID {
+            record.companionSeconds?[id.uuidString, default: 0] += seconds
+        }
         var cursor = start, left = seconds
         while left > 0 {
             let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: cursor))!

@@ -1,314 +1,144 @@
 import SwiftData
 import SwiftUI
 
-/// 시안 A(피그마 1안) 방 꾸미기: 방 아래에 되돌리기·초기화 줄과 인덱스 탭이 붙은 편집 시트가 놓인다.
 extension DecorateView {
     var contentA: some View {
-        VStack(spacing: Spacing.xs) {
+        VStack(spacing: 8) {
+            header
             RoomSceneView(
-                items: items.map(\.state),
-                dolls: dolls.filter(\.isPlaced).map(\.state),
-                mode: .decorate,
-                onHoldDoll: { hold = $0 },
-                onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
-                onMoveItem: move,
-                onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
-                onTapBoard: { isShowingGuestbook = true },
-                selectedItemID: selectedID,
-                onTapItem: { selectedID = $0 },
-                onFeel: { feelCount += 1 },
-                isTransparent: true,
-                illustrationTargetY: 0.7,
-                isCozyRoom: true,
-                onDollScreen: { dollPoint = $0 }
+                items: items.map(\.state), dolls: dolls.filter(\.isPlaced).map(\.state), mode: .decorate,
+                onHoldDoll: { hold = $0 }, onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
+                onMoveItem: move, onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
+                selectedItemID: selectedID, onTapItem: { selectedID = $0 }, onFeel: { feelCount += 1 },
+                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onDollScreen: { dollPoint = $0 }
             )
             .renderedOnlyWhileVisible(background: .clear)
-            // 방 바닥 앞쪽 모서리가 장면 아래에서 잘리지 않게 아래로 넓힌다. 아래 줄은 그 위에 놓인다.
-            .padding(.bottom, -48)
+            .frame(minHeight: 180).frame(maxHeight: .infinity)
             .overlay { holdTooltip }
-            .overlay { tooltipsA }
             .overlay(alignment: .top) {
                 if isBlocked || isFull {
-                    Text(isBlocked ? "돌릴 자리가 없어요. 주변 가구를 옮겨 주세요" : "더 놓을 자리가 없어요. 가구를 옮겨 공간을 만들어 주세요")
-                        .pretendard(.bold, 13, tracking: -0.39)
-                        .foregroundStyle(Color.a.brown)
-                        .padding(.horizontal, Spacing.s)
-                        .padding(.vertical, Spacing.xs)
-                        .sketchBox(fill: .white, radius: 16, line: 1.1)
-                        .padding(.top, Spacing.xs)
+                    D1Bubble(text: isBlocked ? "돌릴 자리가 없어요. 주변 가구를 옮겨 주세요" : "더 놓을 자리가 없어요. 가구를 옮겨 주세요")
+                        .padding(.horizontal, 22).allowsHitTesting(false)
+                } else if selectedID == nil && hold == nil {
+                    D1Bubble(text: "한 손가락으로 끌어서 옮겨봐!").frame(width: 246).allowsHitTesting(false)
                 }
             }
             .sensoryFeedback(.warning, trigger: rotationFailCount)
             historyRow
-            sheetA
-        }
+            categoryTabs
+            editorPanel
+        }.foregroundStyle(Color.mib.text.primary)
     }
 
-    /// 인형 위에 뜨는 안내 말풍선. 3D 장면 위에서 인형을 따라다닌다.
-    var tooltipsA: some View {
-        GeometryReader { proxy in
-            if !isBlocked && !isFull && selectedID == nil, let point = dollPoint {
-                bubbleA {
-                    Text("한 손가락으로\n끌어서 옮겨봐!")
-                        .pretendard(.bold, 13, tracking: -0.39)
-                        .lineSpacing(3)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.a.brown)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                }
-                .allowsHitTesting(false)
-                .position(x: min(max(point.x, 60), proxy.size.width - 60), y: point.y - 32)
-            }
-        }
-    }
-
-    /// 손그림 말풍선: 흰 상자와 아래를 가리키는 꼬리
-    private func bubbleA(@ViewBuilder content: () -> some View) -> some View {
-        VStack(spacing: -1.2) {
-            content()
-                .sketchBox(fill: .white, radius: 16, line: 1.1)
-            Image("a_bubble_tail")
-                .rotationEffect(.degrees(180))
-                .zIndex(1)
-        }
-        .fixedSize()
-    }
-
-    @ToolbarContentBuilder
-    var toolbarA: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button {
-                if hasChanges { isConfirmingDiscard = true } else { dismiss() }
-            } label: {
-                Image("a_back").resizable().frame(width: 26, height: 26)
-            }
-            .accessibilityLabel("뒤로")
-        }
-        .sharedBackgroundVisibility(.hidden)
-        ToolbarItem(placement: .principal) {
-            Text("edit my room")
-                .notCliche(28, relativeTo: .title)
-                .tracking(-1.12)
-                .foregroundStyle(Color.a.brown)
-        }
+    private var header: some View {
+        Text("edit my room").notCliche(28, relativeTo: .title).tracking(-1.12)
+            .frame(maxWidth: .infinity).frame(height: 44)
+            .overlay(alignment: .leading) {
+                Button(action: cancel) { D1Icon(name: "back").frame(width: 44, height: 44).contentShape(Rectangle()) }
+                    .buttonStyle(.plain).accessibilityLabel("뒤로")
+            }.padding(.horizontal, 20)
     }
 
     private var historyRow: some View {
-        HStack(spacing: Spacing.xs) {
-            historyButton("a_undo", label: "되돌리기", isEnabled: !undoStack.isEmpty, action: undo)
-            historyButton("a_redo", label: "다시하기", isEnabled: !redoStack.isEmpty, action: redo)
+        HStack(spacing: 10) {
+            D1IconButton(icon: "undo", label: "되돌리기", action: undo).disabled(undoStack.isEmpty).opacity(undoStack.isEmpty ? 0.4 : 1)
+            D1IconButton(icon: "redo", label: "다시하기", action: redo).disabled(redoStack.isEmpty).opacity(redoStack.isEmpty ? 0.4 : 1)
             Spacer()
-            Button(action: reset) {
-                Text("초기화")
-                    .pretendard(.bold, 14, tracking: -0.42)
-                    .foregroundStyle(Color.a.brown)
-                    .padding(.horizontal, Spacing.m)
-                    .frame(minHeight: 44)
-                    .sketchBox(fill: Color.a.yellow, radius: 22, line: 1.1)
-            }
-            .buttonStyle(.plain)
-            .disabled(!hasChanges)
-            .opacity(hasChanges ? 1 : 0.4)
-        }
-        .padding(.horizontal, Spacing.l)
+            Button("초기화", action: reset).buttonStyle(FocusCompactButton()).frame(width: 82)
+                .disabled(!hasChanges).opacity(hasChanges ? 1 : 0.4)
+        }.padding(.horizontal, 22)
     }
 
-    private func historyButton(_ asset: String, label: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(asset)
-                .resizable()
-                .frame(width: 20, height: 20)
-                .frame(width: 44, height: 44)
-                .sketchBox(radius: 22, line: 1.1)
+    private var categoryTabs: some View {
+        HStack(spacing: 6) {
+            ForEach([FurnitureCategory.furniture, .wallpaper, .flooring, .decor], id: \.self) { tab in
+                D1Choice(title: tab == .decor ? "소품" : tab.label, selected: category == tab, fillsWidth: true) { selectCategory(tab) }
+                    .frame(maxWidth: .infinity)
+            }
+        }.padding(.horizontal, 22)
+    }
+
+    private var editorPanel: some View {
+        VStack(spacing: 16) {
+            Group {
+                if let item = selectedItem { selectedPanel(item) }
+                else { catalogPanel }
+            }.frame(height: 188, alignment: .top)
+            HStack(spacing: 10) {
+                Button("취소", action: cancel).buttonStyle(D1SecondaryStyle())
+                Button("완료") {
+                    do { try modelContext.save(); dismiss() } catch { saveFailed = true }
+                }.buttonStyle(D1PrimaryStyle())
+            }
+        }.padding(.horizontal, 22).padding(.top, 16).padding(.bottom, 16)
+            .frame(maxWidth: .infinity)
+            .background(Color.mib.bg.surface, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+    }
+
+    private func selectedPanel(_ item: RoomItem) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("선택한 가구").pretendard(.medium, 13).foregroundStyle(Color.mib.text.secondary)
+                    Text(item.kind.label).pretendard(.bold, 21)
+                }
+                Spacer()
+                Button("선택 해제") { selectedID = nil }.buttonStyle(FocusCompactButton()).frame(width: 112)
+            }
+            HStack(spacing: 8) {
+                if item.kind.isMovable {
+                    tool("회전", icon: "rotate") { rotate(item) }
+                    tool("좌우반전", icon: "flip") { item.isMirrored.toggle() }
+                }
+                tool("꾸미기", icon: "paint") { editingItem = item }
+                if item.kind.isMovable { tool("삭제", icon: "trash", danger: true) { remove(item) } }
+            }
+            Text("가구를 끌어서 위치를 옮길 수 있어요").pretendard(.medium, 13).foregroundStyle(Color.mib.text.secondary)
         }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.4)
-        .accessibilityLabel(label)
+    }
+
+    private func tool(_ title: String, icon: String, danger: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                D1Icon(name: icon).frame(width: 44, height: 44).d1Surface(radius: 22)
+                    .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Color.mib.line.selected, lineWidth: 1.4))
+                Text(title).pretendard(.medium, 13).foregroundStyle(danger ? Color.mib.semantic.error : Color.mib.text.primary)
+            }.frame(maxWidth: .infinity).frame(height: 72).contentShape(Rectangle())
+        }.buttonStyle(.plain)
+    }
+
+    private var catalogPanel: some View {
+        ScrollView {
+            if let kind = surfaceKind, let surface = items.first(where: { $0.kind == kind }) {
+                FurnitureColorChoices(item: surface, onPhoto: { photoItem = surface })
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                    ForEach(FurnitureKind.allCases.filter { $0.category == category || (category == .decor && $0.category == .rug) }, id: \.self) { kind in
+                        Button { add(kind) } label: {
+                            VStack(spacing: 4) {
+                                FurnitureThumbnail(kind: kind).frame(height: 56)
+                                Text(kind.label).pretendard(.medium, 13).lineLimit(1)
+                            }.padding(6).frame(maxWidth: .infinity).frame(height: 88).d1Surface(radius: 14).contentShape(Rectangle())
+                        }.buttonStyle(.plain).accessibilityLabel("\(kind.label) 추가")
+                    }
+                }
+            }
+        }.scrollIndicators(.hidden).id(category)
+    }
+
+    private func cancel() {
+        if hasChanges { isConfirmingDiscard = true } else { dismiss() }
     }
 
     func undo() {
         guard let previous = undoStack.popLast() else { return }
-        redoStack.append(items.map(\.state))
-        selectedID = nil
-        apply(previous)
+        redoStack.append(items.map(\.state)); selectedID = nil; apply(previous)
     }
-
     func redo() {
         guard let next = redoStack.popLast() else { return }
-        undoStack.append(items.map(\.state))
-        selectedID = nil
-        apply(next)
+        undoStack.append(items.map(\.state)); selectedID = nil; apply(next)
     }
-
-    /// 꾸미기를 시작하던 때의 방으로 돌린다.
     func reset() {
-        restoreOriginal()
-        selectedID = nil
-        undoStack = []
-        redoStack = []
-    }
-
-    // MARK: 편집 시트
-
-    private var sheetA: some View {
-        VStack(spacing: 0) {
-            indexTabs
-            VStack(alignment: .leading, spacing: Spacing.s) {
-                if let item = selectedItem { selectedPanel(item) } else { catalogPanel }
-                Spacer(minLength: 0)
-                HStack(spacing: Spacing.s) {
-                    Button {
-                        if hasChanges { isConfirmingDiscard = true } else { dismiss() }
-                    } label: {
-                        Text("취소")
-                            .pretendard(.bold, 17, tracking: -0.51)
-                            .foregroundStyle(Color.a.brown)
-                            .frame(maxWidth: .infinity, minHeight: 54)
-                            .sketchBox(radius: 27)
-                    }
-                    Button {
-                        do { try modelContext.save(); dismiss() } catch { saveFailed = true }
-                    } label: {
-                        Text("완료")
-                            .pretendard(.bold, 17, tracking: -0.51)
-                            .foregroundStyle(Color.a.cream)
-                            .frame(maxWidth: .infinity, minHeight: 54)
-                            .sketchBox(fill: Color.a.brown, radius: 27)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(Spacing.l)
-            .frame(maxWidth: .infinity)
-            .frame(height: surfaceKind == nil ? 312 : 470)
-            .background {
-                UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14, style: .continuous)
-                    .fill(Color.a.card)
-                    .overlay(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14, style: .continuous)
-                        .stroke(Color.a.line, lineWidth: 1.1))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10).stroke(Color.a.pinkLight, style: StrokeStyle(lineWidth: 1.4, dash: [4, 3])).padding(8)
-                    }
-                    .ignoresSafeArea(edges: .bottom)
-            }
-        }
-        .foregroundStyle(Color.a.brown)
-    }
-
-    private var indexTabs: some View {
-        HStack(alignment: .bottom, spacing: Spacing.xxs) {
-            ForEach(FurnitureCategory.allCases, id: \.self) { tab in
-                let isSelected = category == tab
-                Button {
-                    selectCategory(tab)
-                } label: {
-                    Text(tab.label)
-                        .pretendard(.semiBold, 12, tracking: -0.36)
-                        .foregroundStyle(isSelected ? Color.a.brown : Color.a.soft)
-                        .frame(maxWidth: .infinity, minHeight: isSelected ? 30 : 26)
-                        .background { ASketchIndexSurface(fill: tabColor(tab)) }
-                        .frame(minHeight: 44, alignment: .bottom)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, Spacing.l)
-        .padding(.bottom, -1)
-    }
-
-    private func tabColor(_ tab: FurnitureCategory) -> Color {
-        switch tab {
-        case .furniture: Color.a.card
-        case .wallpaper: Color.a.pinkLight
-        case .flooring: Color.a.mint
-        case .rug: Color.a.blue
-        case .decor: Color.a.yellow
-        }
-    }
-
-    /// 가구를 고르면 보이는 편집 도구: 회전, 꾸미기, 삭제
-    private func selectedPanel(_ item: RoomItem) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
-            HStack(alignment: .lastTextBaseline) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("선택한 가구")
-                        .pretendard(.regular, 12, tracking: -0.24)
-                        .foregroundStyle(Color.a.soft)
-                    Text(item.kind.label)
-                        .pretendard(.black, 26, tracking: -1.04)
-                }
-                Spacer()
-                Button("선택 해제") { selectedID = nil }
-                    .pretendard(.regular, 13, tracking: -0.26)
-                    .foregroundStyle(Color.a.soft)
-                    .frame(minHeight: 44)
-            }
-            HStack(spacing: Spacing.s) {
-                if item.kind.isMovable {
-                    toolCard("회전", asset: "a_tool_rotate") { rotate(item) }
-                    toolCard("좌우반전", asset: "a_tool_flip") { item.isMirrored.toggle() }
-                }
-                toolCard("꾸미기", asset: "a_tool_paint") { editingItem = item }
-                if item.kind.isMovable {
-                    toolCard("삭제", asset: "a_tool_delete", isDanger: true) { remove(item) }
-                }
-            }
-        }
-    }
-
-    private func toolCard(_ title: String, asset: String, isDanger: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.xs) {
-                Image(asset).resizable().frame(width: 24, height: 24)
-                Text(title).pretendard(.bold, 13, tracking: -0.39)
-            }
-            .foregroundStyle(isDanger ? Color.a.danger : Color.a.brown)
-            .frame(maxWidth: .infinity, minHeight: 84)
-            .background(isDanger ? Color.a.dangerFill : Color.a.card, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isDanger ? Color.a.dangerLine : Color.a.line, style: StrokeStyle(lineWidth: 1.1, dash: isDanger ? [4, 3] : [])))
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// 더할 가구와 벽지·바닥재 색을 고른다.
-    private var catalogPanel: some View {
-        ScrollView {
-            VStack(spacing: Spacing.s) {
-                if let kind = surfaceKind, let surface = items.first(where: { $0.kind == kind }) {
-                    ItemColorPicker(item: surface)
-                        .frame(height: 300)
-                    catalogCell("사진으로 꾸미기", symbol: "photo") { editingItem = surface }
-                } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
-                        ForEach(FurnitureKind.allCases.filter { $0.category == category }, id: \.self) { kind in
-                            catalogCell(kind.label, kind: kind) { add(kind) }
-                        }
-                    }
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-        .id(category)
-    }
-
-    private func catalogCell(_ title: String, symbol: String = "photo", kind: FurnitureKind? = nil, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.xs) {
-                if let kind {
-                    FurnitureThumbnail(kind: kind)
-                } else {
-                    Image(systemName: symbol).appFont(.title2)
-                }
-                Text(title).pretendard(.bold, 13, tracking: -0.39)
-            }
-            .foregroundStyle(Color.a.brown)
-            .frame(maxWidth: .infinity, minHeight: 84)
-            .sketchBox(radius: 8, line: 1.1)
-        }
-        .buttonStyle(.plain)
+        restoreOriginal(); selectedID = nil; undoStack = []; redoStack = []
     }
 }

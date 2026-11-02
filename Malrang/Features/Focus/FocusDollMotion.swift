@@ -22,7 +22,7 @@ final class FocusDollMotion {
             result.roughness = 0.95
             return result
         }
-        let wood = material("#EBD4AE"), sage = material("#A8B59A")
+        let wood = material("#EBD4AE")
         func add(_ mesh: MeshResource, _ position: SIMD3<Float>, _ mat: PhysicallyBasedMaterial) -> ModelEntity {
             let entity = ModelEntity(mesh: mesh, materials: [mat]); entity.position = position
             props.addChild(entity); return entity
@@ -33,26 +33,41 @@ final class FocusDollMotion {
                 _ = add(.generateCylinder(height: 0.07, radius: 0.013), [x, 0.035, z], wood)
             }
         }
-        _ = add(.generateCylinder(height: 0.032, radius: 0.012), [-0.105, 0.112, 0.13], sage)
-        for y: Float in [0.097, 0.129] {
-            _ = add(.generateCylinder(height: 0.003, radius: 0.016), [-0.105, y, 0.13], wood)
-        }
-        for index in 0..<6 {
-            let angle = Float(index) / 6 * 2 * .pi
-            let petal = add(.generateSphere(radius: 1), [0.018 + cos(angle) * 0.024, 0.108, 0.14 + sin(angle) * 0.024], material("#FFF2D7"))
-            petal.scale = [0.018, 0.012, 0.019]
-        }
-        let center = add(.generateSphere(radius: 1), [0.018, 0.116, 0.14], material("#E6C574"))
-        center.scale = [0.014, 0.009, 0.014]
-        if let arm = doll.findEntity(named: DollPart.leftArm.rawValue) {
-            let needle = ModelEntity(mesh: .generateCylinder(height: 0.056, radius: 0.0009), materials: [material("#B8ABA0")])
-            needle.name = "focus.needle"; needle.position = [0.012, 0.022, 0.04]
-            needle.orientation = simd_quatf(angle: 0.4, axis: [0, 0, 1]); arm.addChild(needle)
-            let thread = (0...24).map { i -> SIMD3<Float> in
-                let t = Float(i) / 24
-                return [0.012 + t * 0.035, 0.05 - t * 0.065, 0.04 + sin(t * .pi) * 0.015]
+        props.name = "focus.study-desk"
+        // Real study materials replace the sewing spool, flower and needle.
+        let paper = material("#FFF6DE")
+        let ink = material("#9B8274")
+        let book = Entity(); book.name = "focus.study-book"; props.addChild(book)
+        for side: Float in [-1, 1] {
+            let page = ModelEntity(mesh: .generateBox(size: [0.06, 0.005, 0.075], cornerRadius: 0.002), materials: [paper])
+            page.position = [side * 0.03, 0.103, 0.13]
+            page.orientation = simd_quatf(angle: -side * 0.10, axis: [0, 0, 1])
+            book.addChild(page)
+            for row in 0..<5 {
+                let z = Float(row) * 0.009 + 0.105
+                let line = PresetEmbroidery.line([[side * 0.012, 0.107, z], [side * 0.050, 0.107, z]], radius: 0.00045, material: ink, name: "focus.book-text")
+                book.addChild(line)
             }
-            arm.addChild(PresetEmbroidery.line(thread, radius: 0.0006, material: sage, name: "focus.thread"))
+        }
+        for (index, color) in ["#A8B59A", "#E8B8B0", "#D5C4AA"].enumerated() {
+            let y = 0.10 + Float(index) * 0.009
+            _ = add(.generateBox(size: [0.054, 0.009, 0.063], cornerRadius: 0.002), [-0.105, y, 0.13], material(color))
+        }
+        let cup = add(.generateCylinder(height: 0.03, radius: 0.013), [0.115, 0.112, 0.10], material("#E8B8B0"))
+        cup.name = "focus.pencil-cup"
+        for (index, color) in ["#A8B59A", "#E8B8B0", "#E6C574"].enumerated() {
+            _ = add(.generateCylinder(height: 0.045, radius: 0.0015), [0.109 + Float(index) * 0.005, 0.135, 0.10], material(color))
+        }
+        _ = add(.generateBox(size: [0.036, 0.004, 0.026], cornerRadius: 0.001), [0.105, 0.098, 0.155], material("#E6C574"))
+        if let arm = doll.findEntity(named: DollPart.leftArm.rawValue) {
+            let pencil = Entity(); pencil.name = "focus.pencil"
+            pencil.position = [0.012, 0.022, 0.04]
+            pencil.orientation = simd_quatf(angle: 0.4, axis: [0, 0, 1])
+            let shaft = ModelEntity(mesh: .generateCylinder(height: 0.05, radius: 0.0018), materials: [material("#E6C574")])
+            pencil.addChild(shaft)
+            let tip = ModelEntity(mesh: .generateCylinder(height: 0.006, radius: 0.0008), materials: [ink])
+            tip.position.y = -0.028; pencil.addChild(tip)
+            arm.addChild(pencil)
         }
         if configuration.face == nil, let head = doll.findEntity(named: DollPart.head.rawValue) {
             eyes = head.children.filter { $0.name == "eye" }
@@ -71,8 +86,7 @@ final class FocusDollMotion {
         players.forEach { $0.stop() }; players.removeAll()
         for (part, transform) in originals { doll.findEntity(named: part.rawValue)?.transform = transform }
         props.isEnabled = working
-        doll.findEntity(named: "focus.needle")?.isEnabled = working
-        doll.findEntity(named: "focus.thread")?.isEnabled = working
+        doll.findEntity(named: "focus.pencil")?.isEnabled = working
         eyes.forEach { $0.isEnabled = !happy }; smiles.forEach { $0.isEnabled = happy }
         for part in [DollPart.leftArm, .rightArm] {
             guard let arm = doll.findEntity(named: part.rawValue), let base = originals[part] else { continue }

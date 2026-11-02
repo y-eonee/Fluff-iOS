@@ -24,7 +24,7 @@ final class RoomDollWander {
         func box(_ item: RoomItemState) -> DollWalkArea.Box {
             .init(center: [item.x, item.z], half: [item.kind.size.x / 2, item.kind.size.z / 2], yaw: item.yaw)
         }
-        for state in states where state.preset != nil && state.dance == nil {
+        for state in states where state.preset != nil && state.dance == nil && state.restingBedID == nil {
             guard let entity = content.findEntity(named: "doll|\(state.id)"),
                   let body = entity.findEntity(named: "body") else { continue }
             let point = SIMD2(entity.position.x, entity.position.z)

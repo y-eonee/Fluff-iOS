@@ -8,7 +8,7 @@ enum Kind { case bed, chair, sofa, obstacle
     var blocksFloor: Bool { true }
 }
 struct RoomItemState { var id = UUID(); var kind: Kind; var x: Float; var z: Float; var yaw: Float = 0 }
-struct DollState { var id: UUID; var preset: Int? = 1; var dance: Int? = nil }
+struct DollState { var id: UUID; var preset: Int? = 1; var dance: Int? = nil; var restingBedID: UUID? = nil }
 enum SceneFactory { static let dollHeight: Float = 0.45 }
 enum RoomLayout {
     static func seat(at point: SIMD2<Float>, in items: [RoomItemState]) -> (height: Float, item: RoomItemState?) { (0, nil) }

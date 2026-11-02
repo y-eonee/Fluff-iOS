@@ -78,7 +78,7 @@ final class RoomItem {
     }
 }
 
-/// 3D 장면과 친구 목업이 함께 쓰는 가구 값
+/// 3D 장면에서 사용하는 가구 값
 struct RoomItemState: Identifiable, Equatable {
     let id: UUID
     var kind: FurnitureKind

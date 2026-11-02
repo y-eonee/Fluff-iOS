@@ -4,26 +4,25 @@ import SwiftUI
 enum FocusStyle {
     static let giftTop = Color(uiColor: Palette.uiColor("#F0E7EF"))
     static let giftBottom = Color(uiColor: Palette.uiColor("#FBF5E8"))
-    static let canvas = Color(uiColor: Palette.uiColor("#FBF9F5"))
-    static let paper = Color(uiColor: Palette.uiColor("#FFFCF8"))
-    static let ink = Color(uiColor: Palette.uiColor("#674D42"))
-    static let muted = Color(uiColor: Palette.uiColor("#947F73"))
-    static let line = Color(uiColor: Palette.uiColor("#E9DFD7"))
-    static let sage = Color(uiColor: Palette.uiColor("#A8B59A"))
+    static let canvas = Color.mib.bg.screen
+    static let paper = Color.mib.bg.surface
+    static let ink = Color.mib.text.primary
+    static let muted = Color.mib.text.secondary
+    static let line = Color.mib.line.default
+    static let sage = Color.mib.action.primary
     static let shade = Color(uiColor: Palette.uiColor("#493D38"))
     static let inset: CGFloat = 24
     static let radius: CGFloat = 24
-    static let buttonHeight: CGFloat = 56
+    static let buttonHeight: CGFloat = 60
     static let timerSize: CGFloat = 64
 }
 
 struct FocusPrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.headline).foregroundStyle(enabled ? .white : FocusStyle.muted)
+        configuration.label.pretendard(.bold, 20).foregroundStyle(Color.mib.text.onPrimary)
             .frame(maxWidth: .infinity, minHeight: FocusStyle.buttonHeight)
-            .background(enabled ? FocusStyle.ink : FocusStyle.line, in: RoundedRectangle(cornerRadius: 18))
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 30))
     }
 }
 
@@ -76,12 +75,10 @@ extension View {
 }
 
 struct CreationPrimaryButton: ButtonStyle {
+    @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.pretendard(.bold, 20, tracking: -0.6).foregroundStyle(Color.a.cream)
+        configuration.label.pretendard(.bold, 20, tracking: -0.6).foregroundStyle(Color.mib.text.onPrimary)
             .frame(maxWidth: .infinity, minHeight: 60)
-            .background(Color.a.brown, in: Capsule())
-            .overlay(Capsule().stroke(.white.opacity(0.25), lineWidth: 2).blur(radius: 2))
-            .shadow(color: .black.opacity(0.20), radius: 2, y: 4)
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: Capsule())
     }
 }

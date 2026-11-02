@@ -6,7 +6,7 @@ import SwiftUI
 /// 길게 눌러 끌기, 탭, 두 번 탭을 쓰려고 ARView(비 AR 모드)를 감싼다. RealityView에는 화면 좌표로 끌어 옮길 API가 없다.
 struct RoomSceneView: UIViewRepresentable {
     enum Mode {
-        /// 구경만 하고 인형 탭만 받는다 (친구 방)
+        /// 구경만 하고 인형 탭만 받는다
         case view
         /// 인형을 탭하거나 길게 눌러 옮긴다 (내 방)
         case home
@@ -18,6 +18,8 @@ struct RoomSceneView: UIViewRepresentable {
     final class Placement {
         fileprivate var snapshot: (() -> [UUID: SIMD3<Float>])?
         fileprivate var capture: ((@escaping (UIImage?) -> Void) -> Void)?
+        fileprivate var position: ((UUID) -> SIMD3<Float>?)?
+        func currentPosition(of id: UUID) -> SIMD3<Float>? { position?(id) }
         fileprivate var pan: ((CGSize) -> Void)?
         func look(by delta: CGSize) { pan?(delta) }
         func captureImage(_ completion: @escaping (UIImage?) -> Void) {
@@ -67,8 +69,10 @@ struct RoomSceneView: UIViewRepresentable {
     var isCozyRoom = false
     /// 첫 번째 인형 머리 위의 화면 좌표. 인형이 없으면 nil. 말풍선이 인형을 따라다니게 한다.
     var onDollScreen: (CGPoint?) -> Void = { _ in }
+    var onSleepSettled: (UUID) -> Void = { _ in }
     var onSceneReady: () -> Void = {}
     var onDeskScreen: (CGPoint?) -> Void = { _ in }
+    var onFurnitureScreen: ([String: CGRect]) -> Void = { _ in }
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -125,6 +129,10 @@ struct RoomSceneView: UIViewRepresentable {
         private var updateSubscription: (any Cancellable)?
         private var orbitYaw: Float = 0
         private var lastDollPoint: CGPoint?
+        private var approachingBeds = Set<UUID>()
+        private var restingTime: Float = 0
+        private var lastLightingMinute: Int?
+        private var lightingTask: Task<Void, Never>?
         private var accessibleEntities: [(Entity, RoomAccessibilityElement)] = []
         private var roomHidden = false
         private var fitDistance: Float = 1
@@ -150,6 +158,7 @@ struct RoomSceneView: UIViewRepresentable {
 
         func attach(to view: ARView) {
             self.view = view
+            parent.placement?.position = { [weak self] id in self?.root.findEntity(named: "doll|\(id)")?.position }
             parent.placement?.snapshot = { [weak self] in self?.finishPlacement() ?? [:] }
             parent.placement?.pan = { [weak self] delta in self?.moveCamera(by: CGPoint(x: delta.width, y: delta.height)) }
             parent.placement?.capture = { [weak view] completion in
@@ -180,16 +189,26 @@ struct RoomSceneView: UIViewRepresentable {
                             && !UIAccessibility.isReduceMotionEnabled
                             && UIApplication.shared.applicationState == .active)
                     }
+                    if let self {
+                        self.restingTime += Float(min(event.deltaTime, 0.1))
+                        if !UIAccessibility.isReduceMotionEnabled {
+                            for state in self.displayed?.dolls ?? [] where state.restingBedID != nil && !self.approachingBeds.contains(state.id) {
+                                self.root.findEntity(named: "doll|\(state.id)")?.findEntity(named: "body")?.scale.z = 1 + sin(self.restingTime * 1.7) * 0.012
+                            }
+                        }
+                    }
+                    self?.updateDaylight()
                     self?.fitCamera()
                     self?.reportDollScreen()
                     self?.reportDeskScreen()
+                    self?.reportFurnitureScreen()
                     self?.updateAccessibilityFrames()
                 }
             }
 
             let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
             view.addGestureRecognizer(tap)
-            if parent.mode == .decorate {
+            if parent.mode == .decorate || parent.mode == .home {
                 let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
                 doubleTap.numberOfTapsRequired = 2
                 tap.require(toFail: doubleTap)
@@ -234,11 +253,14 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         func stopRendering() {
+            lightingTask?.cancel(); lightingTask = nil; lastLightingMinute = nil
             wander = nil
+            approachingBeds.removeAll()
             renderTask?.cancel()
             renderTask = nil
             updateSubscription?.cancel()
             updateSubscription = nil
+            parent.placement?.position = nil
             parent.placement?.snapshot = nil
             parent.placement?.capture = nil
             parent.placement?.pan = nil
@@ -283,14 +305,18 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func build(_ state: SceneState) async {
-            if parent.isCozyRoom, let environment = await CozyRoomLighting.environmentResource() {
+            approachingBeds.formIntersection(Set(state.dolls.filter { $0.restingBedID != nil }.map(\.id)))
+            if parent.isCozyRoom, let environment = await CozyRoomLighting.environmentResource(at: RoomDaylight.currentDate) {
                 view?.environment.lighting.resource = environment
             }
+            let previous = displayed
+            var settling: [(Entity, RoomItemState)] = []
+            var waking: [(Entity, Transform)] = []
             let content = Entity()
             if var item = state.focusItem {
                 (item.x, item.z) = (0, 0)
                 if !item.kind.hangsOnWall { item.yaw = 0 }
-                content.addChild(await SceneFactory.furniture(item, onFloor: true, cozy: parent.isCozyRoom))
+                content.addChild(await SceneFactory.furniture(item, onFloor: true, cozy: parent.isCozyRoom, cutaway: parent.isCozyRoom))
                 let size = item.kind.size
                 aimCamera(at: [0, size.y / 2, 0], fitting: max(size.x, size.z) * 1.6, height: size.y * 1.4)
             } else {
@@ -304,12 +330,27 @@ struct RoomSceneView: UIViewRepresentable {
                     guard !Task.isCancelled else { return }
                     // 가구 위에 있는 인형은 그 윗면에 서고, 가구가 치워졌으면 바닥으로 내려온다.
                     doll.position.y = RoomLayout.seat(at: [doll.position.x, doll.position.z], in: state.items).height
-                    content.addChild(await SceneFactory.doll(doll))
-                }
-                if !parent.isCozyRoom {
-                    let board = await SceneFactory.memoBoard()
-                    if roomHidden { board.components.set(OpacityComponent(opacity: 0)) }
-                    content.addChild(board)
+                    let model = await SceneFactory.doll(doll)
+                    if let bedID = doll.restingBedID, let bed = state.items.first(where: { $0.id == bedID && $0.kind == .bed }) {
+                        if previous != nil && (previous?.dolls.first(where: { $0.id == doll.id })?.restingBedID == nil || approachingBeds.contains(doll.id)) {
+                            approachingBeds.insert(doll.id)
+                            if let live = root.findEntity(named: "doll|\(doll.id)") { model.transform = live.transform }
+                            else if let old = previous?.dolls.first(where: { $0.id == doll.id }) { model.position = old.position }
+                            settling.append((model, bed))
+                        } else {
+                            DollRestPose.sleeping(model, bed: bed, animated: false)
+                            model.addChild(DollRestPose.quilt(color: bed.colorName))
+                        }
+                    }
+                    if doll.restingBedID == nil, previous?.dolls.first(where: { $0.id == doll.id })?.restingBedID != nil {
+                        for part in [DollPart.leftArm, .rightArm] {
+                            if let arm = model.findEntity(named: part.rawValue) {
+                                waking.append((arm, arm.transform))
+                                arm.orientation = simd_quatf(angle: part == .leftArm ? -1.4 : 1.4, axis: [0, 0, 1])
+                            }
+                        }
+                    }
+                    content.addChild(model)
                 }
                 if let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
                     content.addChild(SceneFactory.selectionBox(selected))
@@ -327,6 +368,9 @@ struct RoomSceneView: UIViewRepresentable {
             root.children.removeAll()
             highlights = []
             content.orientation = simd_quatf(angle: orbitYaw, axis: [0, 1, 0])
+            if parent.isCozyRoom { await CozyRoomLighting.apply(RoomDaylight.at(RoomDaylight.currentDate), to: content) }
+            guard !Task.isCancelled else { return }
+            lastLightingMinute = nil
             root.addChild(content)
             root.addChild(camera)
             root.addChild(light)
@@ -335,6 +379,35 @@ struct RoomSceneView: UIViewRepresentable {
             displayed = state
             configureAccessibility(content)
             parent.onSceneReady()
+            for doll in state.dolls where doll.restingBedID != nil && !approachingBeds.contains(doll.id) { parent.onSleepSettled(doll.id) }
+            for (arm, pose) in waking {
+                arm.move(to: pose, relativeTo: arm.parent, duration: UIAccessibility.isReduceMotionEnabled ? 0 : 1.0, timingFunction: .easeInOut)
+            }
+            for (model, bed) in settling {
+                await DollBedMotion.walkAndSleep(model, bed: bed, items: state.items)
+                if !Task.isCancelled, let id = Self.parse(model.name)?.id { approachingBeds.remove(id); parent.onSleepSettled(id) }
+
+            }
+        }
+
+        private func updateDaylight() {
+            guard parent.isCozyRoom, let content = root.children.first else { return }
+            let date = RoomDaylight.currentDate
+            let minute = Int(date.timeIntervalSince1970 / 60)
+            guard minute != lastLightingMinute else { return }
+            lastLightingMinute = minute
+            lightingTask?.cancel()
+            lightingTask = Task { [weak self, weak content] in
+                guard let self, let content else { return }
+                let profile = RoomDaylight.at(date)
+                let environment = await CozyRoomLighting.environmentResource(at: date)
+                guard !Task.isCancelled else { return }
+                self.view?.environment.lighting.resource = environment
+                self.view?.environment.lighting.intensityExponent = profile.phase == .night ? 0.15 : 0.05
+                self.light.light.color = UIColor(red: CGFloat(0.65 + 0.35 * profile.tint.x), green: CGFloat(0.65 + 0.35 * profile.tint.y), blue: CGFloat(0.65 + 0.35 * profile.tint.z), alpha: 1)
+                self.light.light.intensity = 650 + 600 * profile.strength
+                await CozyRoomLighting.apply(profile, to: content)
+            }
         }
 
         private func finishPlacement() -> [UUID: SIMD3<Float>] {
@@ -392,6 +465,14 @@ struct RoomSceneView: UIViewRepresentable {
                         guard let self, !self.parent.canMoveDolls else { return }
                         self.parent.onTapItem(parsed.id)
                     }
+                } else if parent.mode == .home,
+                          let parsed = Self.parse(entity.name), !parsed.isDoll,
+                          let kind = item(parsed.id)?.kind, [.wall, .bed, .frame].contains(kind) {
+                    element.accessibilityLabel = kind == .wall ? "창문, 같이 바깥 구경하기" : kind == .bed ? "침대, 재우기와 소리" : "액자, 사진과 AR"
+                    element.activate = { [weak self] in
+                        guard let self, !self.parent.canMoveDolls else { return }
+                        self.parent.onDoubleTapItem(parsed.id)
+                    }
                 } else { return nil }
                 return (entity, element)
             }
@@ -444,6 +525,33 @@ struct RoomSceneView: UIViewRepresentable {
             let distance = max(horizontal, vertical)
             fitDistance = distance
             placeCamera()
+        }
+
+        private var lastFurnitureRects: [String: CGRect] = [:]
+        private func reportFurnitureScreen() {
+            guard let view, let content = root.children.first, let state = displayed else { return }
+            var rects: [String: CGRect] = [:]
+            for item in state.items where item.kind == .bed || item.kind == .frame || item.kind == .wall {
+                guard let entity = content.findEntity(named: "item|\(item.id)") else { continue }
+                let points: [SIMD3<Float>]
+                let key: String
+                if item.kind == .wall {
+                    key = "창문"; points = [[-0.92, 0.70, -0.16], [-0.92, 1.48, 0.48]]
+                } else {
+                    key = item.kind.label
+                    let size = item.kind.size
+                    points = [[-size.x / 2, 0, -size.z / 2], [size.x / 2, size.y, size.z / 2]]
+                }
+                let screen = points.compactMap { view.project(entity.convert(position: $0, to: nil)) }
+                if screen.count == 2 {
+                    let a = screen[0], b = screen[1]
+                    rects[key] = CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: max(44, abs(a.x-b.x)), height: max(44, abs(a.y-b.y)))
+                }
+            }
+            if rects != lastFurnitureRects {
+                lastFurnitureRects = rects
+                parent.onFurnitureScreen(rects)
+            }
         }
 
         private var lastDeskPoint: CGPoint?
@@ -595,7 +703,7 @@ struct RoomSceneView: UIViewRepresentable {
                 if let hit = target(at: point), !hit.isDoll { parent.onTapItem(hit.id) } else { parent.onTapItem(nil) }
                 return
             }
-            if let hit = target(at: point) {
+            if let hit = target(at: point, includeFurniture: true) {
                 if hit.isDoll { parent.onTapDoll(hit.id) }
                 else if parent.mode == .home { parent.onTapItem(hit.id) }
             }
@@ -611,7 +719,7 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
-            guard let view, let hit = target(at: gesture.location(in: view)), !hit.isDoll else { return }
+            guard let view, let hit = target(at: gesture.location(in: view), includeFurniture: true), !hit.isDoll else { return }
             parent.onDoubleTapItem(hit.id)
         }
 
@@ -626,6 +734,7 @@ struct RoomSceneView: UIViewRepresentable {
                     origin = CGPoint(x: point.x - delta.x, y: point.y - delta.y)
                 } else { origin = point }
                 guard drag == nil, let hit = target(at: origin), canDrag(hit) else { return }
+                if hit.isDoll, latest?.dolls.first(where: { $0.id == hit.id })?.restingBedID != nil { return }
                 hit.entity.stopAllAnimations()
                 parent.onFeel()
                 drag = Drag(entity: hit.entity, id: hit.id, isDoll: hit.isDoll, start: hit.entity.position)
@@ -707,13 +816,13 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         /// 화면 좌표에 있는 인형이나 가구 엔티티. 이름이 "doll|UUID" 또는 "item|UUID"인 조상을 찾는다.
-        private func target(at point: CGPoint) -> (entity: Entity, id: UUID, isDoll: Bool)? {
+        private func target(at point: CGPoint, includeFurniture: Bool = false) -> (entity: Entity, id: UUID, isDoll: Bool)? {
             for hit in hits(at: point) {
                 var entity: Entity? = hit.entity
                 while let current = entity {
                     if let parsed = Self.parse(current.name) {
-                        // 홈에서는 인형만 고른다. 가구의 충돌 면이 먼저 맞아도 집을 수 있다.
-                        if parent.mode != .home || parsed.isDoll {
+                        // 인형을 집을 때는 가구 충돌 면을 건너뛰고, 탭할 때는 가구도 고른다.
+                        if parent.mode != .home || parsed.isDoll || includeFurniture {
                             return (current, parsed.id, parsed.isDoll)
                         }
                         break
@@ -770,12 +879,15 @@ struct RoomSceneView: UIViewRepresentable {
                 var entity: Entity? = hit.entity
                 while let current = entity, Self.parse(current.name) == nil { entity = current.parent }
                 guard let entity, entity !== dragged, let parsed = Self.parse(entity.name), !parsed.isDoll,
-                      let kind = item(parsed.id)?.kind, kind.seatHeight != nil else { continue }
+                      let kind = item(parsed.id)?.kind else { continue }
+                if kind.blocksFloor && !kind.allowsDollPlacement { return nil }
+                guard kind.allowsDollPlacement else { continue }
                 xz = [hit.position.x, hit.position.z]
                 break
             }
             guard let point = xz ?? floorPoint(at: point) else { return nil }
             let clamped = RoomLayout.clampedToFloor(point)
+            guard RoomLayout.canPlaceDoll(at: clamped, in: items) else { return nil }
             return [clamped.x, RoomLayout.seat(at: clamped, in: items).height, clamped.y]
         }
 
@@ -796,7 +908,7 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func showSeatHighlights() {
-            highlights = (rendered?.items ?? []).filter { $0.kind.seatHeight != nil }.map { SceneFactory.seatHighlight($0) }
+            highlights = (rendered?.items ?? []).filter { $0.kind.allowsDollPlacement }.map { SceneFactory.seatHighlight($0) }
             highlights.forEach { root.addChild($0) }
         }
     }
