@@ -8,6 +8,8 @@ struct DollCustomizeStepA: View {
     @State private var page = 0
     @State private var showDetails = false
     @State private var selectedPart = DollPart.head
+    @State private var editingFace = false
+    private var canEditFace: Bool { draft.shape != .pillow && draft.usesPresetPhoto }
     private let fillingAssets: [Filling: String] = [.fluffy: "a_fill_fluffy", .beads: "a_fill_beads", .jelly: "a_fill_jelly", .foam: "a_fill_foam"]
     private var configuration: PresetConfiguration {
         var value = draft.preset; value.shape = draft.shape
@@ -30,7 +32,19 @@ struct DollCustomizeStepA: View {
                         if draft.shape == .pillow {
                             FaceSizeControl(scale: $draft.customScale)
                         } else {
-                            partEditor
+                            VStack(alignment: .leading, spacing: 16) {
+                                if canEditFace {
+                                    HStack(spacing: 8) {
+                                        D1Choice(title: "인형 모양", selected: !editingFace, fillsWidth: true) { editingFace = false }
+                                        D1Choice(title: "얼굴 사진", selected: editingFace, fillsWidth: true) { editingFace = true }
+                                    }
+                                }
+                                if canEditFace && editingFace {
+                                    PresetPhotoControls(draft: draft)
+                                } else {
+                                    partEditor
+                                }
+                            }
                         }
                     }
                     else if page == 1 { fillingEditor }
@@ -79,7 +93,7 @@ struct DollCustomizeStepA: View {
         switch page {
         case 1: "속재료를 눌러 촉감을 비교해보세요"
         case 2: "솜뭉치에게 이름을 지어주세요"
-        default: draft.shape == .pillow ? "솜뭉치의 크기를 맞춰주세요" : "조절할 인형 부위를 선택해주세요"
+        default: draft.shape == .pillow ? "솜뭉치의 크기를 맞춰주세요" : (canEditFace && editingFace ? "끌어서 얼굴 이동 · 두 손가락으로 크기 조절" : "조절할 인형 부위를 선택해주세요")
         }
     }
 
@@ -95,8 +109,10 @@ struct DollCustomizeStepA: View {
                                    onPart: { selectedPart = $0 }, onSnapshot: { draft.snapshot = $0 })
                         .renderedOnlyWhileVisible(background: .clear)
                 }
-            }.padding(.bottom, 44)
-            if draft.shape != .pillow {
+            }.modifier(PhotoPlacementGesture(draft: draft, isPreset: draft.shape != .pillow,
+                                               enabled: page == 0 && (draft.shape == .pillow || (canEditFace && editingFace))))
+                .padding(.bottom, 44)
+            if draft.shape != .pillow && !(page == 0 && canEditFace && editingFace) {
             GeometryReader { geometry in
                 let artworkHeight = min(240, height - 20)
                 let artworkWidth = min(geometry.size.width, artworkHeight * 1.4)

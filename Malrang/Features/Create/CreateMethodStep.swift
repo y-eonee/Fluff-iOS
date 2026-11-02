@@ -31,11 +31,11 @@ struct CreateMethodStep: View {
                         } else {
                             CustomPhotoPreview(draft: draft)
                         }
-                    }.modifier(PhotoPlacementGesture(draft: draft, isPreset: usesPreset))
+                    }.modifier(PhotoPlacementGesture(draft: draft, isPreset: usesPreset, enabled: !usesPreset))
                         .padding(.bottom, 44)
                     HStack(spacing: 6) {
                         Image("ui_method_sparkle").resizable().frame(width: 14, height: 14).accessibilityHidden(true)
-                        Text("끌어서 이동 · 두 손가락으로 크기 조절")
+                        Text(usesPreset ? "함께할 인형 모양을 골라주세요" : "끌어서 이동 · 두 손가락으로 크기 조절")
                             .pretendard(.medium, 13)
                     }.foregroundStyle(Color.a.creamText).padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Color.a.brown, in: Capsule()).padding(.bottom, 10)
@@ -71,7 +71,6 @@ struct CreateMethodStep: View {
                                     .accessibilityAddTraits(configuration.shape == shape ? .isSelected : [])
                             }
                         }
-                        PresetPhotoControls(draft: draft)
                     }
                 }.padding(.horizontal, 6)
             }.padding(.horizontal, Spacing.m).padding(.vertical, Spacing.s)
