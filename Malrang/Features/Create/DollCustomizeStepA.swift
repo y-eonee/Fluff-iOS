@@ -10,6 +10,7 @@ struct DollCustomizeStepA: View {
     @State private var selectedPart = DollPart.head
     @State private var editingFace = false
     private var canEditFace: Bool { draft.shape != .pillow && draft.usesPresetPhoto }
+    private var nameIsEmpty: Bool { draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     private let fillingAssets: [Filling: String] = [.fluffy: "a_fill_fluffy", .beads: "a_fill_beads", .jelly: "a_fill_jelly", .foam: "a_fill_foam"]
     private var configuration: PresetConfiguration {
         var value = draft.preset; value.shape = draft.shape
@@ -56,8 +57,12 @@ struct DollCustomizeStepA: View {
                 Button(page < 2 ? "다음 단계로" : "완성하기") {
                     if page < 2 {
                         withAnimation(.easeInOut(duration: 0.2)) { page += 1 } }
-                    else { draft.preset = configuration; onNext() }
-                }.buttonStyle(CreationPrimaryButton()).padding(.horizontal, 22).padding(.bottom, 8)
+                    else {
+                        guard !nameIsEmpty else { return }
+                        draft.name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                        draft.preset = configuration; onNext()
+                    }
+                }.buttonStyle(CreationPrimaryButton()).disabled(page == 2 && nameIsEmpty).padding(.horizontal, 22).padding(.bottom, 8)
                     .background(Color.a.paper)
             }
             .navigationBarBackButtonHidden().navigationBarTitleDisplayMode(.inline)

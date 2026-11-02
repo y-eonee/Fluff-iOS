@@ -14,7 +14,7 @@ final class DollDraft {
     var usesPresetPhoto = false
     var snapshot: UIImage?
     var filling = Filling.fluffy
-    /// 비워 두면 플레이스홀더인 "솜뭉치"가 이름이 된다.
+    /// 이름 짓기 단계에서 공백이 아닌 이름을 입력한 뒤 완성한다.
     var name = ""
     var customScale: CGFloat = 1
     var customOffset = CGSize.zero
