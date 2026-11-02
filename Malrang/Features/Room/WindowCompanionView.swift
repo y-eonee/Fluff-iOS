@@ -14,7 +14,7 @@ struct WindowCompanionView: View {
         ZStack(alignment: .top) {
           Color.mib.bg.screen.ignoresSafeArea()
           CompanionScene(dolls: dolls, kind: .window(hour: hour, weather: weather.code))
-            .frame(height: max(500, geo.size.height * 0.86)).ignoresSafeArea(edges: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity).ignoresSafeArea()
             .accessibilityLabel("\(dolls.map(\.name).joined(separator:", "))와 함께 창밖 구경")
           VStack {
             HStack(alignment: .top) {
