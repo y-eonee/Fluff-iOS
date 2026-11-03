@@ -42,7 +42,7 @@ struct CreateMethodStep: View {
                 }.padding(10).frame(height: 220)
                     .background(CreationStyle.blue, in: RoundedRectangle(cornerRadius: 22))
                 VStack(alignment: .leading, spacing: Spacing.s) {
-                    Text("만들기 방식").pretendard(.bold, 17)
+                    Text("인형 모양").pretendard(.bold, 17)
                     HStack(spacing: Spacing.xs) {
                         choice("프리셋", selected: usesPreset) { usesPreset = true }
                         choice("커스텀", selected: !usesPreset) { usesPreset = false }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WindowCompanionView: View {
   let dolls: [DollState]
+  var frameColor: String? = nil
   @Environment(\.dismiss) private var dismiss
   @State private var weather = WindowWeather()
   @State private var bubbleIndex = 0
@@ -10,10 +11,10 @@ struct WindowCompanionView: View {
   var body: some View {
     GeometryReader { geo in
       TimelineView(.periodic(from: .now, by: 60)) { context in
-        let hour = Calendar.current.component(.hour, from: context.date)
+        let hour = Calendar.current.component(.hour, from: RoomDaylight.currentDate)
         ZStack(alignment: .top) {
           Color.mib.bg.screen.ignoresSafeArea()
-          CompanionScene(dolls: dolls, kind: .window(hour: hour, weather: weather.code))
+          CompanionScene(dolls: dolls, kind: .window(hour: hour, weather: weather.code), windowFrameColor: frameColor)
             .frame(maxWidth: .infinity, maxHeight: .infinity).ignoresSafeArea()
             .accessibilityLabel("\(dolls.map(\.name).joined(separator:", "))와 함께 창밖 구경")
           VStack {

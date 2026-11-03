@@ -36,6 +36,10 @@ final class DesignPreviewData {
             let renderer = ImageRenderer(content: CottonArtwork(shape: shape).frame(width: 240, height: 253))
             let doll = Doll(name: name, shape: shape, filling: .fluffy, imageData: renderer.uiImage?.pngData() ?? Data())
             doll.presetConfiguration = PresetConfiguration(shape: shape)
+            if ["cutout-front", "window-cutout"].contains(route), shape == .cat {
+                doll.presetConfiguration = nil
+                doll.imageData = Self.cutoutCharacter()
+            }
             if ProcessInfo.processInfo.arguments.contains("--memory-audit") || route == "walking" || route == "home-ui" {
                 doll.id = UUID(uuidString: "00000000-0000-0000-0000-00000000000\(shape == .cat ? 1 : shape == .bear ? 2 : 3)")!
                 doll.isPlaced = true
@@ -53,6 +57,17 @@ final class DesignPreviewData {
             }
             container.mainContext.insert(item)
         }
+        if route == "create-large" {
+            for part in DollPart.allCases {
+                var value = draft.preset.part(part)
+                value.size = 1.3; value.length = 1.4; value.width = 1.4
+                draft.preset.parts[part.rawValue] = value
+            }
+        }
+        if route == "floor-photo" {
+            let floor = try? container.mainContext.fetch(FetchDescriptor<RoomItem>()).first { $0.kind == .floor }
+            floor?.photoData = Self.framePhoto("FLOOR", first: .systemTeal, second: .systemOrange)
+        }
         if route == "frame-photo" {
             let pictures = [Self.framePhoto("PHOTO A", first: .systemTeal, second: .systemOrange), Self.framePhoto("PHOTO B", first: .systemIndigo, second: .systemPink)]
             for data in pictures { container.mainContext.insert(DecorPhoto(data: data)) }
@@ -61,11 +76,28 @@ final class DesignPreviewData {
         }
         try? container.mainContext.save()
         if ["running", "rest", "paused", "pet", "exit"].contains(route) {
+            session.confirmTime()
             session.start(at: .now.addingTimeInterval(["running", "paused", "exit"].contains(route) ? -1122 : -1501))
             session.tick()
             if route == "paused" { session.togglePause() }
         }
     }
+    /// Asymmetric, hand-drawn character makes inverted geometry and UVs obvious.
+    private static func cutoutCharacter() -> Data {
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: 200, height: 280), format: format).image { context in
+            UIColor.systemTeal.setFill()
+            UIBezierPath(roundedRect: CGRect(x: 65, y: 20, width: 70, height: 110), cornerRadius: 30).fill()
+            UIColor.systemOrange.setFill()
+            UIBezierPath(roundedRect: CGRect(x: 22, y: 120, width: 156, height: 135), cornerRadius: 36).fill()
+            UIColor.white.setFill()
+            UIBezierPath(ovalIn: CGRect(x: 78, y: 55, width: 12, height: 12)).fill()
+            UIBezierPath(ovalIn: CGRect(x: 110, y: 55, width: 12, height: 12)).fill()
+            ("TOP" as NSString).draw(at: CGPoint(x: 73, y: 82), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 22), .foregroundColor: UIColor.white])
+            ("FEET" as NSString).draw(at: CGPoint(x: 66, y: 211), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 26), .foregroundColor: UIColor.white])
+        }.pngData()!
+    }
+
     private static func framePhoto(_ title: String, first: UIColor, second: UIColor) -> Data {
         UIGraphicsImageRenderer(size: CGSize(width: 240, height: 320)).image { context in
             first.setFill(); context.fill(CGRect(x: 0, y: 0, width: 120, height: 320))
@@ -92,9 +124,20 @@ struct DesignPreview: View {
             else if route == "photo-finish" { CreateFlowView(previewDraft: draft, startAtMaking: true) { _ in } }
             else if route == "photo-flow" { CreateFlowView(previewDraft: draft) { _ in } }
             else if route == "create-entry" { CreateFlowView { _ in } }
-            else if ["create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
+            else if ["create-large", "create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
                 NavigationStack { DollCustomizeStepA(draft: draft) {} }
             } else if ["home-ui", "walking"].contains(route) { NavigationStack { HomeView() } }
+            else if ["window-sky", "window-cutout", "cutout-front"].contains(route) {
+                let dolls = ((try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>())) ?? []).sorted { $0.name < $1.name }
+                if route == "cutout-front", let doll = dolls.first(where: { $0.presetConfiguration == nil }) {
+                    CompanionScene(dolls: [doll.state], kind: .radio(playing: false)).frame(height: 350)
+                } else {
+                    WindowCompanionView(dolls: dolls.map(\.state))
+                }
+            }
+            else if ["floor-photo", "window-frame"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == (route == "floor-photo" ? .floor : .wall) }) {
+                NavigationStack { FurnitureCustomView(item: item, initialStyle: route == "floor-photo" ? .photo : .color) }
+            }
             else if route == "frame-photo", let frame = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .frame }) {
                 NavigationStack { FurnitureCustomView(item: frame, initialStyle: .photo) }
             }

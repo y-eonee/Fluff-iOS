@@ -1,3 +1,4 @@
+import simd
 import SwiftData
 import SwiftUI
 
@@ -178,7 +179,7 @@ struct HomeView: View {
                         onSleepSettled: { id in
                             guard travelingDollID == id else { return }
                             travelingDollID = nil
-                            if let doll = placedDolls.first(where: { $0.id == id }) { interactionMessage = "\(doll.name)가 잠들었어요" }
+                            if let doll = placedDolls.first(where: { $0.id == id }) { interactionMessage = doll.restingBedID == nil ? "\(doll.name)가 자리로 돌아왔어요" : "\(doll.name)가 잠들었어요" }
                         },
                         onSceneReady: { isSceneReady = true },
                         onDeskScreen: { deskPoint = $0 },
@@ -228,7 +229,7 @@ struct HomeView: View {
             }
         }
         .fullScreenCover(isPresented: $showingWindow, onDismiss: { windowSelection = [] }) {
-            WindowCompanionView(dolls: windowSelection)
+            WindowCompanionView(dolls: windowSelection, frameColor: items.first { $0.kind == .wall }?.windowFrameColor)
         }
         .fullScreenCover(item: $frameARDoll) { doll in ARCaptureView(doll: doll) }
         .fullScreenCover(isPresented: $showingSound) {
@@ -287,7 +288,7 @@ struct HomeView: View {
         VStack(spacing: 12) {
             D1IconButton(icon: "doll", label: "인형 만들기") { isCreating = true }
             D1IconButton(icon: "bed", label: "방 꾸미기") { isDecorating = true }
-        }.padding(.trailing, 22).padding(.top, 96)
+        }.padding(.trailing, 22).padding(.top, 8)
     }
 
     @ViewBuilder
@@ -451,19 +452,32 @@ extension HomeView {
             interactionMessage = "침대까지 갈 길이 없어요. 주변 가구를 조금 옮겨 주세요"; return
         }
         let previous=(doll.restingBedID,doll.position,doll.danceRaw)
+        let oldReturn = (doll.beforeSleepX, doll.beforeSleepY, doll.beforeSleepZ)
+        let saved = doll.position
+        doll.beforeSleepX = Double(saved.x); doll.beforeSleepY = Double(saved.y); doll.beforeSleepZ = Double(saved.z)
         doll.restingBedID=bed.id;doll.position=DollRestPose.bedPosition(bed.state);doll.danceRaw=nil
         do { try modelContext.save();travelingDollID=doll.id;interactionMessage="\(doll.name)가 침대로 걸어가요" }
-        catch { doll.restingBedID=previous.0;doll.position=previous.1;doll.danceRaw=previous.2;interactionError="재우기를 저장하지 못했어요. 다시 시도해 주세요." }
+        catch { (doll.beforeSleepX, doll.beforeSleepY, doll.beforeSleepZ) = oldReturn; doll.restingBedID=previous.0;doll.position=previous.1;doll.danceRaw=previous.2;interactionError="재우기를 저장하지 못했어요. 다시 시도해 주세요." }
     }
     private func wakeSleeper() {
         guard let doll=sleeper else { return }
-        guard let spot = RoomLayout.dollSpot(avoiding: items.map(\.state), dolls: placedDolls.filter { $0.id != doll.id }.map(\.position)) else {
+        guard let bedItem = items.first(where: { $0.id == doll.restingBedID }) else { return }
+        let states = items.map(\.state)
+        let occupied = placedDolls.filter { $0.id != doll.id }.map(\.position)
+        let saved = doll.beforeSleepPosition.flatMap { spot -> SIMD3<Float>? in
+            let seat = RoomLayout.seat(at: [spot.x, spot.z], in: states)
+            guard abs(seat.height - spot.y) < 0.03,
+                  occupied.allSatisfy({ simd_distance($0, spot) > 0.28 }),
+                  DollBedRoute.plan(from: spot, bed: bedItem.state, items: states) != nil else { return nil }
+            return spot
+        }
+        guard let spot = saved ?? RoomLayout.dollSpot(avoiding: states, dolls: occupied),
+              DollBedRoute.plan(from: spot, bed: bedItem.state, items: states) != nil else {
             interactionMessage = "일어설 빈자리가 없어요. 가구나 인형을 옮겨 주세요"; return
         }
-        travelingDollID = nil
         let bed=doll.restingBedID, oldPosition=doll.position
         doll.restingBedID=nil;doll.position=spot
-        do { try modelContext.save();interactionMessage="\(doll.name)가 일어났어요" }
+        do { try modelContext.save();travelingDollID=doll.id;interactionMessage="\(doll.name)가 일어나서 자리로 돌아가요" }
         catch { doll.restingBedID=bed;doll.position=oldPosition;interactionError="깨우기를 저장하지 못했어요. 다시 시도해 주세요." }
     }
     private var furnitureOverlays: some View {

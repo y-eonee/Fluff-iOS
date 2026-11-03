@@ -9,13 +9,72 @@ import UIKit
             model.addChild(DollRestPose.quilt(color: bed.colorName))
             return
         }
-        let body = model.findEntity(named: "body")
-        let bodyPose = body?.transform
-        let parts = [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg].compactMap { part -> (DollPart, Entity, Transform)? in
+        let walker = Walker(model)
+        for point in route { guard await walker.move(to: point, climbing: abs(model.position.y - point.y) > 0.05) else { return } }
+        let inverse = simd_quatf(angle: -bed.yaw, axis: [0, 1, 0])
+        let local = simd_act(inverse, model.position - SIMD3(bed.x, 0, bed.z))
+        let edge = SIMD3<Float>(max(-bed.kind.size.x / 2 + 0.16, min(bed.kind.size.x / 2 - 0.16, local.x)), bed.kind.seatHeight ?? 0.39,
+                                max(-bed.kind.size.z / 2 + 0.16, min(bed.kind.size.z / 2 - 0.16, local.z)))
+        let mount = SIMD3(bed.x, 0, bed.z) + simd_act(simd_quatf(angle: bed.yaw, axis: [0, 1, 0]), edge)
+        guard await walker.move(to: mount, climbing: true), await walker.move(to: DollRestPose.bedPosition(bed)) else { return }
+        walker.reset()
+        guard !Task.isCancelled else { return }
+        DollRestPose.sleeping(model, bed: bed, animated: true)
+        do { try await Task.sleep(for: .milliseconds(850)) } catch { return }
+        guard !Task.isCancelled else { return }
+        // RealityKit animations and live scale updates must not compete for the final transform.
+        func stop(_ entity: Entity) { entity.stopAllAnimations(); for child in entity.children { stop(child) } }
+        stop(model)
+        DollRestPose.sleeping(model, bed: bed, animated: false)
+        model.addChild(DollRestPose.quilt(color: bed.colorName))
+    }
+    static func wakeAndReturn(_ model: Entity, bed: RoomItemState, destination: SIMD3<Float>, items: [RoomItemState]) async {
+        guard let route = DollBedRoute.plan(from: destination, bed: bed, items: items), let edge = route.last else { return }
+        let walker = Walker(model)
+        model.position = DollRestPose.bedPosition(bed)
+        let parts = (["body"] + DollPart.allCases.map(\.rawValue)).compactMap { name -> (Entity, Transform)? in
+            guard let node = model.findEntity(named: name) else { return nil }
+            return (node, node.transform)
+        }
+        DollRestPose.sleeping(model, bed: bed, animated: false)
+        model.findEntity(named: "sleep.closed-eyes")?.removeFromParent()
+        if let head = model.findEntity(named: DollPart.head.rawValue) {
+            for eye in head.children where eye.name == "eye" { eye.isEnabled = true }
+        }
+        let duration: TimeInterval = UIAccessibility.isReduceMotionEnabled ? 0 : 0.7
+        for (node, pose) in parts {
+            if duration == 0 { node.transform = pose }
+            else { node.move(to: pose, relativeTo: node.parent, duration: duration, timingFunction: .easeInOut) }
+        }
+        do { try await Task.sleep(for: .seconds(duration)) } catch { return }
+        guard !Task.isCancelled else { return }
+        for (node, pose) in parts { node.stopAllAnimations(); node.transform = pose }
+        // Rise on the mattress first, step down beside it, then retrace the checked route.
+        let local = simd_act(simd_quatf(angle: -bed.yaw, axis: [0, 1, 0]), edge - SIMD3(bed.x, 0, bed.z))
+        let mount = SIMD3(bed.x, 0, bed.z) + simd_act(simd_quatf(angle: bed.yaw, axis: [0, 1, 0]),
+            SIMD3<Float>(max(-bed.kind.size.x / 2 + 0.16, min(bed.kind.size.x / 2 - 0.16, local.x)), bed.kind.seatHeight ?? 0.39,
+                         max(-bed.kind.size.z / 2 + 0.16, min(bed.kind.size.z / 2 - 0.16, local.z))))
+        guard await walker.move(to: mount), await walker.move(to: edge, climbing: true) else { return }
+        for point in route.reversed() { guard await walker.move(to: point) else { return } }
+        guard await walker.move(to: destination, climbing: destination.y > 0.05) else { return }
+        walker.reset()
+    }
+
+    private final class Walker {
+        let model: Entity
+        let body: Entity?
+        let bodyPose: Transform?
+        let parts: [(DollPart, Entity, Transform)]
+        var phase: Float = 0
+        init(_ model: Entity) {
+        self.model = model
+        body = model.findEntity(named: "body")
+        bodyPose = body?.transform
+        parts = [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg].compactMap { part -> (DollPart, Entity, Transform)? in
             guard let limb = model.findEntity(named: part.rawValue) else { return nil }
             return (part, limb, limb.transform)
         }
-        var phase: Float = 0
+        }
         func reset() {
             if let bodyPose { body?.transform = bodyPose }
             for (_, limb, pose) in parts { limb.transform = pose }
@@ -56,22 +115,5 @@ import UIKit
             model.position = destination
             return true
         }
-        for point in route { guard await move(to: point, climbing: abs(model.position.y - point.y) > 0.05) else { return } }
-        let inverse = simd_quatf(angle: -bed.yaw, axis: [0, 1, 0])
-        let local = simd_act(inverse, model.position - SIMD3(bed.x, 0, bed.z))
-        let edge = SIMD3<Float>(max(-bed.kind.size.x / 2 + 0.16, min(bed.kind.size.x / 2 - 0.16, local.x)), bed.kind.seatHeight ?? 0.39,
-                                max(-bed.kind.size.z / 2 + 0.16, min(bed.kind.size.z / 2 - 0.16, local.z)))
-        let mount = SIMD3(bed.x, 0, bed.z) + simd_act(simd_quatf(angle: bed.yaw, axis: [0, 1, 0]), edge)
-        guard await move(to: mount, climbing: true), await move(to: DollRestPose.bedPosition(bed)) else { return }
-        reset()
-        guard !Task.isCancelled else { return }
-        DollRestPose.sleeping(model, bed: bed, animated: true)
-        do { try await Task.sleep(for: .milliseconds(850)) } catch { return }
-        guard !Task.isCancelled else { return }
-        // RealityKit animations and live scale updates must not compete for the final transform.
-        func stop(_ entity: Entity) { entity.stopAllAnimations(); for child in entity.children { stop(child) } }
-        stop(model)
-        DollRestPose.sleeping(model, bed: bed, animated: false)
-        model.addChild(DollRestPose.quilt(color: bed.colorName))
     }
 }

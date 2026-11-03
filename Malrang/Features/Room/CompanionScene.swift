@@ -9,6 +9,7 @@ struct CompanionScene: UIViewRepresentable {
   }
   let dolls: [DollState]
   let kind: Kind
+  var windowFrameColor: String? = nil
   func makeCoordinator() -> Coordinator { Coordinator() }
   func makeUIView(context: Context) -> ARView {
     let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
@@ -18,7 +19,7 @@ struct CompanionScene: UIViewRepresentable {
     return view
   }
   func updateUIView(_ view: ARView, context: Context) {
-    context.coordinator.render(dolls: dolls, kind: kind)
+    context.coordinator.render(dolls: dolls, kind: kind, frameColor: windowFrameColor)
   }
   static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
     coordinator.stop()
@@ -32,8 +33,10 @@ struct CompanionScene: UIViewRepresentable {
     private var subscription: (any Cancellable)?
     private var currentDolls: [DollState] = []
     private var currentKind: Kind?
+    private var currentFrameColor: String?
     private var elapsed: Float = 0
     private var clouds: [Entity] = []
+    private var birds: [Entity] = []
     private var companions: [Entity] = []
     private var rain: [Entity] = []
     func stop() {
@@ -42,17 +45,19 @@ struct CompanionScene: UIViewRepresentable {
       task = nil
       subscription = nil
       clouds = []
+      birds = []
       companions = []
       rain = []
     }
-    func render(dolls: [DollState], kind: Kind) {
-      guard currentDolls != dolls || currentKind != kind else { return }
+    func render(dolls: [DollState], kind: Kind, frameColor: String?) {
+      guard currentDolls != dolls || currentKind != kind || currentFrameColor != frameColor else { return }
       currentDolls = dolls
       currentKind = kind
+      currentFrameColor = frameColor
       stop()
-      task = Task { await build(dolls, kind) }
+      task = Task { await build(dolls, kind, frameColor: frameColor) }
     }
-    private func build(_ dolls: [DollState], _ kind: Kind) async {
+    private func build(_ dolls: [DollState], _ kind: Kind, frameColor: String?) async {
       guard let view else { return }
       let root = AnchorEntity(world: .zero)
       var textile = PhysicallyBasedMaterial()
@@ -96,10 +101,10 @@ struct CompanionScene: UIViewRepresentable {
           Palette.uiColor(night ? "#263450" : sunset ? "#EDB6A4" : "#ABD9E8"))
         light.light.color = Palette.uiColor(night ? "#B5C6EE" : "#FFE5B8")
         light.light.intensity = night ? 500 : 1600
-        _ = box([2.6, 0.12, 0.50], [0, 0.05, 0], "#F5DFBA")
-        _ = box([0.10, 2.6, 0.16], [-0.89, 1.2, -0.18], "#F5DFBA")
-        _ = box([0.10, 2.6, 0.16], [0.89, 1.2, -0.18], "#F5DFBA")
-        _ = box([0.035, 2.6, 0.10], [0, 1.2, -0.22], "#F5DFBA", radius: 0.01)
+        _ = box([2.6, 0.12, 0.50], [0, 0.05, 0], frameColor ?? "#F5DFBA")
+        _ = box([0.10, 2.6, 0.16], [-0.89, 1.2, -0.18], frameColor ?? "#F5DFBA")
+        _ = box([0.10, 2.6, 0.16], [0.89, 1.2, -0.18], frameColor ?? "#F5DFBA")
+        _ = box([0.035, 2.6, 0.10], [0, 1.2, -0.22], frameColor ?? "#F5DFBA", radius: 0.01)
         _ = box([2.6, 0.6, 0.2], [0, -0.31, -0.10], "#E5B8B1")
         for i in 0..<5 {
           let x = Float(i) - 2
@@ -107,31 +112,10 @@ struct CompanionScene: UIViewRepresentable {
             [2.2, 0.8, 1.5], [x * 0.8, -0.22, -2.7 - Float(i % 2)], night ? "#354D4B" : "#91B67E")
           _ = ball([0.20, 0.48, 0.20], [x * 0.58, 0.16, -2.4], night ? "#3F6152" : "#82A567")
         }
-        for i in 0..<4 {
-          let group = Entity()
-          root.addChild(group)
-          group.position = [
-            Float(i) * 0.65 - 1.0, 0.75 + Float(i % 3) * 0.43, -2.4 - Float(i % 2) * 0.2,
-          ]
-          for j in 0..<7 {
-            let puff = ModelEntity(
-              mesh: .generateSphere(radius: 0.13),
-              materials: [material(night ? "#8992B1" : "#FFF4E6")])
-            puff.position = [Float(j % 4) * 0.11 - 0.15, Float(j / 4) * 0.11, Float(j % 2) * 0.05]
-            group.addChild(puff)
-          }
-          clouds.append(group)
-        }
-        _ = ball(
-          [0.30, 0.30, 0.08], [sunset ? 0.1 : -0.5, sunset ? 0.55 : 1.65, -3],
-          night ? "#F7F0CB" : "#FFF1B0")
-        if night {
-          for i in 0..<24 {
-            _ = ball(
-              [0.012, 0.012, 0.012], [Float(i % 7) * 0.28 - 0.85, Float(i % 5) * 0.24 + 0.8, -2.8],
-              "#FFF9DD")
-          }
-        }
+        let sky = await WindowSkyModel.make(hour: hour)
+        root.addChild(sky.root)
+        clouds = sky.clouds
+        if !night && weather < 51 { birds = WindowSkyModel.addBirds(to: sky.root) }
         if weather >= 51 {
           let snow = (71...77).contains(weather) || weather == 85 || weather == 86
           for i in 0..<55 {
@@ -197,7 +181,15 @@ struct CompanionScene: UIViewRepresentable {
           self.elapsed += Float(min(event.deltaTime, 0.05))
           for cloud in self.clouds {
             cloud.position.x += Float(event.deltaTime) * 0.015
-            if cloud.position.x > 1.5 { cloud.position.x = -1.5 }
+            if cloud.position.x > 2.6 { cloud.position.x = -2.6 }
+          }
+          for (index, bird) in self.birds.enumerated() {
+            bird.position.x += Float(min(event.deltaTime, 0.05)) * 0.13
+            if bird.position.x > 2.8 { bird.position.x = -2.8 }
+            bird.position.y += sin(self.elapsed * 1.4 + Float(index)) * 0.0004
+            for (side, name) in [(Float(-1), "wing.left"), (Float(1), "wing.right")] {
+              bird.findEntity(named: name)?.orientation = simd_quatf(angle: side * sin(self.elapsed * 5 + Float(index)) * 0.5, axis: [1, 0, 0])
+            }
           }
           for drop in self.rain {
             drop.position.y -= Float(event.deltaTime) * 0.7
@@ -210,7 +202,7 @@ struct CompanionScene: UIViewRepresentable {
       }
     }
     private func model(_ doll: DollState) async -> Entity {
-      if let config = doll.preset { return await PresetDollModel.make(config, detail: .room) }
+      if let config = doll.preset { return await PresetDollModel.make(config) }
       return await PlushCutoutModel.make(doll.imageData)
     }
   }

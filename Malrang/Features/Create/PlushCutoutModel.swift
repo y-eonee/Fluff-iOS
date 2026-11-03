@@ -20,7 +20,11 @@ enum PlushCutoutModel {
       else { return }
       context.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
     }
-    let active = (0..<w * h).map { rgba[$0 * 4 + 3] > 50 }
+    // Bitmap alpha rows start at the top; model vertices rise from the feet.
+    let active = (0..<w * h).map { index in
+      let x = index % w, y = index / w
+      return rgba[((h - 1 - y) * w + x) * 4 + 3] > 50
+    }
     var distance = active.map { $0 ? Float(64) : 0 }
     for y in 0..<h {
       for x in 0..<w {
@@ -60,7 +64,8 @@ enum PlushCutoutModel {
         for (a, b) in corners {
           front.append(point(a, b, 1))
           back.append(point(a, b, -1))
-          uv.append([Float(a) / Float(w), 1 - Float(b) / Float(h)])
+          // The CGImage texture uses bottom-to-top UVs; keep it aligned with the silhouette.
+          uv.append([Float(a) / Float(w), Float(b) / Float(h)])
         }
         faces += [start, start + 1, start + 2, start, start + 2, start + 3]
         for (dx, dy, a, b) in [(-1, 0, 0, 3), (1, 0, 1, 2), (0, -1, 0, 1), (0, 1, 3, 2)] {

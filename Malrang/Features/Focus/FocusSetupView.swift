@@ -71,6 +71,7 @@ extension FocusFlowView {
             Button("집중 시간 설정") { customTime = false; showingSettings = true }
                 .buttonStyle(FocusCompactButton()).padding(.horizontal, 22).padding(.bottom, 24)
             Button("집중 시작하기") { session.start() }.buttonStyle(D1PrimaryStyle())
+                .disabled(!session.canStart)
                 .padding(.horizontal, 22).padding(.bottom, 16)
         }
     }
@@ -163,7 +164,7 @@ extension FocusFlowView {
                 D1Choice(title: "50 / 10", selected: !customTime && session.record.focusMinutes == 50 && session.record.restMinutes == 10, fillsWidth: true) { customTime = false; session.configure(focus: 50, rest: 10) }.frame(maxWidth: .infinity)
                 D1Choice(title: "직접 설정", selected: customTime, fillsWidth: true) { customTime = true }.frame(maxWidth: .infinity)
             }
-            Button("함께 시작하기") { showingSettings = false; session.start() }.buttonStyle(D1PrimaryStyle())
+            Button("함께 시작하기") { session.confirmTime(); showingSettings = false; session.start() }.buttonStyle(D1PrimaryStyle())
             Spacer(minLength: 0)
         }.padding(.horizontal, 22).padding(.top, 12).foregroundStyle(FocusStyle.ink)
             .presentationDetents([.height(489)]).presentationDragIndicator(.visible)

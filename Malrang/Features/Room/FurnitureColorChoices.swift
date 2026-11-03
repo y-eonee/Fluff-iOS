@@ -33,6 +33,13 @@ struct FurnitureColorChoices: View {
                 Button("직접 색 고르기") { showingPicker = true }.buttonStyle(FocusCompactButton())
                 if let onPhoto { Button("사진으로 꾸미기", action: onPhoto).buttonStyle(FocusCompactButton()) }
             }
+            if item.kind == .wall {
+                ColorPicker("창틀 색상", selection: Binding(
+                    get: { Color(uiColor: Palette.uiColor(item.windowFrameColor ?? "#FFE7AE")) },
+                    set: { item.windowFrameColor = Palette.hex($0) }
+                ), supportsOpacity: false).pretendard(.bold, 17).frame(minHeight: 44)
+                Button("창틀 기본색으로") { item.windowFrameColor = nil }.buttonStyle(FocusCompactButton())
+            }
         }.foregroundStyle(Color.mib.text.primary)
             .sheet(isPresented: $showingPicker) {
                 ItemColorPicker(item: item).presentationDetents([.medium, .large]).presentationDragIndicator(.visible).presentationCornerRadius(22)

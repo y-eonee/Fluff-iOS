@@ -19,6 +19,13 @@ final class Doll {
     var createdAt = Date()
     var presetData: Data?
     var restingBedID: UUID?
+    var beforeSleepX: Double?
+    var beforeSleepY: Double?
+    var beforeSleepZ: Double?
+    var beforeSleepPosition: SIMD3<Float>? {
+        guard let x = beforeSleepX, let y = beforeSleepY, let z = beforeSleepZ else { return nil }
+        return [Float(x), Float(y), Float(z)]
+    }
 
     var presetConfiguration: PresetConfiguration? {
         get { presetData.flatMap { try? JSONDecoder().decode(PresetConfiguration.self, from: $0) } }

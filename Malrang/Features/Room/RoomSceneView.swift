@@ -131,6 +131,7 @@ struct RoomSceneView: UIViewRepresentable {
         private var lastDollPoint: CGPoint?
         private var approachingBeds = Set<UUID>()
         private var restingTime: Float = 0
+        private var returningBeds: [UUID: UUID] = [:]
         private var lastLightingMinute: Int?
         private var lightingTask: Task<Void, Never>?
         private var accessibleEntities: [(Entity, RoomAccessibilityElement)] = []
@@ -311,7 +312,7 @@ struct RoomSceneView: UIViewRepresentable {
             }
             let previous = displayed
             var settling: [(Entity, RoomItemState)] = []
-            var waking: [(Entity, Transform)] = []
+            var waking: [(Entity, RoomItemState, SIMD3<Float>)] = []
             let content = Entity()
             if var item = state.focusItem {
                 (item.x, item.z) = (0, 0)
@@ -342,13 +343,13 @@ struct RoomSceneView: UIViewRepresentable {
                             model.addChild(DollRestPose.quilt(color: bed.colorName))
                         }
                     }
-                    if doll.restingBedID == nil, previous?.dolls.first(where: { $0.id == doll.id })?.restingBedID != nil {
-                        for part in [DollPart.leftArm, .rightArm] {
-                            if let arm = model.findEntity(named: part.rawValue) {
-                                waking.append((arm, arm.transform))
-                                arm.orientation = simd_quatf(angle: part == .leftArm ? -1.4 : 1.4, axis: [0, 0, 1])
-                            }
-                        }
+                    if doll.restingBedID == nil,
+                       let bedID = returningBeds[doll.id] ?? previous?.dolls.first(where: { $0.id == doll.id })?.restingBedID,
+                       let bed = state.items.first(where: { $0.id == bedID }),
+                       DollBedRoute.plan(from: doll.position, bed: bed, items: state.items) != nil {
+                        model.position = DollRestPose.bedPosition(bed)
+                        returningBeds[doll.id] = bedID
+                        waking.append((model, bed, doll.position))
                     }
                     content.addChild(model)
                 }
@@ -375,18 +376,23 @@ struct RoomSceneView: UIViewRepresentable {
             root.addChild(camera)
             root.addChild(light)
 
-            if parent.mode == .home { wander = RoomDollWander(content: content, states: state.dolls, items: state.items) }
+
             displayed = state
             configureAccessibility(content)
             parent.onSceneReady()
             for doll in state.dolls where doll.restingBedID != nil && !approachingBeds.contains(doll.id) { parent.onSleepSettled(doll.id) }
-            for (arm, pose) in waking {
-                arm.move(to: pose, relativeTo: arm.parent, duration: UIAccessibility.isReduceMotionEnabled ? 0 : 1.0, timingFunction: .easeInOut)
+            for (model, bed, destination) in waking {
+                await DollBedMotion.wakeAndReturn(model, bed: bed, destination: destination, items: state.items)
+                guard !Task.isCancelled else { return }
+                if let id = Self.parse(model.name)?.id { returningBeds[id] = nil; parent.onSleepSettled(id) }
             }
             for (model, bed) in settling {
                 await DollBedMotion.walkAndSleep(model, bed: bed, items: state.items)
                 if !Task.isCancelled, let id = Self.parse(model.name)?.id { approachingBeds.remove(id); parent.onSleepSettled(id) }
 
+            }
+            if !Task.isCancelled, parent.mode == .home {
+                wander = RoomDollWander(content: content, states: state.dolls, items: state.items)
             }
         }
 
@@ -536,7 +542,7 @@ struct RoomSceneView: UIViewRepresentable {
                 let points: [SIMD3<Float>]
                 let key: String
                 if item.kind == .wall {
-                    key = "창문"; points = [[-0.92, 0.70, -0.16], [-0.92, 1.48, 0.48]]
+                    key = "창문"; points = [[-0.92, 0.43, -0.28], [-0.92, 1.48, 0.38]]
                 } else {
                     key = item.kind.label
                     let size = item.kind.size
@@ -821,6 +827,16 @@ struct RoomSceneView: UIViewRepresentable {
                 var entity: Entity? = hit.entity
                 while let current = entity {
                     if let parsed = Self.parse(current.name) {
+                        if parent.mode == .home, !parsed.isDoll, item(parsed.id)?.kind == .wall {
+                            let local = current.convert(position: hit.position, from: nil)
+                            // Same coordinates as the live window after its sill offset.
+                            let z = local.z - 0.05
+                            let archY: Float = 1.18
+                            let inOpening = abs(local.x + 0.94) < 0.14 && abs(z) <= 0.33
+                                && local.y >= 0.43
+                                && (local.y <= archY || z * z + (local.y - archY) * (local.y - archY) <= 0.33 * 0.33)
+                            guard inOpening else { return nil }
+                        }
                         // 인형을 집을 때는 가구 충돌 면을 건너뛰고, 탭할 때는 가구도 고른다.
                         if parent.mode != .home || parsed.isDoll || includeFurniture {
                             return (current, parsed.id, parsed.isDoll)

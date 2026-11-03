@@ -23,6 +23,7 @@ final class FocusSession {
         var checkpoint: Date?
         var daily: [String: TimeInterval] = [:]
         // Optional fields keep existing saved timers and study history readable.
+        var timeConfirmed: Bool?
         var activity: StudyActivity?
         var companionSeconds: [String: TimeInterval]?
     }
@@ -37,6 +38,8 @@ final class FocusSession {
         }
         tick()
     }
+    var canStart: Bool { !active && record.dollID != nil && record.timeConfirmed == true && record.focusMinutes > 0 }
+    func confirmTime() { guard !active else { return }; record.timeConfirmed = true; save() }
     var active: Bool { record.phase != .ready }
     var resting: Bool { record.phase == .resting || record.phase == .pausedRest }
     var paused: Bool { record.phase == .pausedFocus || record.phase == .pausedRest }
@@ -52,6 +55,7 @@ final class FocusSession {
     func selectActivity(_ activity: StudyActivity) {
         guard !active else { return }
         record.activity = activity
+        record.timeConfirmed = false
         configure(focus: activity.recommendedMinutes, rest: activity == .task ? 10 : 5)
     }
     func configure(focus: Int, rest: Int) {
@@ -59,7 +63,7 @@ final class FocusSession {
         record.focusMinutes = min(180, max(1, focus)); record.restMinutes = min(60, max(1, rest)); save()
     }
     func start(at date: Date = .now) {
-        guard !active, record.dollID != nil else { return }
+        guard canStart else { return }
         record.phase = .focusing; record.seconds = 0; record.checkpoint = date; save()
     }
     func togglePause(at date: Date = .now) {
@@ -78,7 +82,7 @@ final class FocusSession {
         record.phase = .focusing; record.seconds = 0; record.checkpoint = date; save()
     }
     func stop(at date: Date = .now) {
-        tick(at: date); record.phase = .ready; record.seconds = 0; record.checkpoint = nil; save()
+        tick(at: date); record.timeConfirmed = false; record.phase = .ready; record.seconds = 0; record.checkpoint = nil; save()
     }
     func tick(at date: Date = .now) {
         guard let checkpoint = record.checkpoint, !paused, active else { return }

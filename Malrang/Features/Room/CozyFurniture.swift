@@ -42,7 +42,8 @@ enum CozyFurniture {
             case .wall, .floor: (scale, softness) = (12, 0.25)
             case .lamp: (scale, softness) = (9, 0.35)
             }
-            return Self.material(hex, usesWindowLighting: usesWindowLighting,
+            let color = part.hasPrefix("window.") ? (item.windowFrameColor ?? hex) : hex
+            return Self.material(color, usesWindowLighting: usesWindowLighting,
                                  textureRepeat: item.kind == .floor ? 16 : scale / 1.5,
                                  softness: softness, surfaceScale: scale,
                                  surfaceGlow: part.hasPrefix("window") ? 0.75 : (item.kind == .lamp && part == "shade" ? -0.65 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : 0)),
@@ -343,7 +344,8 @@ enum CozyFurniture {
         }
         if item.photoData != nil, item.kind != .wall {
             let isWall = item.kind.hangsOnWall
-            let size: SIMD2<Float> = isWall ? [s.x * 0.76, s.y * 0.77] : [s.x * 0.9, s.z * 0.85]
+            let size: SIMD2<Float> = item.kind == .floor ? [cutaway ? s.x : 8, cutaway ? s.z : 8]
+                : isWall ? [s.x * 0.76, s.y * 0.77] : [s.x * 0.9, s.z * 0.85]
             let photo = ModelEntity(mesh: .generatePlane(width: size.x, height: size.y), materials: [photoMaterial])
             photo.name = "custom-photo"
             if isWall {
@@ -354,7 +356,7 @@ enum CozyFurniture {
             }
             else {
                 photo.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
-                photo.position = [0, (item.kind.seatHeight ?? 0.01) + 0.002, 0]
+                photo.position = [0, item.kind == .floor ? 0.003 : (item.kind.seatHeight ?? 0.01) + 0.002, 0]
             }
             root.addChild(photo)
         }

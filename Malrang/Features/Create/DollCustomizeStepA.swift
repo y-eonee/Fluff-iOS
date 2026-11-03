@@ -27,7 +27,7 @@ struct DollCustomizeStepA: View {
                 CreationProgress(step: 3)
                 Text(["모양 조절", "속재료 선택", "이름 짓기"][page])
                     .pretendard(.bold, 17).accessibilityAddTraits(.isHeader)
-                preview(height: min(306, max(190, geometry.size.height - 440)))
+                preview(height: page == 0 ? min(420, max(320, geometry.size.height - 260)) : 306)
                 Group {
                     if page == 0 {
                         if draft.shape == .pillow {
@@ -110,7 +110,7 @@ struct DollCustomizeStepA: View {
                 if draft.shape == .pillow {
                     CustomPhotoPreview(draft: draft)
                 } else {
-                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19,
+                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true,
                                    onPart: { selectedPart = $0 }, onSnapshot: { draft.snapshot = $0 })
                         .renderedOnlyWhileVisible(background: .clear)
                 }

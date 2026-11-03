@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CreationProgress: View {
     let step: Int
-    private let titles = ["사진", "투명화", "방식", "꾸미기", "완성"]
+    private let titles = ["사진", "투명화", "인형 모양", "꾸미기", "완성"]
 
     var body: some View {
         HStack(spacing: Spacing.xs) {

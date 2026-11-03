@@ -14,7 +14,8 @@ enum DollBackSeams {
         let stitch = ModelEntity(mesh: .generateSphere(radius: 0.0010), materials: [thread])
         stitch.name = "rear.seam"
         stitch.scale = [1, 2.4, 1]
-        stitch.position = [0, t * 0.085, -sqrt(max(0, 1 - t * t)) * 0.093]
+        let surface = PresetHeadSurface.point(latitude: t, angle: -.pi / 2, width: 0.128)
+        stitch.position = [0, surface.y, surface.z - 0.0012]
         head.addChild(stitch)
       }
     }
@@ -24,7 +25,9 @@ enum DollBackSeams {
         let stitch = ModelEntity(mesh: .generateSphere(radius: 0.0009), materials: [thread])
         stitch.name = "rear.seam"
         stitch.scale = [1, 2.2, 1]
-        stitch.position = [0, t * 0.055, -sqrt(max(0, 1 - t * t)) * 0.060]
+        let y = t * 0.05
+        let apronRow = (0.046 - y) / 0.111
+        stitch.position = [0, y, 0.005 - (0.059 + 0.006 * apronRow) - 0.001]
         torso.addChild(stitch)
       }
     }

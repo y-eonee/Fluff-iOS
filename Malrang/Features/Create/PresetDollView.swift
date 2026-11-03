@@ -7,6 +7,7 @@ struct PresetDollView: UIViewRepresentable {
     var cameraDistance: Float = 0.95
     var cameraTarget: Float = 0.22
     var cameraYaw: Float = 0
+    var fitsModel = false
     var focusScene = false
     var working = false
     var happy = false
@@ -15,7 +16,7 @@ struct PresetDollView: UIViewRepresentable {
     var onSnapshot: ((UIImage) -> Void)?
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> ARView {
-        let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
+        let view = PresetRenderView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
         view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
         view.environment.background = .color(.clear); view.isOpaque = false
         view.environment.lighting.intensityExponent = -1.0
@@ -38,14 +39,19 @@ struct PresetDollView: UIViewRepresentable {
         rim.look(at: [0, 0.2, 0], from: [1, 0.7, 0.1], relativeTo: nil); anchor.addChild(rim)
         view.scene.addAnchor(anchor)
         context.coordinator.anchor = anchor; context.coordinator.view = view
+        context.coordinator.camera = camera
+        view.onLayout = { [weak coordinator = context.coordinator] in coordinator?.fitCamera() }
         view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:))))
         return view
     }
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.onPart = onPart
+        context.coordinator.fitsModel = fitsModel
+        context.coordinator.cameraYaw = cameraYaw
         context.coordinator.update(configuration, focusScene: focusScene, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
     }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+        (view as? PresetRenderView)?.onLayout = nil
         coordinator.task?.cancel()
         coordinator.task = nil
         coordinator.motion = nil
@@ -60,6 +66,18 @@ struct PresetDollView: UIViewRepresentable {
     }
     final class Coordinator: NSObject {
         weak var view: ARView?
+        var camera: PerspectiveCamera?
+        var fitsModel = false
+        var cameraYaw: Float = 0
+        func fitCamera() {
+            guard fitsModel, let model, let camera, let view, view.bounds.height > 0, view.bounds.width > 0 else { return }
+            let bounds = model.visualBounds(relativeTo: nil)
+            let size = bounds.extents
+            let aspect = Float(view.bounds.width / view.bounds.height)
+            let halfFOV = camera.camera.fieldOfViewInDegrees * .pi / 360
+            let distance = max(size.y / 2, max(size.x, size.z) / (2 * aspect)) / tan(halfFOV) * 1.18 + size.z / 2
+            camera.look(at: bounds.center, from: bounds.center + SIMD3(sin(cameraYaw) * distance, 0.02, cos(cameraYaw) * distance), relativeTo: nil)
+        }
         var anchor: AnchorEntity?
         var model: Entity?
         var configuration: PresetConfiguration?
@@ -116,6 +134,7 @@ struct PresetDollView: UIViewRepresentable {
                 guard !Task.isCancelled else { return }
                 model?.removeFromParent(); model = entity; anchor?.addChild(entity)
                 renderedConfiguration = value
+                fitCamera()
                 if let data = value.face { photoAspect = ImageDownsampling.aspectRatio(data) }
                 if focusScene {
                     let motion = FocusDollMotion(doll: entity, configuration: value)
@@ -137,5 +156,14 @@ struct PresetDollView: UIViewRepresentable {
                 entity = current.parent
             }
         }
+    }
+}
+
+/// Refit after rotation or a change in the available preview area.
+private final class PresetRenderView: ARView {
+    var onLayout: (() -> Void)?
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        onLayout?()
     }
 }

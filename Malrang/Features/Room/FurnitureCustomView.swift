@@ -106,6 +106,7 @@ struct FurnitureCustomView: View {
         .onChange(of: style) {
             if style == .basic {
                 item.colorName = nil
+                item.windowFrameColor = nil
                 item.photoData = nil
             }
         }
