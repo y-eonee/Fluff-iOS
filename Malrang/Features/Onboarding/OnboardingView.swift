@@ -1,8 +1,10 @@
+import AuthenticationServices
 import SwiftUI
 
-/// 간편 가입. 실제 Apple/카카오 로그인은 서버가 정해진 뒤 연결한다.
+/// Apple 인증이 성공한 뒤에만 프로필과 방으로 이동한다.
 struct OnboardingView: View {
     let onStart: () -> Void
+    @State private var account = AppleAccount()
 
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -43,14 +45,20 @@ struct OnboardingView: View {
                     Spacer(minLength: Spacing.l)
 
                     VStack(spacing: Spacing.s) {
-                        Button(action: onStart) {
-                            Label("Apple로 시작하기", systemImage: "apple.logo")
+                        SignInWithAppleButton(.continue) { request in
+                            account.prepare(request)
+                        } onCompletion: { result in
+                            if account.complete(result) { onStart() }
                         }
-                        .buttonStyle(D1PrimaryStyle())
-                        Button(action: onStart) {
-                            Label("카카오로 시작하기", systemImage: "message.fill")
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 30))
+                        .accessibilityIdentifier("apple-sign-in")
+                        if let message = account.message {
+                            Text(message).pretendard(.regular, 13)
+                                .multilineTextAlignment(.center)
+                                .accessibilityIdentifier("apple-sign-in-error")
                         }
-                        .buttonStyle(D1SecondaryStyle())
                     }
                 }
                 .frame(maxWidth: 420)

@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 
-/// 프로필 만들기(첫 가입)와 프로필 편집. 만들 때는 "시작하기", 편집할 때는 취소/완료.
+/// 프로필 만들기와 편집. 편집은 뒤로가기와 단일 완료 버튼을 제공한다.
 struct ProfileEditView: View {
     var isCreating = false
     @AppStorage("nickname") private var nickname = ""
@@ -11,15 +11,31 @@ struct ProfileEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var isConfirmingDelete = false
+    @State private var isConfirmingLogout = false
     @State private var draftName = ""
     @State private var draftAvatar = Data()
     @State private var pickerItem: PhotosPickerItem?
+    @State private var accountError: String?
     private let maxLength = 10
 
     private var trimmed: String { draftName.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         VStack(spacing: Spacing.l) {
+            ZStack {
+                Text(isCreating ? "프로필 만들기" : "프로필 편집")
+                    .pretendard(.bold, 18)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("profile-page-title")
+                if !isCreating {
+                    HStack {
+                        Button { dismiss() } label: {
+                            D1Icon(name: "back").frame(width: 44, height: 44).contentShape(Rectangle())
+                        }.buttonStyle(.plain).accessibilityLabel("뒤로가기")
+                        Spacer()
+                    }
+                }
+            }.frame(height: 44)
             if isCreating {
                 Text("내 방에서 사용할 프로필을 정해주세요")
                     .appFont(.footnote)
@@ -54,11 +70,20 @@ struct ProfileEditView: View {
                     .buttonStyle(.primary)
                     .disabled(trimmed.isEmpty)
             } else {
-                Button("회원탈퇴") { isConfirmingDelete = true }
-                    .appFont(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
-                    .frame(minHeight: 44)
-                CancelConfirmButtons(onCancel: { dismiss() }, onConfirm: save)
+                HStack(spacing: 24) {
+                    Button { isConfirmingLogout = true } label: {
+                        Text("로그아웃").frame(minHeight: 44).contentShape(Rectangle())
+                    }
+                    Button { isConfirmingDelete = true } label: {
+                        Text("회원탈퇴").frame(minHeight: 44).contentShape(Rectangle())
+                    }
+                }
+                .buttonStyle(.plain)
+                .pretendard(.regular, 13)
+                .foregroundStyle(Color.app.inkSecondary)
+                .frame(minHeight: 44)
+                Button("완료", action: save)
+                    .buttonStyle(CreationPrimaryButton())
                     .disabled(trimmed.isEmpty)
             }
         }
@@ -66,9 +91,8 @@ struct ProfileEditView: View {
         .padding(Spacing.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { AppBackground() }
-        .navigationTitle(isCreating ? "프로필 만들기" : "프로필 편집")
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(!isCreating)
+        .navigationBarBackButtonHidden()
+        .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
             draftName = nickname
@@ -77,8 +101,16 @@ struct ProfileEditView: View {
         .confirmationDialog("정말 탈퇴할까요?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
             Button("탈퇴하기", role: .destructive, action: deleteAccount)
         } message: {
-            Text("인형, 방, 프로필이 모두 지워지고 되돌릴 수 없어요")
+            Text("이 기기의 인형, 방, 프로필이 모두 지워지고 되돌릴 수 없어요. Apple 계정 연결은 Apple 계정 설정에서 별도로 해제할 수 있어요.")
         }
+        .confirmationDialog("로그아웃할까요?", isPresented: $isConfirmingLogout, titleVisibility: .visible) {
+            Button("로그아웃", role: .destructive) { AppleAccount.signOut(); isSignedIn = false }
+        } message: {
+            Text("인형과 방은 그대로 남아 있어요")
+        }
+        .alert("계정 정보를 삭제하지 못했어요", isPresented: Binding(get: { accountError != nil }, set: { if !$0 { accountError = nil } })) {
+            Button("확인", role: .cancel) { accountError = nil }
+        } message: { Text(accountError ?? "다시 시도해 주세요.") }
         .task(id: pickerItem) {
             guard let pickerItem,
                   let data = try? await pickerItem.loadTransferable(type: Data.self),
@@ -110,12 +142,20 @@ struct ProfileEditView: View {
     }
 
     private func deleteAccount() {
-        try? modelContext.delete(model: Doll.self)
-        try? modelContext.delete(model: RoomItem.self)
-        try? modelContext.delete(model: DecorPhoto.self)
-        nickname = ""
-        avatarData = Data()
-        isSignedIn = false
+        do {
+            try modelContext.delete(model: Doll.self)
+            try modelContext.delete(model: RoomItem.self)
+            try modelContext.delete(model: DecorPhoto.self)
+            try modelContext.save()
+            try AppleAccount.removeLocalIdentity()
+            nickname = ""
+            avatarData = Data()
+            isSignedIn = false
+            RenderMemory.clearCaches()
+        } catch {
+            modelContext.rollback()
+            accountError = "저장 상태를 확인한 뒤 다시 시도해 주세요."
+        }
     }
 
     private func save() {

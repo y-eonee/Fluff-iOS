@@ -2,14 +2,12 @@ import SwiftData
 import SwiftUI
 
 struct MyPageView: View {
-    @AppStorage("isSignedIn") private var isSignedIn = false
     @AppStorage("nickname") private var nickname = ""
     @AppStorage("avatarData") private var avatarData = Data()
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("soundOn") private var soundOn = true
     @Environment(AppState.self) private var appState
     @Environment(\.openURL) private var openURL
-    @State private var isConfirmingLogout = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -20,7 +18,7 @@ struct MyPageView: View {
                         HStack(spacing: 12) {
                             ProfileAvatar(data: avatarData, size: 64)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(nickname.isEmpty ? "나의 솜뭉치 방" : nickname).pretendard(.bold, 17)
+                                Text(nickname.isEmpty ? "나의 인형 방" : nickname).pretendard(.bold, 17)
                                 Text("프로필 편집").pretendard(.medium, 13).foregroundStyle(Color.mib.text.secondary)
                             }
                             Spacer()
@@ -52,18 +50,10 @@ struct MyPageView: View {
                             }.frame(minHeight: 52)
                         }.pretendard(.regular, 16).padding(.horizontal, 16).d1Surface(radius: 14)
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("계정").pretendard(.bold, 17)
-                        Button("로그아웃") { isConfirmingLogout = true }.buttonStyle(D1SecondaryStyle())
-                    }
                 }.padding(.horizontal, 22).padding(.bottom, 24)
             }.scrollIndicators(.hidden)
         }.foregroundStyle(Color.mib.text.primary).tint(Color.mib.action.primary).background(Color.mib.bg.screen)
-            .safeAreaInset(edge: .bottom, spacing: 0) { D1HomeTabs(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 })) }
-            .toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar)
-            .confirmationDialog("로그아웃할까요?", isPresented: $isConfirmingLogout, titleVisibility: .visible) {
-                Button("로그아웃", role: .destructive) { isSignedIn = false }
-            } message: { Text("인형과 방은 그대로 남아 있어요") }
+            .toolbar(.hidden, for: .navigationBar)
     }
 
     private var separator: some View { Rectangle().fill(Color.mib.line.default).frame(height: 1) }

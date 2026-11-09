@@ -1,3 +1,4 @@
+import AuthenticationServices
 import GoogleSignIn
 import SwiftData
 import SwiftUI
@@ -63,6 +64,11 @@ struct MalrangApp: App {
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { RenderMemory.clearCaches() }
+                if phase == .active { Task { await AppleAccount.validateSession() } }
+            }
+            .task { await AppleAccount.validateSession() }
+            .onReceive(NotificationCenter.default.publisher(for: ASAuthorizationAppleIDProvider.credentialRevokedNotification)) { _ in
+                Task { await AppleAccount.validateSession() }
             }
             .onOpenURL { url in _ = GIDSignIn.sharedInstance.handle(url) }
             .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
