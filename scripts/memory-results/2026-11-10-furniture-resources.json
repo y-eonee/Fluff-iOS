@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-10",
+  "device": "iPhone 17 Pro",
+  "configuration": "Debug, launched without debugger",
+  "baselineCommit": "d27eb9f",
+  "metric": "task_vm_info.phys_footprint and MTLDevice.currentAllocatedSize divided by 1048576 (MiB)",
+  "scenario": "Saved room: 3 dolls, 10 furniture items, one visible renderer. One baseline and one optimized process run, sampled at 20/40/60 seconds. Normal device rendering budget varies with heat, so comparison forces contentScaleFactor=1 and bloom off in BOTH runs. Release behavior and normal quality budget are unchanged.",
+  "changes": [
+    "Discard unused embedded texture references in baked furniture cache while preserving original tint.",
+    "Reuse equal materials within each furniture build.",
+    "Cull back faces only for known closed cushion meshes; retain two-sided fabric fibers and open geometry."
+  ],
+  "limitations": [
+    "Single paired run; not continuous peak measurement or long-duration soak.",
+    "Both runs reported serious thermal state (2); no temperature or power reduction is established.",
+    "Instruments Game Performance attachment timed out waiting for the device; no GPU-time result is claimed.",
+    "Do not compare these fixed-budget numbers directly with the user's earlier 600 MB observation or infer ordinary full-quality memory from them.",
+    "The final optimized build also disables auto-lock only during diagnostic sampling and records timestamps; rendering code is identical to the visual-validation build."
+  ],
+  "before": [
+    {
+      "renderScales": [
+        1
+      ],
+      "roomFurniture": 10,
+      "comparisonBudget": true,
+      "metalMB": 196.6875,
+      "thermalState": 2,
+      "footprintMB": 425.1105728149414,
+      "baselineResources": true,
+      "visibleRenderers": 1,
+      "seconds": 20,
+      "roomDolls": 3
+    },
+    {
+      "metalMB": 196.6875,
+      "roomDolls": 3,
+      "seconds": 40,
+      "thermalState": 2,
+      "footprintMB": 420.2980728149414,
+      "renderScales": [
+        1
+      ],
+      "roomFurniture": 10,
+      "comparisonBudget": true,
+      "baselineResources": true,
+      "visibleRenderers": 1
+    },
+    {
+      "thermalState": 2,
+      "seconds": 60,
+      "visibleRenderers": 1,
+      "roomDolls": 3,
+      "roomFurniture": 10,
+      "footprintMB": 420.1105728149414,
+      "metalMB": 196.6875,
+      "comparisonBudget": true,
+      "renderScales": [
+        1
+      ],
+      "baselineResources": true
+    }
+  ],
+  "after": [
+    {
+      "seconds": 20,
+      "roomDolls": 3,
+      "metalMB": 190.875,
+      "renderScales": [
+        1
+      ],
+      "comparisonBudget": true,
+      "baselineResources": false,
+      "visibleRenderers": 1,
+      "thermalState": 2,
+      "footprintMB": 375.6262435913086,
+      "roomFurniture": 10,
+      "timestamp": 1794245045.861404
+    },
+    {
+      "visibleRenderers": 1,
+      "footprintMB": 374.0637435913086,
+      "roomFurniture": 10,
+      "thermalState": 2,
+      "seconds": 40,
+      "timestamp": 1794245065.898725,
+      "baselineResources": false,
+      "roomDolls": 3,
+      "comparisonBudget": true,
+      "renderScales": [
+        1
+      ],
+      "metalMB": 190.875
+    },
+    {
+      "footprintMB": 374.0793685913086,
+      "roomDolls": 3,
+      "baselineResources": false,
+      "seconds": 60,
+      "thermalState": 2,
+      "timestamp": 1794245085.985976,
+      "visibleRenderers": 1,
+      "roomFurniture": 10,
+      "comparisonBudget": true,
+      "metalMB": 190.875,
+      "renderScales": [
+        1
+      ]
+    }
+  ],
+  "deltaAt60Seconds": {
+    "footprintMiB": -46.03120422363281,
+    "metalMiB": -5.8125
+  },
+  "verification": {
+    "deviceMetalBuild": "passed",
+    "simulatorBuild": "passed",
+    "furnitureChecks": 94,
+    "furniturePassed": true,
+    "cozyMaterialAndBeddingAudit": "passed",
+    "daytimeVisualComparison": "no visible furniture surface loss; dolls move between captures"
+  },
+  "nextExperiments": [
+    "Profile a Release build during a 10-minute repeatable interaction/idle session, including power and frame timing.",
+    "Prototype explicit render scheduling for idle 30 FPS / interaction 60 FPS using public RealityRenderer APIs; ARView has no public preferredFramesPerSecond control in the installed SDK. Revalidate picking, snapshots, animation and postprocessing before replacing the renderer.",
+    "Combine static submeshes that share materials while retaining independently editable, moving and selectable parts; measure draw-call and GPU-time changes before adopting."
+  ],
+  "references": [
+    "https://developer.apple.com/documentation/realitykit/improving-the-performance-of-a-realitykit-app",
+    "https://developer.apple.com/documentation/realitykit/reducing-gpu-utilization-in-your-realitykit-app",
+    "https://developer.apple.com/documentation/realitykit/realityrenderer"
+  ]
+}

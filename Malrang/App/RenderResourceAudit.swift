@@ -38,6 +38,9 @@ enum RenderResourceAudit {
 @MainActor
 enum LiveRenderAudit {
     static func run() async {
+        let wasIdleTimerDisabled = UIApplication.shared.isIdleTimerDisabled
+        UIApplication.shared.isIdleTimerDisabled = true
+        defer { UIApplication.shared.isIdleTimerDisabled = wasIdleTimerDisabled }
         var samples: [[String: Any]] = []
         for seconds in [20, 40, 60] {
             do { try await Task.sleep(for: .seconds(20)) } catch { return }
@@ -57,9 +60,13 @@ enum LiveRenderAudit {
                 for child in entity.children { visit(child) }
             }
             for view in views { for anchor in view.scene.anchors { visit(anchor) } }
-            samples.append(["seconds": seconds, "footprintMB": Double(info.phys_footprint) / 1_048_576,
+            samples.append(["seconds": seconds, "timestamp": Date().timeIntervalSince1970,
+                            "footprintMB": Double(info.phys_footprint) / 1_048_576,
                             "metalMB": Double(MTLCreateSystemDefaultDevice()?.currentAllocatedSize ?? 0) / 1_048_576,
                             "visibleRenderers": views.count, "roomFurniture": furniture, "roomDolls": dolls,
+                            "renderScales": views.map(\.contentScaleFactor),
+                            "comparisonBudget": ProcessInfo.processInfo.arguments.contains("--render-comparison"),
+                            "baselineResources": ProcessInfo.processInfo.arguments.contains("--render-baseline"),
                             "thermalState": ProcessInfo.processInfo.thermalState.rawValue])
             if let data = try? JSONSerialization.data(withJSONObject: samples, options: .prettyPrinted) {
                 try? data.write(to: URL.documentsDirectory.appending(path: "live-render-audit.json"), options: .atomic)
