@@ -28,7 +28,7 @@ enum FurnitureKind: String, CaseIterable {
         case .desk: "책상"
         case .shelf: "선반"
         case .chair: "의자"
-        case .sofa: "라운지 의자"
+        case .sofa: "소파"
         case .rugRound: "원형 러그"
         case .rugSquare: "사각 러그"
         case .plant: "화분"
@@ -71,17 +71,14 @@ enum FurnitureKind: String, CaseIterable {
 
     var defaultColorName: String {
         switch self {
-        case .wall: "#FFF4F1"
-        case .floor: "#FCDCE2"
-        case .bed: "#F7B9C8"
-        case .sofa: "#F7B9C8"
-        case .desk, .shelf: "#E7C3A2"
-        case .chair: "#F7B9C8"
-        case .frame: "#FFFFFF"
-        case .rugRound, .rugSquare: "#F7B9C8"
-        case .plant: "#A9D49A"
-        case .lamp: "#FFF0B8"
-        case .flowerCushion: "#FFF1D9"
+        case .wall: CozyRoomPalette.ivory
+        case .floor: CozyRoomPalette.floorMint
+        case .bed, .plant: CozyRoomPalette.mint
+        case .desk, .chair: CozyRoomPalette.peach
+        case .shelf, .frame: CozyRoomPalette.wood
+        case .sofa: CozyRoomPalette.blush
+        case .rugRound, .rugSquare, .lamp: CozyRoomPalette.cream
+        case .flowerCushion: CozyRoomPalette.softMint
         }
     }
 
@@ -129,9 +126,9 @@ enum FurnitureKind: String, CaseIterable {
         }
     }
 
-    /// The lounge chair is a placement surface; bed/desk/window/frame are activity entry points.
-    var hasHomeInteraction: Bool { [.bed, .desk, .wall, .frame].contains(self) }
-    var allowsDollPlacement: Bool { seatHeight != nil && !hasHomeInteraction }
+    /// Sofa seats are reserved for its activity; only the bed also accepts manual placement.
+    var hasHomeInteraction: Bool { [.bed, .desk, .wall, .frame, .sofa].contains(self) }
+    var allowsDollPlacement: Bool { self == .bed || (seatHeight != nil && !hasHomeInteraction) }
 
     var isMovable: Bool { self != .wall && self != .floor }
 

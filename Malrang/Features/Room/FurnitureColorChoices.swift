@@ -6,8 +6,8 @@ struct FurnitureColorChoices: View {
     var onPhoto: (() -> Void)? = nil
     @State private var showingPicker = false
     private let colors: [(String?, String)] = [
-        (nil, "기본색"), ("#F6B2CF", "분홍"), ("#E5D4FC", "라벤더"), ("#B8CDBB", "민트"),
-        ("#F9E5D1", "크림"), ("#FFF0B8", "노랑"), ("#EBA7B7", "장미"), ("#FFFDF8", "아이보리")
+        (nil, "기본색"), (CozyRoomPalette.mint, "민트"), (CozyRoomPalette.softMint, "연한 민트"), (CozyRoomPalette.cream, "크림"),
+        (CozyRoomPalette.peach, "살구"), (CozyRoomPalette.blush, "분홍"), (CozyRoomPalette.wood, "우드"), (CozyRoomPalette.lavender, "라벤더")
     ]
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -35,7 +35,7 @@ struct FurnitureColorChoices: View {
             }
             if item.kind == .wall {
                 ColorPicker("창틀 색상", selection: Binding(
-                    get: { Color(uiColor: Palette.uiColor(item.windowFrameColor ?? "#FFE7AE")) },
+                    get: { Color(uiColor: Palette.uiColor(item.windowFrameColor ?? CozyRoomPalette.wood)) },
                     set: { item.windowFrameColor = Palette.hex($0) }
                 ), supportsOpacity: false).pretendard(.bold, 17).frame(minHeight: 44)
                 Button("창틀 기본색으로") { item.windowFrameColor = nil }.buttonStyle(FocusCompactButton())

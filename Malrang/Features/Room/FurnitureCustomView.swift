@@ -92,7 +92,7 @@ struct FurnitureCustomView: View {
         .toolbar(.visible, for: .navigationBar)
         .tint(Color.mib.action.primary)
         .foregroundStyle(Color.mib.text.primary)
-        .navigationTitle("\(item.kind.label) 꾸미기")
+        .cozyPageTitle("\(item.kind.label) 꾸미기")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if item.kind.isMovable {

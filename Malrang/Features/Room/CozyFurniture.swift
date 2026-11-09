@@ -42,7 +42,14 @@ enum CozyFurniture {
             case .wall, .floor: (scale, softness) = (12, 0.25)
             case .lamp: (scale, softness) = (9, 0.35)
             }
-            let color = part.hasPrefix("window.") ? (item.windowFrameColor ?? hex) : hex
+            let color: String
+            if part.hasPrefix("window.") {
+                color = item.windowFrameColor ?? CozyRoomPalette.wood
+            } else if customizablePart(part, kind: item.kind), item.kind != .wall || item.colorName != nil {
+                color = main
+            } else {
+                color = CozyRoomPalette.color(for: part, kind: item.kind, fallback: hex)
+            }
             return Self.material(color, usesWindowLighting: usesWindowLighting,
                                  textureRepeat: item.kind == .floor ? 16 : scale / 1.5,
                                  softness: softness, surfaceScale: scale,
@@ -100,7 +107,7 @@ enum CozyFurniture {
                 mesh = meshes["sphere"] ?? .generateSphere(radius: 0.5)
                 meshes["sphere"] = mesh
             }
-            let model = ModelEntity(mesh: mesh, materials: [material(color)])
+            let model = ModelEntity(mesh: mesh, materials: [material(color, part: name)])
             model.name = name
             model.scale = plush ? SIMD3<Float>(repeating: 1) : size
             model.position = at
@@ -114,7 +121,7 @@ enum CozyFurniture {
             }
         }
         func leg(_ x: Float, _ z: Float, height: Float, color: String) {
-            let model = ModelEntity(mesh: .generateCylinder(height: max(0.01, height - 0.035), radius: 0.032), materials: [material(color)])
+            let model = ModelEntity(mesh: .generateCylinder(height: max(0.01, height - 0.035), radius: 0.032), materials: [material(color, part: "leg")])
             model.name = "leg"
             model.position = [x, height / 2, z]
             root.addChild(model)
@@ -124,7 +131,7 @@ enum CozyFurniture {
         if let baked {
             func restoreMaterials(_ entity: Entity) {
                 if var model = entity.components[ModelComponent.self], let source = model.materials.first as? PhysicallyBasedMaterial {
-                    let hex = item.colorName != nil && customizablePart(entity.name, kind: item.kind)
+                    let hex = customizablePart(entity.name, kind: item.kind)
                         ? main : colorHex(source.baseColor.tint)
                     model.materials = [material(hex, part: entity.name)]
                     entity.components.set(model)
@@ -143,39 +150,39 @@ enum CozyFurniture {
                 let a = Float(i) / 5 * 2 * .pi
                 ball("flower.petal", [0.125, 0.09, 0.12], [cos(a) * 0.069, 0.045, sin(a) * 0.069], main)
             }
-            ball("flower.center", [0.08, 0.09, 0.08], [0, 0.055, 0], "#F2D793")
+            ball("flower.center", [0.08, 0.09, 0.08], [0, 0.055, 0], CozyRoomPalette.mint)
         case .wall:
             func wallPanel(_ name: String, _ size: SIMD2<Float>, _ center: SIMD2<Float>, _ color: String) {
                 let mesh = CozyRoomShell.panel(size: size, center: center, cutaway: cutaway)
-                let model = ModelEntity(mesh: mesh, materials: item.photoData != nil ? [photoMaterial] : [material(color)])
+                let model = ModelEntity(mesh: mesh, materials: item.photoData != nil ? [photoMaterial] : [material(color, part: name)])
                 model.name = name
                 model.components.set(DynamicLightShadowComponent(castsShadow: false))
                 root.addChild(model)
             }
             wallPanel("wall.left", [0.055, 2.04], [-1.025, 0], main)
-            wallPanel("wall.back", [2.04, 0.055], [0, -1.025], item.colorName ?? "#F5DAC1")
+            wallPanel("wall.back", [2.04, 0.055], [0, -1.025], item.colorName ?? CozyRoomPalette.ivory)
             if item.photoData == nil {
                 for i in 0..<10 {
                     wallPanel("wall.stripe.\(i)", [0.006, 0.10], [-0.993, -0.94 + Float(i) * 0.21],
-                              item.colorName == nil ? "#FFC1B7" : main)
+                              item.colorName == nil ? CozyRoomPalette.softMint : main)
                 }
             }
-            box("skirting.left", [0.075, 0.13, 2], [-0.976, 0.065, 0], "#ECA7B9")
-            box("skirting.back", [2, 0.13, 0.075], [0, 0.065, -0.976], "#ECA7B9")
+            box("skirting.left", [0.075, 0.13, 2], [-0.976, 0.065, 0], CozyRoomPalette.mint)
+            box("skirting.back", [2, 0.13, 0.075], [0, 0.065, -0.976], CozyRoomPalette.mint)
             if !cutaway {
             for isLeft in [true, false] {
                 let slope = isLeft ? CozyRoomShell.riseZ : CozyRoomShell.riseX
                 let center: SIMD2<Float> = isLeft ? [-0.97, 0] : [0, -0.97]
                 let length = 2 * sqrt(1 + slope * slope)
                 let molding = ModelEntity(mesh: .generateBox(size: isLeft ? [0.10, 0.08, length] : [length, 0.08, 0.10], cornerRadius: 0.02),
-                                          materials: [material("#D7C7DD")])
+                                          materials: [material(CozyRoomPalette.softMint, part: "cornice")])
                 molding.name = isLeft ? "cornice.left" : "cornice.back"
                 molding.position = [center.x, CozyRoomShell.height(x: center.x, z: center.y) - 0.04, center.y]
                 molding.orientation = simd_quatf(angle: isLeft ? -atan(slope) : atan(slope), axis: isLeft ? [1, 0, 0] : [0, 0, 1])
                 molding.components.set(DynamicLightShadowComponent(castsShadow: false))
                 root.addChild(molding)
             }
-            let ceiling = ModelEntity(mesh: CozyRoomShell.ceiling(), materials: [material(item.colorName ?? "#EFD4EB")])
+            let ceiling = ModelEntity(mesh: CozyRoomShell.ceiling(), materials: [material(CozyRoomPalette.ivory, part: "ceiling")])
             ceiling.name = "ceiling"
             ceiling.components.set(DynamicLightShadowComponent(castsShadow: false))
             root.addChild(ceiling)
@@ -186,48 +193,48 @@ enum CozyFurniture {
             sky.position = [-0.982, 0.70, 0.16]
             sky.components.set(DynamicLightShadowComponent(castsShadow: false))
             root.addChild(sky)
-            box("window.sill", [0.18, 0.06, 0.66], [-0.94, 0.70, 0.16], "#FFE7AE")
+            box("window.sill", [0.18, 0.06, 0.66], [-0.94, 0.70, 0.16], CozyRoomPalette.mint)
             for z: Float in [-0.13, 0.45] {
-                box("window.frame", [0.07, 0.73, 0.055], [-0.94, 1.055, z], "#FFE7AE")
+                box("window.frame", [0.07, 0.73, 0.055], [-0.94, 1.055, z], CozyRoomPalette.mint)
             }
-            let arch = ModelEntity(mesh: archFrame(), materials: [material("#FFE7AE", part: "window.arch")])
+            let arch = ModelEntity(mesh: archFrame(), materials: [material(CozyRoomPalette.mint, part: "window.arch")])
             arch.name = "window.arch"
             arch.position = [-0.94, 0.70, 0.16]
             arch.components.set(DynamicLightShadowComponent(castsShadow: false))
             root.addChild(arch)
-            box("window.crossbar", [0.07, 0.045, 0.58], [-0.93, 1.12, 0.16], "#FFE7AE")
-            box("window.mullion", [0.07, 0.96, 0.035], [-0.93, 1.19, 0.16], "#FFE7AE")
+            box("window.crossbar", [0.07, 0.045, 0.58], [-0.93, 1.12, 0.16], CozyRoomPalette.mint)
+            box("window.mullion", [0.07, 0.96, 0.035], [-0.93, 1.19, 0.16], CozyRoomPalette.mint)
         case .floor:
             // 홈에서는 바닥 가장자리가 드러나지 않게 화면 밖까지 이어진다.
             box("floor", [cutaway ? 2 : 8, 0.145, cutaway ? 2 : 8], [0, -0.0725, 0], main)
             if cutaway, item.colorName == nil, item.photoData == nil {
                 for x in 0..<8 { for z in 0..<8 {
-                    box("floor.tile", [0.25, 0.002, 0.25], [-0.875 + Float(x) * 0.25, 0.002, -0.875 + Float(z) * 0.25], (x + z).isMultiple(of: 2) ? "#F8D5DD" : "#FFF0DD", radius: 0.001)
+                    box("floor.tile", [0.25, 0.002, 0.25], [-0.875 + Float(x) * 0.25, 0.002, -0.875 + Float(z) * 0.25], (x + z).isMultiple(of: 2) ? CozyRoomPalette.softMint : CozyRoomPalette.floorMint, radius: 0.001)
                 } }
             }
         case .bed:
-            box("frame", [s.x, 0.13, s.z], [0, 0.105, 0], "#F5DFC8", radius: 0.07)
-            box("mattress", [s.x * 0.94, 0.14, s.z * 0.94], [0, 0.24, 0], "#FFF0D9", radius: 0.055)
-            box("headboard", [s.x, 0.53, 0.105], [0, 0.36, -s.z / 2 + 0.04], "#F5DFC8", radius: 0.05)
+            box("frame", [s.x, 0.13, s.z], [0, 0.105, 0], CozyRoomPalette.wood, radius: 0.07)
+            box("mattress", [s.x * 0.94, 0.14, s.z * 0.94], [0, 0.24, 0], CozyRoomPalette.surface, radius: 0.055)
+            box("headboard", [s.x, 0.53, 0.105], [0, 0.36, -s.z / 2 + 0.04], CozyRoomPalette.wood, radius: 0.05)
             box("duvet", [s.x * 1.01, 0.20, s.z * 0.71], [0, 0.29, s.z * 0.15], main, radius: 0.045)
-            box("duvet.fold", [s.x * 1.16, 0.10, 0.26], [0, 0.385, -s.z * 0.07], "#FBE2DB", radius: 0.035)
-            box("pillow", [s.x * 0.86, 0.13, 0.28], [0, 0.375, -s.z * 0.32], "#FFE6DE", radius: 0.065)
+            box("duvet.fold", [s.x * 1.16, 0.10, 0.26], [0, 0.385, -s.z * 0.07], CozyRoomPalette.softMint, radius: 0.035)
+            box("pillow", [s.x * 0.86, 0.13, 0.28], [0, 0.375, -s.z * 0.32], CozyRoomPalette.surface, radius: 0.065)
             for x: Float in [-s.x * 0.36, s.x * 0.36] {
-                for z: Float in [-s.z * 0.36, s.z * 0.36] { leg(x, z, height: 0.09, color: "#E7C7AF") }
+                for z: Float in [-s.z * 0.36, s.z * 0.36] { leg(x, z, height: 0.09, color: CozyRoomPalette.wood) }
             }
         case .desk:
             let top = item.kind.seatHeight ?? 0.437
             box("desktop", [s.x, 0.075, s.z], [0, top - 0.0375, 0], main, radius: 0.035)
             for x: Float in [-s.x * 0.39, s.x * 0.39] {
-                for z: Float in [-s.z * 0.32, s.z * 0.32] { leg(x, z, height: top - 0.06, color: "#EBD5BD") }
+                for z: Float in [-s.z * 0.32, s.z * 0.32] { leg(x, z, height: top - 0.06, color: CozyRoomPalette.wood) }
             }
-            box("notebook.lower.cover", [0.20, 0.016, 0.14], [0.045, top + 0.008, 0.15], "#BCAAD8", radius: 0.006)
-            box("notebook.pages", [0.18, 0.014, 0.125], [0.05, top + 0.023, 0.15], "#FFF5E6", radius: 0.006)
-            box("notebook.cover", [0.19, 0.014, 0.13], [0.05, top + 0.039, 0.15], "#F1BCBF", radius: 0.006)
-            box("pencil.cup", [0.065, 0.085, 0.065], [-0.125, top + 0.043, -0.01], "#EBA7B7")
+            box("notebook.lower.cover", [0.20, 0.016, 0.14], [0.045, top + 0.008, 0.15], CozyRoomPalette.softMint, radius: 0.006)
+            box("notebook.pages", [0.18, 0.014, 0.125], [0.05, top + 0.023, 0.15], CozyRoomPalette.surface, radius: 0.006)
+            box("notebook.cover", [0.19, 0.014, 0.13], [0.05, top + 0.039, 0.15], CozyRoomPalette.mint, radius: 0.006)
+            box("pencil.cup", [0.065, 0.085, 0.065], [-0.125, top + 0.043, -0.01], CozyRoomPalette.mint)
             for i in 0..<4 {
                 box("pencil", [0.008, 0.12, 0.008], [-0.143 + Float(i) * 0.012, top + 0.12, -0.01],
-                    ["#D7BAE7", "#E7B36C", "#B3CBBD", "#E09CA9"][i], radius: 0.003)
+                    [CozyRoomPalette.softMint, CozyRoomPalette.wood, CozyRoomPalette.mint, CozyRoomPalette.softMint][i], radius: 0.003)
             }
         case .chair:
             let top = item.kind.seatHeight ?? 0.227
@@ -242,9 +249,9 @@ enum CozyFurniture {
             box("backrest", [s.x * 0.80, 0.32, 0.13], [0, 0.24, -s.z * 0.35], main, radius: 0.06)
             for i in 0..<5 {
                 let a = Float(i) / 5 * 2 * .pi
-                ball("flower.petal", [0.125, 0.105, 0.12], [cos(a) * 0.073, 0.205 + sin(a) * 0.022, sin(a) * 0.073], "#FFF1D9")
+                ball("flower.petal", [0.125, 0.105, 0.12], [cos(a) * 0.073, 0.205 + sin(a) * 0.022, sin(a) * 0.073], CozyRoomPalette.ivory)
             }
-            ball("flower.center", [0.083, 0.09, 0.083], [0, 0.225, 0], "#F2D793")
+            ball("flower.center", [0.083, 0.09, 0.083], [0, 0.225, 0], CozyRoomPalette.mint)
         case .rugRound, .rugSquare:
             if item.kind == .rugRound { ball("rug", [s.x, 0.025, s.z], [0, 0.013, 0], main) }
             else { box("rug", [s.x, 0.01, s.z], [0, 0.005, 0], main, radius: 0.004) }
@@ -253,54 +260,54 @@ enum CozyFurniture {
             for i in 0..<4 {
                 let h: Float = i.isMultiple(of: 2) ? 0.17 : 0.19
                 let x = -0.06 + Float(i) * 0.058
-                let color = ["#B8B1DA", "#E9AAB8", "#C4BADF", "#E8BECD"][i]
-                box("book.pages", [0.044, h - 0.016, 0.088], [x, 0.045 + h / 2, -0.004], "#F7E3D1", radius: 0.003)
+                let color = [CozyRoomPalette.lavender, CozyRoomPalette.blush, CozyRoomPalette.softMint, CozyRoomPalette.peach][i]
+                box("book.pages", [0.044, h - 0.016, 0.088], [x, 0.045 + h / 2, -0.004], CozyRoomPalette.surface, radius: 0.003)
                 for side: Float in [-1, 1] {
                     box("book.cover", [0.006, h, 0.10], [x + side * 0.025, 0.045 + h / 2, 0], color, radius: 0.002)
                 }
                 box("book.spine", [0.054, h, 0.014], [x, 0.045 + h / 2, 0.045], color, radius: 0.005)
                 for y: Float in [0.075, 0.045 + h - 0.025] {
-                    box("book.detail", [0.025, 0.008, 0.003], [x, y, 0.053], "#F4D6AC", radius: 0.001)
+                    box("book.detail", [0.025, 0.008, 0.003], [x, y, 0.053], CozyRoomPalette.wood, radius: 0.001)
                 }
             }
-            let pot = ModelEntity(mesh: turnedMesh(name: "shelf-pot", profile: [(0, 0.029), (0.006, 0.036), (0.02, 0.043), (0.065, 0.048), (0.075, 0.048), (0.080, 0.044)]), materials: [material("#F8E3C1")])
+            let pot = ModelEntity(mesh: turnedMesh(name: "shelf-pot", profile: [(0, 0.029), (0.006, 0.036), (0.02, 0.043), (0.065, 0.048), (0.075, 0.048), (0.080, 0.044)]), materials: [material(CozyRoomPalette.surface, part: "pot")])
             pot.name = "pot"
             pot.position = [-0.22, 0.045, 0]
             root.addChild(pot)
             for i in 0..<7 {
                 let angle = Float(i) * 2.4
-                ball("leaf", [0.065, 0.045, 0.045], [-0.22 + cos(angle) * 0.05, 0.15 + sin(angle) * 0.04, sin(angle) * 0.035], "#91AD70")
+                ball("leaf", [0.065, 0.045, 0.045], [-0.22 + cos(angle) * 0.05, 0.15 + sin(angle) * 0.04, sin(angle) * 0.035], CozyRoomPalette.mint)
             }
             for i in 0..<6 {
                 let t = Float(i)
                 ball("vine.leaf", [0.060, 0.070, 0.045], [-0.25 - sin(t * 0.6) * 0.07, 0.14 - t * 0.047, 0.06],
-                     i.isMultiple(of: 2) ? "#789457" : "#A4B570")
+                     i.isMultiple(of: 2) ? CozyRoomPalette.mint : CozyRoomPalette.mint)
             }
-            ball("plant.bud", [0.055, 0.055, 0.055], [-0.22, 0.19, 0.045], "#E8A7BF")
+            ball("plant.bud", [0.055, 0.055, 0.055], [-0.22, 0.19, 0.045], CozyRoomPalette.softMint)
             for i in 0..<5 {
                 let a = Float(i) / 5 * 2 * .pi
-                ball("shelf.flower", [0.055, 0.055, 0.035], [0.24 + cos(a) * 0.034, 0.105 + sin(a) * 0.034, 0.035], "#EDADBB")
+                ball("shelf.flower", [0.055, 0.055, 0.035], [0.24 + cos(a) * 0.034, 0.105 + sin(a) * 0.034, 0.035], CozyRoomPalette.softMint)
             }
-            ball("shelf.flower.center", [0.035, 0.035, 0.035], [0.24, 0.105, 0.052], "#F3D59C")
+            ball("shelf.flower.center", [0.035, 0.035, 0.035], [0.24, 0.105, 0.052], CozyRoomPalette.wood)
         case .plant:
-            ball("pot", [s.x, 0.19, s.z], [0, 0.095, 0], "#F4DABA")
+            ball("pot", [s.x, 0.19, s.z], [0, 0.095, 0], CozyRoomPalette.surface)
             box("stem", [0.018, 0.29, 0.018], [0, 0.30, 0], "#839C64", radius: 0.008)
             for i in 0..<8 {
                 let angle = Float(i) * 2.4
                 ball("leaf", [0.11, 0.065, 0.08], [cos(angle) * 0.06, 0.21 + Float(i) * 0.034, sin(angle) * 0.06], main)
             }
         case .frame:
-            box("frame", [s.x, s.y, 0.055], [0, s.y / 2, 0], item.colorName ?? "#F5D6B7", radius: 0.017)
-            box("mat", [s.x * 0.76, s.y * 0.77, 0.009], [0, s.y / 2, 0.031], "#FFF0DF", radius: 0.004)
-            for x: Float in [-0.032, 0.032] { ball("heart", [0.083, 0.10, 0.018], [x, s.y * 0.54, 0.041], "#E9A0B2") }
-            let tip = ModelEntity(mesh: .generateBox(size: [0.083, 0.083, 0.012], cornerRadius: 0.012), materials: [material("#E9A0B2")])
+            box("frame", [s.x, s.y, 0.055], [0, s.y / 2, 0], item.colorName ?? CozyRoomPalette.wood, radius: 0.017)
+            box("mat", [s.x * 0.76, s.y * 0.77, 0.009], [0, s.y / 2, 0.031], CozyRoomPalette.surface, radius: 0.004)
+            for x: Float in [-0.032, 0.032] { ball("heart", [0.083, 0.10, 0.018], [x, s.y * 0.54, 0.041], CozyRoomPalette.mint) }
+            let tip = ModelEntity(mesh: .generateBox(size: [0.083, 0.083, 0.012], cornerRadius: 0.012), materials: [material(CozyRoomPalette.mint, part: "heart.tip")])
             tip.name = "heart.tip"
             tip.position = [0, s.y * 0.44, 0.041]
             tip.orientation = simd_quatf(angle: .pi / 4, axis: [0, 0, 1])
             root.addChild(tip)
         case .lamp:
-            ball("base", [0.085, 0.075, 0.085], [0, 0.0375, 0], "#E2AE70")
-            box("stem", [0.02, 0.12, 0.02], [0, 0.09, 0], "#DCB477", radius: 0.009)
+            ball("base", [0.085, 0.075, 0.085], [0, 0.0375, 0], CozyRoomPalette.wood)
+            box("stem", [0.02, 0.12, 0.02], [0, 0.09, 0], CozyRoomPalette.wood, radius: 0.009)
             let shade = ModelEntity(mesh: lampShade(), materials: [material(main, part: "shade")])
             shade.name = "shade"
             shade.position.y = 0.125
@@ -383,7 +390,8 @@ enum CozyFurniture {
         case .rugRound, .rugSquare: return part == "rug"
         case .plant: return part.contains("leaf")
         case .flowerCushion: return part == "flower.petal"
-        case .wall, .floor: return true
+        case .wall: return part.hasPrefix("wall.") || part == "ceiling"
+        case .floor: return part == "floor"
         }
     }
 
@@ -413,17 +421,7 @@ enum CozyFurniture {
         return material
     }
 
-    static func defaultColor(for kind: FurnitureKind) -> String {
-        switch kind {
-        case .wall: "#FFE8DB"
-        case .floor: "#E5D4FC"
-        case .bed: "#FFABB2"
-        case .chair, .sofa: "#F6B2CF"
-        case .desk, .shelf: "#F9E5D1"
-        case .rugRound, .rugSquare: "#F2BDCA"
-        default: kind.defaultColorName
-        }
-    }
+    static func defaultColor(for kind: FurnitureKind) -> String { kind.defaultColorName }
 
     static func skyMaterial(at date: Date = .now, profile: RoomDaylight? = nil) async -> UnlitMaterial? {
         let daylight = profile ?? RoomDaylight.at(date)
