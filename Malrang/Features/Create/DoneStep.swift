@@ -9,11 +9,11 @@ struct DoneStep: View {
     var body: some View {
         VStack(spacing: Spacing.l) {
             Text("\(doll.name.josa("이", "가")) 태어났어요!")
-                .appFont(.title2, .bold)
+                .pretendard(.bold, 20)
                 .multilineTextAlignment(.center)
             Group {
                 if let configuration = doll.presetConfiguration {
-                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19)
+                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true)
                         .renderedOnlyWhileVisible(background: .clear)
                 } else {
                     Image(uiImage: doll.image).resizable().scaledToFit()
@@ -21,14 +21,14 @@ struct DoneStep: View {
             }.frame(maxHeight: .infinity).accessibilityLabel(doll.name)
             HStack(spacing: Spacing.s) {
                 Button("다시 만들기", action: onRestart)
-                    .buttonStyle(.secondary)
+                    .buttonStyle(CreationSecondaryButton())
                 Button("방에 배치하기", action: onPlace)
-                    .buttonStyle(.primary)
+                    .buttonStyle(CreationPrimaryButton())
             }
         }
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.m)
-        .navigationTitle("완성!")
+        .toolbar(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .background { Celebration() }

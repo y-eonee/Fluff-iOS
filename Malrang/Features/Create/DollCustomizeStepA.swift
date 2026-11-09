@@ -2,13 +2,15 @@ import SwiftUI
 
 struct DollCustomizeStepA: View {
     @Bindable var draft: DollDraft
+    var onPrevious: (() -> Void)? = nil
     let onNext: () -> Void
     @Environment(\.dismiss) private var dismiss
     @AppStorage("soundOn") private var soundOn = true
     @State private var page = 0
     @State private var showDetails = false
     @State private var selectedPart = DollPart.head
-    @State private var editingFace = false
+    @State private var editingFace = true
+    @FocusState private var nameFocused: Bool
     private var canEditFace: Bool { draft.shape != .pillow && draft.usesPresetPhoto }
     private var nameIsEmpty: Bool { draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     private let fillingAssets: [Filling: String] = [.fluffy: "a_fill_fluffy", .beads: "a_fill_beads", .jelly: "a_fill_jelly", .foam: "a_fill_foam"]
@@ -24,14 +26,13 @@ struct DollCustomizeStepA: View {
         GeometryReader { geometry in
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                CreationProgress(step: 3)
                 Text(["모양 조절", "속재료 선택", "이름 짓기"][page])
                     .pretendard(.bold, 17).accessibilityAddTraits(.isHeader)
-                preview(height: page == 0 ? min(420, max(320, geometry.size.height - 260)) : 306)
+                preview(height: page == 0 ? min(420, max(320, geometry.size.height - 260)) : (page == 2 ? min(306, max(198, geometry.size.height - 220)) : 306))
                 Group {
                     if page == 0 {
                         if draft.shape == .pillow {
-                            FaceSizeControl(scale: $draft.customScale)
+                            Text("이전 단계에서 편집한 사진 크기가 그대로 적용돼요").pretendard(.regular, 14)
                         } else {
                             VStack(alignment: .leading, spacing: 16) {
                                 if canEditFace {
@@ -53,8 +54,15 @@ struct DollCustomizeStepA: View {
                 }.padding(.horizontal, 6)
             }.padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 16)
         }.scrollIndicators(.hidden).background(Color.a.paper).foregroundStyle(Color.a.brown)
+            .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 3) }
             .safeAreaInset(edge: .bottom) {
-                Button(page < 2 ? "다음 단계로" : "완성하기") {
+                HStack(spacing: 10) {
+                Button("이전 단계") {
+                    if page > 0 { page -= 1 }
+                    else if let onPrevious { onPrevious() }
+                    else { dismiss() }
+                }.buttonStyle(CreationSecondaryButton())
+                Button(page < 2 ? "다음 단계" : "완성하기") {
                     if page < 2 {
                         withAnimation(.easeInOut(duration: 0.2)) { page += 1 } }
                     else {
@@ -62,33 +70,29 @@ struct DollCustomizeStepA: View {
                         draft.name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
                         draft.preset = configuration; onNext()
                     }
-                }.buttonStyle(CreationPrimaryButton()).disabled(page == 2 && nameIsEmpty).padding(.horizontal, 22).padding(.bottom, 8)
+                }.buttonStyle(CreationPrimaryButton()).disabled(page == 2 && nameIsEmpty)
+                }.padding(.horizontal, 22).padding(.bottom, 8)
                     .background(Color.a.paper)
             }
+            .onChange(of: page) { _, value in nameFocused = value == 2 }
+            #if DEBUG
+            .onAppear { if ProcessInfo.processInfo.arguments.contains("--design-preview=create-name") { page = 2 } }
+            #endif
             .navigationBarBackButtonHidden().navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { if page > 0 { page -= 1 } else { dismiss() } } label: {
-                        Image("a_back").resizable().frame(width: 24, height: 24)
-                    }.accessibilityLabel("뒤로")
-                }.sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .principal) { Text("making fluff").notCliche(28, relativeTo: .title).foregroundStyle(Color.a.brown) }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        ForEach(DollShape.presets, id: \.self) { shape in
-                            Button(shape.label) { draft.shape = shape; draft.snapshot = nil }
-                        }
-                        Button("자유 · 사진 누끼") { draft.shape = .pillow; draft.snapshot = nil }
                         Button("색상·귀 세부 조절") { showDetails = true }
                     } label: { Image(systemName: "ellipsis").frame(width: 24, height: 24) }
-                    .accessibilityLabel("인형 모양과 세부 설정")
+                    .accessibilityLabel("인형 세부 설정")
                 }.sharedBackgroundVisibility(.hidden)
             }
             .sheet(isPresented: $showDetails) {
                 NavigationStack {
                     ScrollView { VStack(alignment: .leading, spacing: 16) { detailEditor }.padding(24) }
                         .background(Color.a.paper).foregroundStyle(Color.a.brown)
-                        .navigationTitle("인형 세부 조절").navigationBarTitleDisplayMode(.inline)
+                        .cozyPageTitle("인형 세부 조절").navigationBarTitleDisplayMode(.inline)
                         .toolbar { Button("완료") { showDetails = false } }
                 }.presentationDetents([.medium, .large])
             }
@@ -97,8 +101,8 @@ struct DollCustomizeStepA: View {
     private var previewGuide: String {
         switch page {
         case 1: "속재료를 눌러 촉감을 비교해보세요"
-        case 2: "솜뭉치에게 이름을 지어주세요"
-        default: draft.shape == .pillow ? "솜뭉치의 크기를 맞춰주세요" : (canEditFace && editingFace ? "끌어서 얼굴 이동 · 두 손가락으로 크기 조절" : "조절할 인형 부위를 선택해주세요")
+        case 2: "인형에게 이름을 지어주세요"
+        default: draft.shape == .pillow ? "편집한 사진으로 만들어요" : (canEditFace && editingFace ? "끌어서 얼굴 이동 · 두 손가락으로 크기 조절" : "조절할 인형 부위를 선택해주세요")
         }
     }
 
@@ -115,32 +119,14 @@ struct DollCustomizeStepA: View {
                         .renderedOnlyWhileVisible(background: .clear)
                 }
             }.modifier(PhotoPlacementGesture(draft: draft, isPreset: draft.shape != .pillow,
-                                               enabled: page == 0 && (draft.shape == .pillow || (canEditFace && editingFace))))
+                                               enabled: page == 0 && canEditFace && editingFace))
                 .padding(.bottom, 44)
-            if draft.shape != .pillow && !(page == 0 && canEditFace && editingFace) {
-            GeometryReader { geometry in
-                let artworkHeight = min(240, height - 20)
-                let artworkWidth = min(geometry.size.width, artworkHeight * 1.4)
-                let inset = (geometry.size.width - artworkWidth) / 2
-                shapeArrow(-1).position(x: inset + artworkWidth * 0.0714, y: artworkHeight * 0.60)
-                shapeArrow(1).position(x: inset + artworkWidth * 0.9286, y: artworkHeight * 0.60)
-            }
-            }
-            HStack(spacing: 6) {
+            if page != 2 { HStack(spacing: 6) {
                 Image("ui_create_sparkle").resizable().frame(width: 14, height: 14).accessibilityHidden(true)
                 Text(previewGuide).pretendard(.medium, 13, tracking: -0.26)
             }.foregroundStyle(Color.a.cream).padding(.horizontal, 14).padding(.vertical, 8)
-                .background(Color.a.brown, in: Capsule()).padding(.bottom, 10)
+                .background(Color.a.brown, in: Capsule()).padding(.bottom, 10) }
         }.padding(10).frame(height: height).background(CreationStyle.blue, in: RoundedRectangle(cornerRadius: 22))
-    }
-    private func shapeArrow(_ direction: Int) -> some View {
-        Button {
-            let shapes = DollShape.presets
-            let index = shapes.firstIndex(of: draft.shape) ?? 0
-            draft.shape = shapes[(index + direction + shapes.count) % shapes.count]; draft.snapshot = nil
-        } label: {
-            Color.clear.frame(width: 44, height: 44).contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityLabel(direction < 0 ? "이전 인형 모양" : "다음 인형 모양")
     }
     private var partEditor: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -149,7 +135,7 @@ struct DollCustomizeStepA: View {
                 Spacer()
                 Text("미리보기에서 눌러도 선택돼요").pretendard(.medium, 12).foregroundStyle(Color.a.soft)
             }
-            if draft.shape == .pillow { FaceSizeControl(scale: $draft.customScale) }
+            if draft.shape == .pillow { EmptyView() }
             else {
                 HStack(spacing: 6) {
                     ForEach(DollPart.allCases.filter { $0 != .ears }) { part in
@@ -187,12 +173,14 @@ struct DollCustomizeStepA: View {
         }
     }
     private var nameEditor: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("인형 이름").pretendard(.bold, 17)
-            HStack {
-                TextField("인형 이름", text: $draft.name, prompt: Text("솜뭉치").foregroundStyle(Color.a.soft.opacity(0.65))).onChange(of: draft.name) { draft.name = String(draft.name.prefix(10)) }
-                Text("\(draft.name.count)/10").pretendard(.regular, 13).foregroundStyle(Color.a.soft)
-            }.padding(.horizontal, 16).frame(height: 50).creationOutline(fill: Color.a.card, radius: 8)
+        VStack(alignment: .trailing, spacing: 6) {
+            TextField("인형 이름을 입력해 주세요", text: $draft.name)
+                .pretendard(.regular, 14)
+                .onChange(of: draft.name) { draft.name = String(draft.name.prefix(10)) }
+                .submitLabel(.done).focused($nameFocused)
+                .padding(.horizontal, 12).frame(height: 44)
+                .creationOutline(fill: Color.a.card, radius: 10)
+            Text("\(draft.name.count)/10").pretendard(.regular, 11).foregroundStyle(Color.a.soft)
         }
     }
     @ViewBuilder private var detailEditor: some View {

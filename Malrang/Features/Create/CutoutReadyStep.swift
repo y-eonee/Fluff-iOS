@@ -7,10 +7,10 @@ struct CutoutReadyStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
-            Text("좋아요!\n이제 만들기 방식을 골라요")
-                .appFont(.title2, .bold)
+            Text("좋아요!\n이제 인형 모양을 골라요")
+                .pretendard(.bold, 20)
             Text("투명하게 만든 사진이 인형 원단에 들어가요")
-                .appFont(.body)
+                .pretendard(.regular, 13)
                 .foregroundStyle(Color.app.inkSecondary)
             Image(uiImage: draft.finalCutout ?? UIImage())
                 .resizable()
@@ -23,19 +23,19 @@ struct CutoutReadyStep: View {
                         .appFont(.footnote, .bold)
                         .padding(.horizontal, Spacing.s)
                         .padding(.vertical, Spacing.xxs)
-                        .background(Color.app.pastelMint, in: Capsule())
+                        .background(CreationStyle.yellow, in: Capsule())
                         .padding(Spacing.s)
                 }
             HStack(spacing: Spacing.s) {
                 Button("다시 편집", action: onEdit)
-                    .buttonStyle(.secondary)
-                Button("방식 선택하기", action: onNext)
-                    .buttonStyle(.primary)
+                    .buttonStyle(CreationSecondaryButton())
+                Button("모양 선택하기", action: onNext)
+                    .buttonStyle(CreationPrimaryButton())
             }
         }
         .foregroundStyle(Color.app.ink)
         .padding(Spacing.m)
-        .navigationBarTitleDisplayMode(.inline)
+        .cozyPageTitle("making fluff")
     }
 }
 

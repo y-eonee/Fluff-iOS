@@ -9,14 +9,13 @@ struct MakingStep: View {
     let onDone: (Doll) -> Void
     @Environment(\.modelContext) private var modelContext
     @State private var progress = 0.0
-    @State private var isAskingToLeave = false
     @State private var saveFailed = false
     @State private var saved = false
     @State private var finalSnapshot: UIImage?
 
     @ViewBuilder private var artwork: some View {
         if draft.shape != .pillow {
-            PresetDollView(configuration: draft.preset, cameraDistance: 0.90, cameraTarget: 0.19,
+            PresetDollView(configuration: draft.preset, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true,
                            onSnapshot: { image in
                                guard finalSnapshot == nil else { return }
                                finalSnapshot = image
@@ -40,49 +39,13 @@ struct MakingStep: View {
         }
         .padding(Spacing.m)
         .frame(maxHeight: .infinity)
-        .navigationTitle("인형 만드는 중")
+        .cozyPageTitle("인형 만드는 중")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("뒤로", systemImage: "chevron.left") { isAskingToLeave = true }
-            }
-        }
-        .overlay {
-            if isAskingToLeave { leaveConfirmation }
-        }
         .task { if draft.shape == .pillow { await make() } }
         .alert("인형을 저장하지 못했어요", isPresented: $saveFailed) {
             Button("다시 저장") { Task { await make() } }
             Button("돌아가기", role: .cancel, action: onLeave)
-        }
-    }
-
-    private var leaveConfirmation: some View {
-        ZStack {
-            Color.app.ink.opacity(0.3).ignoresSafeArea()
-            VStack(spacing: Spacing.m) {
-                Group {
-                    if let image = finalSnapshot ?? draft.snapshot { Image(uiImage: image).resizable().scaledToFit() }
-                    else { Image(systemName: "teddybear").font(.largeTitle) }
-                }
-                    .frame(height: 100)
-                    .saturation(0)
-                    .opacity(0.6)
-                Text("지금 나가면 \(draft.displayName.josa("은", "는"))\n완성되지 않아요!")
-                    .appFont(.headline)
-                    .multilineTextAlignment(.center)
-                HStack(spacing: Spacing.s) {
-                    Button("나가기", action: onLeave)
-                        .buttonStyle(.secondary)
-                    Button("계속 만들기") { isAskingToLeave = false }
-                        .buttonStyle(.primary)
-                }
-            }
-            .foregroundStyle(Color.app.ink)
-            .padding(Spacing.l)
-            .cardStyle()
-            .padding(Spacing.l)
         }
     }
 

@@ -27,7 +27,7 @@ struct PhotoPickStep: View {
                 } label: {
                     if isLoading { ProgressView() } else { Text("이 사진으로 만들기") }
                 }
-                .buttonStyle(.primary)
+                .buttonStyle(CreationPrimaryButton())
                 .disabled(draft.photo == nil || isLoading)
 
             }
@@ -35,7 +35,7 @@ struct PhotoPickStep: View {
             .padding(Spacing.m)
         }
         .background { AppBackground() }
-        .navigationTitle("사진 선택")
+        .cozyPageTitle("making fluff")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: selection) {
             guard let selection else { return }

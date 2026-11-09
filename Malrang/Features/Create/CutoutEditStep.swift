@@ -50,7 +50,7 @@ struct CutoutEditStep: View {
                     draft.cutout = draft.photo
                     phase = .ready
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(CreationSecondaryButton())
                 .padding(.horizontal, Spacing.l)
                 Spacer()
             case .ready:
@@ -58,7 +58,7 @@ struct CutoutEditStep: View {
             }
         }
         .padding(Spacing.m)
-        .navigationTitle("이미지 편집")
+        .cozyPageTitle("making fluff")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             draft.cropRect = nil
@@ -130,19 +130,19 @@ struct CutoutEditStep: View {
             }
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("브러시 크기")
-                    .appFont(.headline)
+                    .pretendard(.regular, 13)
                 Slider(value: $brushSize, in: 10...80) { isAdjustingBrush = $0 }
             }
             .disabled(tool == .auto || tool == .move)
             .opacity(tool == .auto || tool == .move ? 0.4 : 1)
             HStack(spacing: Spacing.s) {
                 Button("다시 선택", action: onReselect)
-                    .buttonStyle(.secondary)
+                    .buttonStyle(CreationSecondaryButton())
                 Button("다음") {
                     commitZoom()
                     onNext()
                 }
-                    .buttonStyle(.primary)
+                    .buttonStyle(CreationPrimaryButton())
             }
         }
         .onAppear { hint = "자동으로 영역을 찾았어요" }
@@ -229,7 +229,7 @@ struct CutoutEditStep: View {
         .onGeometryChange(for: CGSize.self) { $0.size } action: { canvasSize = $0 }
         .padding(Spacing.s)
         .background { Checkerboard() }
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .clipped()
         .accessibilityLabel("투명화한 사진. 두 손가락으로 확대하고, 한 손가락으로 끌어 옮기거나 문질러 다듬어요")
     }
 
