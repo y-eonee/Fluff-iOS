@@ -38,7 +38,7 @@ final class FocusSession {
         }
         tick()
     }
-    var canStart: Bool { !active && record.dollID != nil && record.timeConfirmed == true && record.focusMinutes > 0 }
+    var canStart: Bool { !active && record.dollID != nil && (1...180).contains(record.focusMinutes) && (1...60).contains(record.restMinutes) }
     func confirmTime() { guard !active else { return }; record.timeConfirmed = true; save() }
     var active: Bool { record.phase != .ready }
     var resting: Bool { record.phase == .resting || record.phase == .pausedRest }

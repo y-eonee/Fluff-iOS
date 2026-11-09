@@ -3,6 +3,7 @@ import SwiftUI
 
 struct FocusFlowView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var modelContext
     @Environment(\.scenePhase) var scenePhase
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
@@ -11,7 +12,6 @@ struct FocusFlowView: View {
     @State var showMain = false
     @State var creating = false
     @State var confirmingExit = false
-    @State var showingSettings = false
     @State var customTime = false
     @State var happyUntil = Date.distantPast
     @State var touchCount = 0
@@ -28,20 +28,28 @@ struct FocusFlowView: View {
         NavigationStack {
             Group {
                 if session.active { running }
-                else if showingSettings, let selected { settingsSummary(selected) }
                 else if showMain, let selected { main(selected) }
                 else { selectionScreen }
             }
             .foregroundStyle(FocusStyle.ink)
             .background(FocusStyle.canvas)
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showingSettings) { settingsSheet }
             .overlay { if confirmingExit { exitDialog } }
             .task {
                 if session.active, selected == nil { session.stop() }
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--focus-start-preview"), !session.active, let doll = dolls.first {
+                    session.select(doll.id); session.confirmTime(); session.start()
+                }
+                #endif
                 while !Task.isCancelled {
                     session.tick()
                     do { try await Task.sleep(for: .seconds(1)) } catch { return }
+                }
+            }
+            .onChange(of: session.active) { wasActive, active in
+                if !wasActive, active, let selected {
+                    DollActivityRecorder.record(.desk, ids: [selected.id], in: modelContext)
                 }
             }
             .onChange(of: scenePhase) { if scenePhase == .active { session.tick() } }
@@ -52,6 +60,20 @@ struct FocusFlowView: View {
                 happyUntil = .distantPast
             }
         }
+    }
+
+    /// Keep the same home snapshot through selection, focus, pause, and rest.
+    var roomBackground: some View {
+        GeometryReader { geometry in
+            Group {
+                if let roomSnapshot { Image(uiImage: roomSnapshot).resizable() }
+                else { Image("focus_selection_room").resizable() }
+            }.scaledToFill()
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .blur(radius: 6, opaque: true)
+                .overlay(Color.black.opacity(0.35))
+                .clipped()
+        }.accessibilityHidden(true)
     }
 
     func header(action: @escaping () -> Void) -> some View {

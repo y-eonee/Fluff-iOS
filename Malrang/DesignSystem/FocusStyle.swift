@@ -20,7 +20,7 @@ enum FocusStyle {
 struct FocusPrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.pretendard(.bold, 20).foregroundStyle(Color.mib.text.onPrimary)
+        configuration.label.pretendard(.bold, D1.ctaFontSize).foregroundStyle(Color.mib.text.onPrimary)
             .frame(maxWidth: .infinity, minHeight: FocusStyle.buttonHeight)
             .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 30))
     }
@@ -77,8 +77,17 @@ extension View {
 struct CreationPrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.pretendard(.bold, 20, tracking: -0.6).foregroundStyle(Color.mib.text.onPrimary)
+        configuration.label.pretendard(.bold, D1.ctaFontSize, tracking: -0.32).foregroundStyle(Color.mib.text.onPrimary)
             .frame(maxWidth: .infinity, minHeight: 60)
-            .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: Capsule())
+            .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 26))
+    }
+}
+
+struct CreationSecondaryButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.pretendard(.bold, D1.ctaFontSize).foregroundStyle(Color.mib.text.primary)
+            .frame(maxWidth: .infinity, minHeight: 60).contentShape(Rectangle())
+            .background(Color.mib.bg.surface, in: RoundedRectangle(cornerRadius: 26))
+            .overlay(RoundedRectangle(cornerRadius: 26).strokeBorder(Color.mib.line.selected))
     }
 }

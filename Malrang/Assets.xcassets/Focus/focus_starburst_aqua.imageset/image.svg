@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="313.419" height="261.119" viewBox="0 0 313.419 261.119" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Decoration / Original starburst">
+<mask id="mask0_0_54" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="314" height="262">
+<rect id="Rectangle 161126485" width="313.419" height="261.119" fill="#D9D9D9"/>
+</mask>
+<g mask="url(#mask0_0_54)">
+<path id="Vector" d="M302.283 140.897L235.501 162.225L282.688 214.211L214.04 199.282L228.969 267.931L176.983 220.743L155.655 287.525L134.328 220.743L82.3413 267.931L97.2707 199.282L28.6222 214.211L75.8097 162.225L9.02734 140.897L75.8097 119.57L28.6222 67.5835L97.2707 82.5129L82.3413 13.8644L134.328 61.0519L155.655 -5.73047L176.983 61.0519L228.969 13.8644L214.04 82.5129L282.688 67.5835L235.501 119.57L302.283 140.897Z" fill="#E6F2EE" stroke-width="1.2" stroke="#D1E7E5"/>
+</g>
+</g>
+</svg>
