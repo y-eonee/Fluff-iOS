@@ -7,8 +7,8 @@ import RealityKit
 nonisolated final class CozyBloom {
     private final class PipelineCache: @unchecked Sendable {
         let lock = NSLock()
-        var values: [String: (MTLComputePipelineState, MTLComputePipelineState)] = [:]
-        func get(device: MTLDevice, preset: Bool) -> (MTLComputePipelineState, MTLComputePipelineState)? {
+        var values: [String: (MTLComputePipelineState, MTLComputePipelineState, MTLComputePipelineState)] = [:]
+        func get(device: MTLDevice, preset: Bool) -> (MTLComputePipelineState, MTLComputePipelineState, MTLComputePipelineState)? {
             lock.lock(); defer { lock.unlock() }
             let key = "\(device.registryID)-\(preset)"
             if let value = values[key] { return value }
@@ -16,8 +16,10 @@ nonisolated final class CozyBloom {
                   let first = library.makeFunction(name: preset ? "plushExtractLight" : "cozyExtractLight"),
                   let second = library.makeFunction(name: preset ? "plushCompositeLight" : "cozyCompositeLight"),
                   let extract = try? device.makeComputePipelineState(function: first),
-                  let composite = try? device.makeComputePipelineState(function: second) else { return nil }
-            let value = (extract, composite)
+                  let composite = try? device.makeComputePipelineState(function: second),
+                  let copyFunction = library.makeFunction(name: "cozyCopyColor"),
+                  let copy = try? device.makeComputePipelineState(function: copyFunction) else { return nil }
+            let value = (extract, composite, copy)
             values[key] = value
             return value
         }
@@ -25,20 +27,25 @@ nonisolated final class CozyBloom {
     private static let pipelines = PipelineCache()
     private let extract: MTLComputePipelineState
     private let composite: MTLComputePipelineState
+    private let copy: MTLComputePipelineState
     private let device: MTLDevice
     private var highlights: MTLTexture?
     private var softened: MTLTexture?
     private var blur: MPSImageGaussianBlur?
 
     init?(device: MTLDevice, preset: Bool = false) {
-        guard let (extract, composite) = Self.pipelines.get(device: device, preset: preset) else { return nil }
+        guard let (extract, composite, copy) = Self.pipelines.get(device: device, preset: preset) else { return nil }
         self.device = device
         self.extract = extract
         self.composite = composite
+        self.copy = copy
     }
 
     func render(_ context: ARView.PostProcessContext) {
-        let source = context.sourceColorTexture
+        render(source: context.sourceColorTexture, target: context.targetColorTexture, commandBuffer: context.commandBuffer)
+    }
+
+    func render(source: MTLTexture, target: MTLTexture, commandBuffer: MTLCommandBuffer) {
         let width = max(1, (source.width + 3) / 4)
         let height = max(1, (source.height + 3) / 4)
         if highlights?.width != width || highlights?.height != height {
@@ -58,18 +65,18 @@ nonisolated final class CozyBloom {
             blur?.edgeMode = .clamp
         }
         guard let highlights, let softened, let blur else {
-            let encoder = context.commandBuffer.makeBlitCommandEncoder()
-            encoder?.copy(from: source, to: context.targetColorTexture)
-            encoder?.endEncoding()
+            // Renderer outputs may be HDR while the drawable is BGRA/sRGB.
+            // A compute copy converts formats; a Metal blit cannot do that.
+            encode(copy, textures: [source, target], commandBuffer: commandBuffer)
             return
         }
-        encode(extract, textures: [source, highlights], context: context)
-        blur.encode(commandBuffer: context.commandBuffer, sourceTexture: highlights, destinationTexture: softened)
-        encode(composite, textures: [source, softened, context.targetColorTexture], context: context)
+        encode(extract, textures: [source, highlights], commandBuffer: commandBuffer)
+        blur.encode(commandBuffer: commandBuffer, sourceTexture: highlights, destinationTexture: softened)
+        encode(composite, textures: [source, softened, target], commandBuffer: commandBuffer)
     }
 
-    private func encode(_ pipeline: MTLComputePipelineState, textures: [MTLTexture], context: ARView.PostProcessContext) {
-        guard let encoder = context.commandBuffer.makeComputeCommandEncoder() else { return }
+    private func encode(_ pipeline: MTLComputePipelineState, textures: [MTLTexture], commandBuffer: MTLCommandBuffer) {
+        guard let encoder = commandBuffer.makeComputeCommandEncoder() else { return }
         encoder.setComputePipelineState(pipeline)
         for (index, texture) in textures.enumerated() { encoder.setTexture(texture, index: index) }
         let width = pipeline.threadExecutionWidth

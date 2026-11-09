@@ -2,6 +2,11 @@
 #include <RealityKit/RealityKit.h>
 using namespace metal;
 
+kernel void cozyCopyColor(texture2d<float, access::read> source [[texture(0)]],
+                          texture2d<float, access::write> target [[texture(1)]], uint2 p [[thread_position_in_grid]]) {
+    if (p.x < target.get_width() && p.y < target.get_height()) target.write(source.read(p), p);
+}
+
 kernel void cozyExtractLight(texture2d<float, access::read> source [[texture(0)]],
                              texture2d<float, access::write> target [[texture(1)]], uint2 p [[thread_position_in_grid]]) {
     if (p.x >= target.get_width() || p.y >= target.get_height()) return;

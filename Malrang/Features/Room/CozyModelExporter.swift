@@ -11,7 +11,7 @@ enum CozyModelExporter {
         guard ProcessInfo.processInfo.arguments.contains("--audit-cozy-models") else { return }
         var report: [String] = []
         if let device = MTLCreateSystemDefaultDevice(), let library = device.makeDefaultLibrary() {
-            let names = ["cozyFabric", "cozyExtractLight", "cozyCompositeLight", "plushExtractLight", "plushCompositeLight"]
+            let names = ["cozyFabric", "cozyCopyColor", "cozyExtractLight", "cozyCompositeLight", "plushExtractLight", "plushCompositeLight"]
             for name in names {
                 report.append("metal.\(name): \(library.makeFunction(name: name) != nil ? "PASS" : "FAIL")")
             }

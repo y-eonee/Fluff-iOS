@@ -3,7 +3,7 @@ import RealityKit
 import SwiftUI
 
 /// 위에서 비스듬히 내려다보는 3D 방.
-/// 길게 눌러 끌기, 탭, 두 번 탭을 쓰려고 ARView(비 AR 모드)를 감싼다. RealityView에는 화면 좌표로 끌어 옮길 API가 없다.
+/// 홈은 프레임을 조절하는 RealityRenderer, 편집 미리보기는 ARView를 사용한다.
 struct RoomSceneView: UIViewRepresentable {
     enum Mode {
         /// 구경만 하고 인형 탭만 받는다
@@ -96,25 +96,22 @@ struct RoomSceneView: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
-    func makeUIView(context: Context) -> ARView {
-        let view = EfficientARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
-        view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
-        view.environment.background = .color(isTransparent ? .clear : UIColor(Color.app.background))
+    func makeUIView(context: Context) -> RoomRenderView {
+        let view = RoomRenderView(adaptive: mode == .home)
+        view.sceneBackground = isTransparent ? .clear : UIColor(Color.app.background)
         view.backgroundColor = .clear
         context.coordinator.attach(to: view)
         return view
     }
 
-    func updateUIView(_ view: ARView, context: Context) {
+    func updateUIView(_ view: RoomRenderView, context: Context) {
         context.coordinator.parent = self
         context.coordinator.render(SceneState(items: items, dolls: dolls, focusItem: focusItem, selectedItemID: selectedItemID))
     }
 
-    static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+    static func dismantleUIView(_ view: RoomRenderView, coordinator: Coordinator) {
         coordinator.stopRendering()
-        view.renderCallbacks.postProcess = nil
-        view.scene.anchors.removeAll()
-        view.environment.lighting.resource = nil
+        view.shutdown()
     }
 
     struct SceneState: Equatable {
@@ -126,7 +123,7 @@ struct RoomSceneView: UIViewRepresentable {
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var parent: RoomSceneView
-        private weak var view: ARView?
+        private weak var view: RoomRenderView?
         private let root = AnchorEntity(world: .zero)
         private let camera = PerspectiveCamera()
         private let light = DirectionalLight()
@@ -176,8 +173,21 @@ struct RoomSceneView: UIViewRepresentable {
             self.parent = parent
         }
 
-        func attach(to view: ARView) {
+        func attach(to view: RoomRenderView) {
             self.view = view
+            if RoomPerformanceAudit.enabled {
+                let original = cameraDirection
+                view.performanceInteraction = { [weak self, weak view] seconds in
+                    guard let self else { return }
+                    let angle: Float = seconds < 10 ? sin(Float(seconds / 10) * 2 * .pi) * 0.12 : 0
+                    let direction = simd_act(simd_quatf(angle: angle, axis: [0, 1, 0]), original)
+                    if self.cameraDirection != direction {
+                        self.cameraDirection = direction
+                        self.placeCamera()
+                    }
+                    if seconds < 10 { view?.markInteraction() }
+                }
+            }
             parent.placement?.position = { [weak self] id in self?.root.findEntity(named: "doll|\(id)")?.position }
             parent.placement?.cancel = { [weak self] in
                 guard let self else { return }
@@ -190,32 +200,32 @@ struct RoomSceneView: UIViewRepresentable {
             parent.placement?.pan = { [weak self] delta in self?.moveCamera(by: CGPoint(x: delta.width, y: delta.height)) }
             parent.placement?.capture = { [weak view] completion in
                 guard let view else { completion(nil); return }
-                view.snapshot(saveToHDR: false, completion: completion)
+                view.snapshot(completion)
             }
             orbitYaw = parent.focusItem.map { $0.kind.isMovable && !$0.kind.hangsOnWall ? $0.yaw : 0 } ?? 0
-            view.scene.addAnchor(root)
+            view.attach(root, camera: camera)
             camera.camera.fieldOfViewInDegrees = (parent.isCozyRoom && parent.mode != .decorate) ? 42 : (parent.illustrationTargetY == nil ? 30 : 4)
             light.light.intensity = parent.isCozyRoom ? 1250 : 2500
             if parent.isCozyRoom {
-                (view as? EfficientARView)?.configureBloom()
+                view.configureBloom()
                 light.light.color = Palette.uiColor("#FFE8DE")
-                view.environment.background = .color(parent.mode == .decorate ? .clear : Palette.uiColor("#FFFFF4"))
-                view.environment.lighting.intensityExponent = 0.05
+                view.sceneBackground = parent.mode == .decorate ? .clear : Palette.uiColor("#FFFFF4")
+                view.lightingExponent = 0.05
             }
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 6, depthBias: 2)
             light.look(at: .zero, from: parent.isCozyRoom ? [-0.6, 3, 2] : [1.5, 3, 2], relativeTo: nil)
 
             // 화면 크기가 정해지거나 바뀌면 카메라 거리를 다시 맞춘다.
-            updateSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in
+            updateSubscription = view.subscribe { [weak self] deltaTime in
                 MainActor.assumeIsolated {
                     if let self {
-                        self.wander?.update(delta: event.deltaTime, running: self.parent.allowsDollWandering
+                        self.wander?.update(delta: deltaTime, running: self.parent.allowsDollWandering
                             && self.parent.mode == .home && !self.parent.canMoveDolls && self.drag == nil
                             && !UIAccessibility.isReduceMotionEnabled
                             && UIApplication.shared.applicationState == .active)
                     }
                     if let self {
-                        self.restingTime += Float(min(event.deltaTime, 0.1))
+                        self.restingTime += Float(min(deltaTime, 0.1))
                         if !UIAccessibility.isReduceMotionEnabled {
                             for (id, body) in self.restingBodies where !self.approachingBeds.contains(id) {
                                 body.scale.z = 1 + sin(self.restingTime * 1.7) * 0.012
@@ -224,7 +234,7 @@ struct RoomSceneView: UIViewRepresentable {
                     }
                     self?.fitCamera()
                     if let self {
-                        self.overlayElapsed += event.deltaTime
+                        self.overlayElapsed += deltaTime
                         if self.overlayElapsed >= 0.1 {
                             self.overlayElapsed = 0
                             self.updateDaylight()
@@ -354,7 +364,7 @@ struct RoomSceneView: UIViewRepresentable {
             lightingTask?.cancel(); lightingTask = nil
             approachingBeds.formIntersection(Set(state.dolls.filter { $0.restingBedID != nil }.map(\.id)))
             if parent.isCozyRoom, let environment = await CozyRoomLighting.environmentResource(at: RoomDaylight.currentDate) {
-                view?.environment.lighting.resource = environment
+                view?.environmentResource = environment
             }
             let previous = displayed
             var settling: [(Entity, RoomItemState)] = []
@@ -497,7 +507,7 @@ struct RoomSceneView: UIViewRepresentable {
                 guard let self, let content else { return }
                 let environment = await CozyRoomLighting.environmentResource(at: date)
                 guard !Task.isCancelled else { return }
-                self.view?.environment.lighting.resource = environment
+                self.view?.environmentResource = environment
                 self.configureDaylight(profile)
                 await CozyRoomLighting.apply(profile, to: content)
                 if !Task.isCancelled { self.lastLightingProfile = profile }
@@ -505,7 +515,7 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func configureDaylight(_ profile: RoomDaylight) {
-            view?.environment.lighting.intensityExponent = profile.phase == .night ? 0.15 : 0.05
+            view?.lightingExponent = profile.phase == .night ? 0.15 : 0.05
             light.light.color = UIColor(red: CGFloat(0.65 + 0.35 * profile.tint.x), green: CGFloat(0.65 + 0.35 * profile.tint.y), blue: CGFloat(0.65 + 0.35 * profile.tint.z), alpha: 1)
             light.light.intensity = 650 + 600 * profile.strength
         }
@@ -751,6 +761,7 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func moveCamera(by move: CGPoint) {
+            view?.markInteraction()
             guard let view, view.bounds.height > 0, drag == nil else { return }
             let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
             let metersPerPoint = 2 * fitDistance / zoom * tanHalf / Float(view.bounds.height)
@@ -1093,8 +1104,8 @@ struct RoomSceneView: UIViewRepresentable {
         /// 좁은 화각의 방 카메라는 기본 raycast 범위(100m)보다 멀리 놓일 수 있다.
         private func hits(at point: CGPoint) -> [CollisionCastHit] {
             guard let view, let ray = view.ray(through: point) else { return [] }
-            return view.scene.raycast(origin: ray.origin, direction: ray.direction,
-                                      length: max(100, camera.camera.far + 1), query: .all)
+            return view.raycast(origin: ray.origin, direction: ray.direction,
+                                length: max(100, camera.camera.far + 1))
                 .sorted { $0.distance < $1.distance }
         }
 

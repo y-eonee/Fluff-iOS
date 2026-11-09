@@ -74,6 +74,7 @@ struct MalrangApp: App {
                 if phase == .active { Task { await AppleAccount.validateSession() } }
             }
             .task { await AppleAccount.validateSession() }
+            .task { await RoomPerformanceAudit.runIfRequested() }
             .onReceive(NotificationCenter.default.publisher(for: ASAuthorizationAppleIDProvider.credentialRevokedNotification)) { _ in
                 Task { await AppleAccount.validateSession() }
             }
