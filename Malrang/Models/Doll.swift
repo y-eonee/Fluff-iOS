@@ -17,6 +17,17 @@ final class Doll {
     var z = 0.0
     var danceRaw: String?
     var createdAt = Date()
+    /// Optional storage keeps dolls created before activity tracking compatible.
+    var activityData: Data?
+    var history: DollActivityHistory {
+        activityData.flatMap { try? JSONDecoder().decode(DollActivityHistory.self, from: $0) } ?? DollActivityHistory()
+    }
+
+    func record(_ activity: DollActivity) {
+        var updated = history
+        updated.record(activity)
+        activityData = try? JSONEncoder().encode(updated)
+    }
     var presetData: Data?
     var restingBedID: UUID?
     var beforeSleepX: Double?
@@ -68,6 +79,8 @@ struct DollState: Identifiable, Equatable {
     var dance: DanceMove?
     var preset: PresetConfiguration? = nil
     var restingBedID: UUID? = nil
+    /// Temporary presentation for sofa activities; never saved to the doll model.
+    var couchCompanionScale: Float? = nil
 }
 
 /// 인형 모양. 커스텀(pillow)은 사진 누끼 모양 그대로 시접을 두른 인형이다.

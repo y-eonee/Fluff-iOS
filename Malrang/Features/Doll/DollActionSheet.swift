@@ -4,6 +4,8 @@ import SwiftUI
 /// 인형을 탭하면 올라오는 화면. 열자마자 인형을 만질 수 있고, 춤추기·AR은 아래 버튼으로 한다.
 struct DollActionSheet: View {
     let doll: Doll
+    var isPushed = false
+    var initiallyShowsHistory = false
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -14,28 +16,30 @@ struct DollActionSheet: View {
     @State private var move = DanceMove.bounce
 
     var body: some View {
-        NavigationStack {
+        Group {
+            if isPushed { page } else { NavigationStack { page } }
+        }
+    }
+
+    private var page: some View {
             Group {
                 if !isRemoved {
                     content
                 }
             }
             .background { AppBackground() }
-            .navigationTitle(isRemoved ? "" : doll.name)
+            .cozyPageTitle("my fluff")
+            .toolbar(.visible, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("닫기", systemImage: "xmark") { dismiss() }
+                if !isPushed {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("닫기", systemImage: "chevron.left") { dismiss() }
+                    }
                 }
                 if !isRemoved {
                     ToolbarItemGroup(placement: .topBarTrailing) {
-                        ShareLink(item: Image(uiImage: doll.image), preview: SharePreview(doll.name, image: Image(uiImage: doll.image))) {
-                            Label("공유", systemImage: "square.and.arrow.up")
-                        }
                         Menu("더보기", systemImage: "ellipsis") {
-                            if doll.isPlaced {
-                                Button("방에서 빼기", systemImage: "tray.and.arrow.down") { removeFromRoom() }
-                            }
                             Button("인형 삭제", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
                         }
                     }
@@ -50,31 +54,30 @@ struct DollActionSheet: View {
             } message: {
                 Text("방에서도 사라지고 되돌릴 수 없어요")
             }
-        }
-
     }
 
     private var content: some View {
-        VStack(spacing: 0) {
-            Group {
-                if isChoosingDance {
-                    DancingDoll(image: doll.image, move: move)
-                        .accessibilityLabel("\(doll.name), \(move.label) 춤")
-                        .padding(Spacing.l)
-                } else {
-                    SquishyDoll(doll: doll.state)
-                }
-            }
-            .frame(maxHeight: .infinity)
-            if isChoosingDance {
-                DancePanel(doll: doll, selected: $move) {
-                    withAnimation(.spring) { isChoosingDance = false }
-                }
-                .transition(.move(edge: .bottom))
-            } else {
-                actions
-                    .transition(.move(edge: .bottom))
-            }
+        ScrollViewReader { reader in
+            ScrollView {
+                VStack(spacing: 20) {
+                    Group {
+                        if isChoosingDance {
+                            DancingDoll(image: doll.image, move: move)
+                                .accessibilityLabel("\(doll.name), \(move.label) 춤")
+                                .padding(24)
+                        } else {
+                            SquishyDoll(doll: doll.state)
+                        }
+                    }.frame(height: 340).padding(.horizontal, 52)
+                    DollHistoryCard(doll: doll).padding(.horizontal, 18).id("history")
+                    if isChoosingDance {
+                        DancePanel(doll: doll, selected: $move) {
+                            withAnimation(.spring) { isChoosingDance = false }
+                        }
+                    } else { actions }
+                }.padding(.top, 8).padding(.bottom, 24)
+            }.scrollIndicators(.hidden)
+                .onAppear { if initiallyShowsHistory { reader.scrollTo("history", anchor: .top) } }
         }
         .fullScreenCover(isPresented: $isShowingAR) {
             ARCaptureView(doll: doll)
@@ -102,38 +105,18 @@ struct DollActionSheet: View {
                 }
             }
             .buttonStyle(.secondary)
-            HStack(spacing: Spacing.s) {
-                Button(doll.isPlaced ? "위치 옮기기" : "방에 두기") {
+            if !doll.isPlaced {
+                Button("방에 두기") {
                     appState.place(doll)
                     dismiss()
-                }
-                .buttonStyle(.primary)
-                if doll.isPlaced {
-                    Button(action: removeFromRoom) {
-                        VStack(spacing: Spacing.xxs) {
-                            Text("방에서 빼기")
-                            Text("인형 목록에 보관").appFont(.caption)
-                        }
-                    }
-                    .buttonStyle(.secondary)
-                    .accessibilityLabel("방에서 빼기, 인형 목록에 보관")
-                }
+                }.buttonStyle(.primary)
             }
         }
         .padding(Spacing.m)
-        .background {
-            UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous)
-                .fill(Color.app.surface)
-                .ignoresSafeArea(edges: .bottom)
-        }
-        .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: -4)
+
     }
 
-    private func removeFromRoom() {
-        doll.isPlaced = false
-        try? modelContext.save()
-        dismiss()
-    }
+
 }
 
 #Preview {
