@@ -12,6 +12,9 @@ enum PresetDollModel {
     }
 
     private static var geometry: [String: MeshResource] = [:]
+    /// All spheres differ only by entity scale. Share buffers across stitches,
+    /// buttons, body volumes, dolls, and repeated visits to the editor.
+    static func unitSphere() -> MeshResource { mesh("unit-sphere") { .generateSphere(radius: 0.5) } }
     private static func mesh(_ key: String, build: () -> MeshResource) -> MeshResource {
         if let value = geometry[key] { return value }
         let value = build()
@@ -244,7 +247,7 @@ enum PresetDollModel {
         var happy: Bool
         var detail: Detail
     }
-    private static let cache = EntityTemplateCache<ModelKey>(capacity: 8, byteLimit: 64 * 1024 * 1024)
+    private static let cache = EntityTemplateCache<ModelKey>(capacity: 3, byteLimit: 32 * 1024 * 1024)
 
     static func make(_ configuration: PresetConfiguration, happy: Bool = false, detail: Detail = .full) async -> Entity {
         // Conservative reservation includes decoded color/alpha textures and procedural geometry.
@@ -264,7 +267,10 @@ enum PresetDollModel {
         let normal = textile?.normal
         let fur = configuration.shape == .bear ? "#D5B59D" : configuration.shape == .rabbit ? "#E3D7CF" : "#E1D8D2"
         let garment = configuration.shape == .bear ? "#C58B87" : configuration.shape == .rabbit ? "#9E8CA8" : "#94A58D"
+        var materials: [String: PhysicallyBasedMaterial] = [:]
         func material(_ hex: String, cloth: Bool = true) -> PhysicallyBasedMaterial {
+            let key = "\(hex)-\(cloth)"
+            if let existing = materials[key] { return existing }
             var m = PhysicallyBasedMaterial()
             m.baseColor = .init(tint: Palette.uiColor(hex), texture: cloth ? texture.map { .init($0) } : nil)
             if cloth, let normal { m.normal = .init(texture: .init(normal)) }
@@ -272,6 +278,7 @@ enum PresetDollModel {
             m.metallic = .init(floatLiteral: 0)
             m.textureCoordinateTransform.scale = [3.2, 3.2]
             if cloth { m.sheen = .init(tint: UIColor(white: 0.25, alpha: 1)) }
+            materials[key] = m
             return m
         }
         func apronMaterial(_ hex: String) -> PhysicallyBasedMaterial {
@@ -300,7 +307,7 @@ enum PresetDollModel {
         func ball(_ name: String, _ part: DollPart, _ size: SIMD3<Float>, _ position: SIMD3<Float>, _ color: String, cloth: Bool = true) -> ModelEntity {
             let mesh: MeshResource = name == "foot"
                 ? footMesh()
-                : .generateSphere(radius: 0.5)
+                : unitSphere()
             let model = ModelEntity(mesh: mesh, materials: [material(color, cloth: cloth)])
             model.name = name; model.scale = size; model.position = position
             if ["paw", "shoulder", "foot", "floppy-ear", "round-ear", "body.fur", "neck.fur"].contains(name), let limbPile {
@@ -449,11 +456,15 @@ enum PresetDollModel {
             let stem = (0...8).map { facePoint(0, -0.032 - Float($0) * 0.0009, muzzle: true) }
             groups[.head]!.addChild(PresetEmbroidery.line(stem, radius: 0.0013, material: thread, name: "mouth.center-thread"))
         }
-        // Fibers are visual detail; the underlying head handles selection and collisions.
+        // Selection acts on the seven editable parts, not on individual stitches.
+        // A local part bound follows the same part transform without hundreds of
+        // convex hulls for decorative thread, cheeks, and buttons.
         for group in root.children where detail == .full {
-            for child in group.children where child.name != "head.short-pile" {
-                child.generateCollisionShapes(recursive: false)
-            }
+            let bounds = group.visualBounds(relativeTo: group)
+            let size = simd_max(bounds.extents, SIMD3<Float>(repeating: 0.001))
+            group.components.set(CollisionComponent(shapes: [
+                ShapeResource.generateBox(size: size).offsetBy(translation: bounds.center)
+            ]))
         }
         return root
     }

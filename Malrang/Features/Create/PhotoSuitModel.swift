@@ -28,7 +28,7 @@ enum PhotoSuitModel {
         }
         func color(_ part: DollPart) -> String { configuration.part(part).color ?? "#F7F5F4" }
         func oval(_ name: String, part: DollPart, size: SIMD3<Float>, at: SIMD3<Float> = .zero, tint: String? = nil) -> ModelEntity {
-            let entity = ModelEntity(mesh: .generateSphere(radius: 0.5), materials: [material(tint ?? color(part))])
+            let entity = ModelEntity(mesh: PresetDollModel.unitSphere(), materials: [material(tint ?? color(part))])
             entity.name = name; entity.scale = size; entity.position = at; groups[part]!.addChild(entity)
             return entity
         }

@@ -1,9 +1,28 @@
+import Foundation
 import Metal
 import MetalPerformanceShaders
 import RealityKit
 
 /// A restrained halo around lit fleece, confined to the 3D render (not the UI).
 nonisolated final class CozyBloom {
+    private final class PipelineCache: @unchecked Sendable {
+        let lock = NSLock()
+        var values: [String: (MTLComputePipelineState, MTLComputePipelineState)] = [:]
+        func get(device: MTLDevice, preset: Bool) -> (MTLComputePipelineState, MTLComputePipelineState)? {
+            lock.lock(); defer { lock.unlock() }
+            let key = "\(device.registryID)-\(preset)"
+            if let value = values[key] { return value }
+            guard let library = device.makeDefaultLibrary(),
+                  let first = library.makeFunction(name: preset ? "plushExtractLight" : "cozyExtractLight"),
+                  let second = library.makeFunction(name: preset ? "plushCompositeLight" : "cozyCompositeLight"),
+                  let extract = try? device.makeComputePipelineState(function: first),
+                  let composite = try? device.makeComputePipelineState(function: second) else { return nil }
+            let value = (extract, composite)
+            values[key] = value
+            return value
+        }
+    }
+    private static let pipelines = PipelineCache()
     private let extract: MTLComputePipelineState
     private let composite: MTLComputePipelineState
     private let device: MTLDevice
@@ -12,11 +31,7 @@ nonisolated final class CozyBloom {
     private var blur: MPSImageGaussianBlur?
 
     init?(device: MTLDevice, preset: Bool = false) {
-        guard let library = device.makeDefaultLibrary(),
-              let first = library.makeFunction(name: preset ? "plushExtractLight" : "cozyExtractLight"),
-              let second = library.makeFunction(name: preset ? "plushCompositeLight" : "cozyCompositeLight"),
-              let extract = try? device.makeComputePipelineState(function: first),
-              let composite = try? device.makeComputePipelineState(function: second) else { return nil }
+        guard let (extract, composite) = Self.pipelines.get(device: device, preset: preset) else { return nil }
         self.device = device
         self.extract = extract
         self.composite = composite
@@ -24,9 +39,15 @@ nonisolated final class CozyBloom {
 
     func render(_ context: ARView.PostProcessContext) {
         let source = context.sourceColorTexture
-        let width = max(1, (source.width + 1) / 2)
-        let height = max(1, (source.height + 1) / 2)
+        let width = max(1, (source.width + 3) / 4)
+        let height = max(1, (source.height + 3) / 4)
         if highlights?.width != width || highlights?.height != height {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--render-audit") {
+                let summary = "source=\(source.width)x\(source.height) bloom=\(width)x\(height) buffers=\(width * height * 8 * 2) bytes"
+                try? summary.write(to: URL.documentsDirectory.appending(path: "render-targets.txt"), atomically: true, encoding: .utf8)
+            }
+            #endif
             let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba16Float,
                 width: width, height: height, mipmapped: false)
             descriptor.usage = [.shaderRead, .shaderWrite]

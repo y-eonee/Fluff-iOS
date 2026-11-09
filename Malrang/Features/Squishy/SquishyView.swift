@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// 말랑이 체험 화면
 struct SquishyView: View {
@@ -19,7 +20,7 @@ struct SquishyView: View {
         .padding(Spacing.m)
         .frame(maxWidth: .infinity)
         .background { AppBackground() }
-        .navigationTitle("만지기")
+        .cozyPageTitle("만지기")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -28,6 +29,7 @@ struct SquishyView: View {
 /// 처음에는 화살표가 위에서 가리켜서 만져 보게 한다. 춤을 적용한 인형은 춤추면서 눌린다.
 struct SquishyDoll: View {
     let doll: DollState
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hapticOn") private var hapticOn = true
     @AppStorage("soundOn") private var soundOn = true
@@ -90,6 +92,7 @@ struct SquishyDoll: View {
                     isTouching = true
                     lastStrokePoint = value.location
                     pressCount += 1
+                    DollActivityRecorder.record(.touch, ids: [doll.id], in: modelContext)
                     if soundOn { doll.filling.playSound() }
                     withAnimation(.spring(duration: 0.12)) { press = 1 }
                     withAnimation(.spring) { hasTouched = true }

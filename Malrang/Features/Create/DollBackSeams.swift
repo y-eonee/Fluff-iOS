@@ -11,9 +11,9 @@ enum DollBackSeams {
     if let head = model.findEntity(named: DollPart.head.rawValue) {
       for i in 0..<17 {
         let t = Float(i) / 16 * 1.7 - 0.85
-        let stitch = ModelEntity(mesh: .generateSphere(radius: 0.0010), materials: [thread])
+        let stitch = ModelEntity(mesh: PresetDollModel.unitSphere(), materials: [thread])
         stitch.name = "rear.seam"
-        stitch.scale = [1, 2.4, 1]
+        stitch.scale = [0.002, 0.0048, 0.002]
         let surface = PresetHeadSurface.point(latitude: t, angle: -.pi / 2, width: 0.128)
         stitch.position = [0, surface.y, surface.z - 0.0012]
         head.addChild(stitch)
@@ -22,9 +22,9 @@ enum DollBackSeams {
     if let torso = model.findEntity(named: DollPart.torso.rawValue) {
       for i in 0..<14 {
         let t = Float(i) / 13 * 1.6 - 0.8
-        let stitch = ModelEntity(mesh: .generateSphere(radius: 0.0009), materials: [thread])
+        let stitch = ModelEntity(mesh: PresetDollModel.unitSphere(), materials: [thread])
         stitch.name = "rear.seam"
-        stitch.scale = [1, 2.2, 1]
+        stitch.scale = [0.0018, 0.00396, 0.0018]
         let y = t * 0.05
         let apronRow = (0.046 - y) / 0.111
         stitch.position = [0, y, 0.005 - (0.059 + 0.006 * apronRow) - 0.001]

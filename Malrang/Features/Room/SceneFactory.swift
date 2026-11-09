@@ -23,12 +23,15 @@ enum SceneFactory {
         var cozy: Bool
         var cutaway: Bool
     }
-    private static let furnitureCache = EntityTemplateCache<FurnitureKey>(capacity: 24, byteLimit: 96 * 1024 * 1024)
+    private static let furnitureCache = EntityTemplateCache<FurnitureKey>(capacity: 12, byteLimit: 48 * 1024 * 1024)
 
     /// `onFloor`는 가구 하나만 보여줄 때 벽에 거는 가구도 바닥 높이에 두려고 쓴다.
     static func furniture(_ item: RoomItemState, onFloor: Bool = false, elevation: Float = 0, cozy: Bool = false, cutaway: Bool = false) async -> Entity {
         let key = FurnitureKey(item: item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
-        return await furnitureCache.entity(for: key, estimatedCost: 8 * 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0)) {
+        // Meshes/textiles are shared by CozyFurniture's bounded set of templates.
+        // Count the incremental hierarchy/materials here; reserving those shared
+        // buffers again evicted all ten starter-room entries on every revisit.
+        return await furnitureCache.entity(for: key, estimatedCost: 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0)) {
             await buildFurniture(item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
         }
     }

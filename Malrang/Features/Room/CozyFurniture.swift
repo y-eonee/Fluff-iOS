@@ -638,7 +638,9 @@ enum CozyFurniture {
         for triangle in stride(from: 0, to: projectedPositions.count, by: 3) {
             let a = projectedPositions[triangle], b = projectedPositions[triangle + 1], c = projectedPositions[triangle + 2]
             let area = simd_length(simd_cross(b - a, c - a)) / 2
-            let expected = area * 34000
+            // The fabric shader supplies surface detail; sparse geometry preserves
+            // the fuzzy silhouette without tens of thousands of subpixel fibers.
+            let expected = area * 12000
             let count = Int(expected) + (random() < expected - floor(expected) ? 1 : 0)
             for _ in 0..<count {
                 let u = sqrt(random()), v = random()

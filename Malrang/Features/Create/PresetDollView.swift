@@ -20,9 +20,7 @@ struct PresetDollView: UIViewRepresentable {
         view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
         view.environment.background = .color(.clear); view.isOpaque = false
         view.environment.lighting.intensityExponent = -1.0
-        if let device = MTLCreateSystemDefaultDevice(), let bloom = CozyBloom(device: device, preset: true) {
-            view.renderCallbacks.postProcess = { context in bloom.render(context) }
-        }
+        view.configureBloom(preset: true)
         let anchor = AnchorEntity(world: .zero)
         let camera = PerspectiveCamera(); camera.camera.fieldOfViewInDegrees = 32
         let target = configuration.isPhotoSuit == true ? cameraTarget - 0.015 : cameraTarget
@@ -130,7 +128,7 @@ struct PresetDollView: UIViewRepresentable {
                     try? await Task.sleep(for: .milliseconds(100))
                     guard !Task.isCancelled else { return }
                 }
-                let entity = await PresetDollModel.make(value, happy: focusScene ? false : happy)
+                let entity = await PresetDollModel.make(value, happy: focusScene ? false : happy, detail: focusScene ? .room : .full)
                 guard !Task.isCancelled else { return }
                 model?.removeFromParent(); model = entity; anchor?.addChild(entity)
                 renderedConfiguration = value
@@ -160,7 +158,7 @@ struct PresetDollView: UIViewRepresentable {
 }
 
 /// Refit after rotation or a change in the available preview area.
-private final class PresetRenderView: ARView {
+private final class PresetRenderView: EfficientARView {
     var onLayout: (() -> Void)?
     override func layoutSubviews() {
         super.layoutSubviews()

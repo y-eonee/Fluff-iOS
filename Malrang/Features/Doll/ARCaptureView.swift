@@ -8,6 +8,7 @@ import SwiftUI
 /// 카메라 화면에 인형을 놓고 함께 찍는 예절샷(사진·영상). 저장 버튼을 누르기 전에는 기기에 남지 않는다.
 struct ARCaptureView: View {
     let doll: Doll
+    var onUsePhoto: ((UIImage) throws -> Void)? = nil
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -29,7 +30,7 @@ struct ARCaptureView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background { AppBackground() }
-                .navigationTitle("AR로 함께하기")
+                .cozyPageTitle("AR로 함께하기")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(isRecording ? .hidden : .automatic, for: .navigationBar)
                 .alert("녹화하지 못했어요", isPresented: $isRecordFailed) {
@@ -55,7 +56,9 @@ struct ARCaptureView: View {
         } else if let video {
             CapturedVideoView(url: video) { self.video = nil }
         } else if let photo {
-            CapturedPhotoView(photo: photo) { self.photo = nil }
+            CapturedPhotoView(photo: photo, onRetake: { self.photo = nil }, onUsePhoto: onUsePhoto.map { use in
+                { image in try use(image); dismiss() }
+            })
         } else {
             switch cameraStatus {
             case .authorized:
@@ -104,7 +107,7 @@ struct ARCaptureView: View {
     /// 가운데 셔터, 왼쪽 춤추기, 오른쪽 인형 삭제. 녹화 중에는 셔터만 남긴다.
     private var controls: some View {
         VStack(spacing: Spacing.s) {
-            if !isRecording {
+            if !isRecording && onUsePhoto == nil {
                 HStack(spacing: Spacing.xs) {
                     Chip(title: "사진", isSelected: !isVideoMode) { isVideoMode = false }
                     Chip(title: "영상", isSelected: isVideoMode) { isVideoMode = true }
@@ -162,6 +165,7 @@ struct ARCaptureView: View {
             }
             .animation(.spring, value: isRecording)
         }
+        .disabled(onUsePhoto != nil && !hasDoll)
         .accessibilityLabel(isVideoMode ? (isRecording ? "녹화 멈추기" : "녹화 시작") : "촬영")
     }
 
@@ -213,12 +217,9 @@ private struct CapturedVideoView: View {
                     UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
                     isSaved = true
                 }
-                .buttonStyle(.secondary)
-                .disabled(isSaved)
-                ShareLink(item: url) {
-                    Text("공유")
-                }
                 .buttonStyle(.primary)
+                .disabled(isSaved)
+
             }
         }
         .padding(Spacing.m)
@@ -230,6 +231,8 @@ private struct CapturedVideoView: View {
 private struct CapturedPhotoView: View {
     let photo: UIImage
     let onRetake: () -> Void
+    var onUsePhoto: ((UIImage) throws -> Void)? = nil
+    @State private var saveFailed = false
     @State private var isSaved = false
 
     var body: some View {
@@ -247,20 +250,27 @@ private struct CapturedPhotoView: View {
             HStack(spacing: Spacing.s) {
                 Button("다시 찍기", action: onRetake)
                     .buttonStyle(.secondary)
+                if let onUsePhoto {
+                    Button("액자에 넣기") {
+                        do { try onUsePhoto(photo) }
+                        catch { saveFailed = true }
+                    }.buttonStyle(D1PrimaryStyle())
+                } else {
                 Button(isSaved ? "저장됨" : "저장") {
                     UIImageWriteToSavedPhotosAlbum(photo, nil, nil, nil)
                     isSaved = true
                 }
-                .buttonStyle(.secondary)
-                .disabled(isSaved)
-                ShareLink(item: Image(uiImage: photo), preview: SharePreview("예절샷", image: Image(uiImage: photo))) {
-                    Text("공유")
-                }
                 .buttonStyle(.primary)
+                .disabled(isSaved)
+
+                }
             }
         }
         .padding(Spacing.m)
         .sensoryFeedback(.success, trigger: isSaved)
+        .alert("사진을 액자에 넣지 못했어요", isPresented: $saveFailed) {
+            Button("확인", role: .cancel) {}
+        } message: { Text("사진은 그대로 있어요. 다시 시도해 주세요.") }
     }
 }
 

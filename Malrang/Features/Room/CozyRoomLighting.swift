@@ -5,9 +5,13 @@ enum CozyRoomLighting {
   static func clearCache() {
     environment = nil
     environmentPhase = nil
+    daylightTexture = nil
+    daylightTint = nil
   }
   private static var environment: EnvironmentResource?
   private static var environmentPhase: RoomDaylight.Phase?
+  private static var daylightTexture: TextureResource?
+  private static var daylightTint: SIMD3<Float>?
 
   static func environmentResource(at date: Date = .now) async -> EnvironmentResource? {
     let profile = RoomDaylight.at(date)
@@ -37,18 +41,24 @@ enum CozyRoomLighting {
     let color = UIColor(
       red: CGFloat(profile.tint.x), green: CGFloat(profile.tint.y), blue: CGFloat(profile.tint.z),
       alpha: 1)
-    let format = UIGraphicsImageRendererFormat()
-    format.scale = 1
-    let image = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1), format: format).image {
-      context in
-      color.setFill()
-      context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
-    }
     let texture: TextureResource?
-    if let cgImage = image.cgImage {
-      texture = try? await TextureResource(image: cgImage, options: .init(semantic: .raw))
+    if daylightTint == profile.tint, let cached = daylightTexture {
+      texture = cached
     } else {
-      texture = nil
+      let format = UIGraphicsImageRendererFormat()
+      format.scale = 1
+      let image = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1), format: format).image {
+        context in
+        color.setFill()
+        context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+      }
+      if let cgImage = image.cgImage {
+        texture = try? await TextureResource(image: cgImage, options: .init(semantic: .raw))
+      } else {
+        texture = nil
+      }
+      daylightTexture = texture
+      daylightTint = profile.tint
     }
     let sky = await CozyFurniture.skyMaterial(profile: profile)
     func update(_ entity: Entity) {

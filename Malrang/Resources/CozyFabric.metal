@@ -5,10 +5,13 @@ using namespace metal;
 kernel void cozyExtractLight(texture2d<float, access::read> source [[texture(0)]],
                              texture2d<float, access::write> target [[texture(1)]], uint2 p [[thread_position_in_grid]]) {
     if (p.x >= target.get_width() || p.y >= target.get_height()) return;
-    uint2 q = p * 2;
+    // Sample across each output pixel's footprint, including odd-sized render targets.
+    float2 ratio = float2(source.get_width(), source.get_height()) / float2(target.get_width(), target.get_height());
+    uint2 q = uint2((float2(p) + 0.25) * ratio);
+    uint2 r = uint2((float2(p) + 0.75) * ratio);
     uint2 edge = uint2(source.get_width() - 1, source.get_height() - 1);
-    float4 averaged = (source.read(min(q, edge)) + source.read(min(q + uint2(1, 0), edge))
-                     + source.read(min(q + uint2(0, 1), edge)) + source.read(min(q + uint2(1, 1), edge))) * 0.25;
+    float4 averaged = (source.read(min(q, edge)) + source.read(min(uint2(r.x, q.y), edge))
+                     + source.read(min(uint2(q.x, r.y), edge)) + source.read(min(r, edge))) * 0.25;
     float3 color = averaged.rgb;
     float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
     target.write(float4(color * smoothstep(0.62, 0.95, luminance), 1), p);
@@ -30,31 +33,38 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
 [[visible]] void cozyFabric(realitykit::surface_parameters params) {
     constexpr sampler fabricSampler(coord::normalized, address::repeat, filter::linear, mip_filter::linear);
     float softness = params.uniforms().custom_parameter().y;
-    float3 local = params.geometry().model_position() * params.uniforms().custom_parameter().x;
-    // Derive model-space projection weights, including rotated furniture.
-    float3 n = abs(normalize(cross(dfdx(local), dfdy(local))));
-    float3 weights = pow(n, float3(4.0));
-    weights /= max(0.0001, weights.x + weights.y + weights.z);
-    half3 fiber = params.textures().base_color().sample(fabricSampler, local.yz).rgb * half(weights.x)
-        + params.textures().base_color().sample(fabricSampler, local.xz).rgb * half(weights.y)
-        + params.textures().base_color().sample(fabricSampler, local.xy).rgb * half(weights.z);
-    float2 uv = n.y > max(n.x, n.z) ? local.xz : (n.x > n.z ? local.yz : local.xy);
-    half3 tint = half3(params.material_constants().base_color_tint());
-    half3 fleece = clamp((fiber - 0.90h) * 1.85h + 0.91h, 0.75h, 1.0h);
-    fiber = mix(fiber, fleece, half(softness));
-    // A second, lower-frequency layer gives wool small tufts instead of uniform grain.
-    half3 tufts = params.textures().base_color().sample(fabricSampler, local.yz * 0.43).rgb * half(weights.x)
-        + params.textures().base_color().sample(fabricSampler, local.xz * 0.43).rgb * half(weights.y)
-        + params.textures().base_color().sample(fabricSampler, local.xy * 0.43).rgb * half(weights.z);
-    fiber *= clamp(1.0h + (tufts - 0.92h) * half(softness * 1.8), 0.92h, 1.04h);
     float encodedLight = params.uniforms().custom_parameter().w;
-    float fiberMesh = encodedLight < 0.0 ? 1.0 : 0.0;
-    float daylight = encodedLight < 0.0 ? -encodedLight - 1.0 : encodedLight;
+    bool isFiberMesh = encodedLight < 0.0;
+    half3 tint = half3(params.material_constants().base_color_tint());
+    half3 fiber = half3(0.92h);
+    float3 surfaceNormal = float3(0.0, 0.0, 1.0);
+    // Fiber triangles previously sampled seven textures and computed triplanar
+    // derivatives, then discarded every result. Keep exactly the same constant
+    // fiber color/normal and only sample fabric on the underlying surface.
+    if (!isFiberMesh) {
+        float3 local = params.geometry().model_position() * params.uniforms().custom_parameter().x;
+        // Derive model-space projection weights, including rotated furniture.
+        float3 n = abs(normalize(cross(dfdx(local), dfdy(local))));
+        float3 weights = pow(n, float3(4.0));
+        weights /= max(0.0001, weights.x + weights.y + weights.z);
+        fiber = params.textures().base_color().sample(fabricSampler, local.yz).rgb * half(weights.x)
+            + params.textures().base_color().sample(fabricSampler, local.xz).rgb * half(weights.y)
+            + params.textures().base_color().sample(fabricSampler, local.xy).rgb * half(weights.z);
+        float2 uv = n.y > max(n.x, n.z) ? local.xz : (n.x > n.z ? local.yz : local.xy);
+        half3 fleece = clamp((fiber - 0.90h) * 1.85h + 0.91h, 0.75h, 1.0h);
+        fiber = mix(fiber, fleece, half(softness));
+        // A second, lower-frequency layer gives wool small tufts instead of uniform grain.
+        half3 tufts = params.textures().base_color().sample(fabricSampler, local.yz * 0.43).rgb * half(weights.x)
+            + params.textures().base_color().sample(fabricSampler, local.xz * 0.43).rgb * half(weights.y)
+            + params.textures().base_color().sample(fabricSampler, local.xy * 0.43).rgb * half(weights.z);
+        fiber *= clamp(1.0h + (tufts - 0.92h) * half(softness * 1.8), 0.92h, 1.04h);
+        float3 detail = float3(realitykit::unpack_normal(params.textures().normal().sample(fabricSampler, uv).rgb));
+        surfaceNormal = normalize(float3(detail.xy * mix(0.20, 0.80, softness), detail.z));
+    }
+    float daylight = isFiberMesh ? -encodedLight - 1.0 : encodedLight;
     half3 daylightTint = params.textures().custom().sample(fabricSampler, float2(0.5)).rgb;
-    fiber = mix(fiber, half3(0.92h), half(fiberMesh));
     params.surface().set_base_color(tint * fiber);
-    float3 detail = float3(realitykit::unpack_normal(params.textures().normal().sample(fabricSampler, uv).rgb));
-    params.surface().set_normal(normalize(float3(detail.xy * mix(0.20, 0.80, softness) * (1.0 - fiberMesh), mix(detail.z, 1.0, fiberMesh))));
+    params.surface().set_normal(surfaceNormal);
     params.surface().set_roughness(half(mix(0.88, 0.98, softness)));
     params.surface().set_metallic(0.0h);
     params.surface().set_specular(0.04h);
@@ -117,10 +127,13 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
 kernel void plushExtractLight(texture2d<float, access::read> source [[texture(0)]],
                               texture2d<float, access::write> target [[texture(1)]], uint2 p [[thread_position_in_grid]]) {
     if (p.x >= target.get_width() || p.y >= target.get_height()) return;
-    uint2 q = p * 2;
+    // Sample across each output pixel's footprint, including odd-sized render targets.
+    float2 ratio = float2(source.get_width(), source.get_height()) / float2(target.get_width(), target.get_height());
+    uint2 q = uint2((float2(p) + 0.25) * ratio);
+    uint2 r = uint2((float2(p) + 0.75) * ratio);
     uint2 edge = uint2(source.get_width() - 1, source.get_height() - 1);
-    float4 averaged = (source.read(min(q, edge)) + source.read(min(q + uint2(1, 0), edge))
-                     + source.read(min(q + uint2(0, 1), edge)) + source.read(min(q + uint2(1, 1), edge))) * 0.25;
+    float4 averaged = (source.read(min(q, edge)) + source.read(min(uint2(r.x, q.y), edge))
+                     + source.read(min(uint2(q.x, r.y), edge)) + source.read(min(r, edge))) * 0.25;
     float4 c = averaged;
     float strength = smoothstep(0.68, 0.98, dot(c.rgb, float3(0.2126, 0.7152, 0.0722)));
     target.write(float4(c.rgb * c.a, c.a) * strength, p);
