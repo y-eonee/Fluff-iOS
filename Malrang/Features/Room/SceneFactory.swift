@@ -231,9 +231,15 @@ enum SceneFactory {
     }
 
     /// 인형을 끌 때 올려둘 수 있는 자리를 표시하는 판
-    static func seatHighlight(_ item: RoomItemState) -> Entity {
+    static func seatHighlight(_ item: RoomItemState, covered: Bool = false) -> Entity {
         var material = UnlitMaterial(color: UIColor(named: "brandAccent") ?? .systemPink)
         material.blending = .transparent(opacity: 0.55)
+        if item.kind == .bed {
+            let entity = ModelEntity(mesh: .generateBox(size: [0.64, 0.004, 0.11]), materials: [material])
+            entity.orientation = simd_quatf(angle: item.yaw, axis: [0, 1, 0])
+            entity.position = SIMD3(item.x, RoomLayout.bedSeatHeight(covered: covered) + 0.006, item.z) + entity.orientation.act([0, 0, 0.335])
+            return entity
+        }
         let size = item.kind.size
         let entity = ModelEntity(mesh: .generateBox(size: [size.x * 0.95, 0.004, size.z * 0.95]), materials: [material])
         entity.position = [item.x, (item.kind.seatHeight ?? 0) + 0.006, item.z]

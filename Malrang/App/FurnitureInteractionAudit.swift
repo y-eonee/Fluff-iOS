@@ -55,15 +55,39 @@
         }
       } catch { checks["persistence"] = false }
       let room = RoomItem.starterRoom.map(\.state)
-      for item in room where item.kind.hasHomeInteraction && item.kind.blocksFloor {
+      for item in room where item.kind.hasHomeInteraction && item.kind.blocksFloor && !item.kind.allowsDollPlacement {
         checks["blocked_placement_\(item.kind.rawValue)"] = !RoomLayout.canPlaceDoll(
           at: [item.x, item.z], in: room)
         checks["no_manual_seat_\(item.kind.rawValue)"] =
           RoomLayout.seat(at: [item.x, item.z], in: [item]).item == nil
       }
-      if let chair = room.first(where: { $0.kind == .sofa }) {
-        checks["lounge_chair_is_available"] =
-          RoomLayout.seat(at: [chair.x, chair.z], in: room).item?.id == chair.id
+      if let sofa = room.first(where: { $0.kind == .sofa }) {
+        checks["sofa_reserved_for_activity"] =
+          RoomLayout.seat(at: [sofa.x, sofa.z], in: room, includingActivitySeats: true).item?.id == sofa.id
+        checks["sofa_display_name"] = sofa.kind.label == "소파"
+      }
+      if let chair = room.first(where: { $0.kind == .chair }) {
+        for shape in DollShape.presets {
+          var config = PresetConfiguration(); config.shape = shape
+          let seatedDoll = Doll(name: "의자 검증", shape: .cat, filling: .fluffy, imageData: data)
+          seatedDoll.presetConfiguration = config
+          let model = await SceneFactory.doll(seatedDoll.state)
+          for (index, yaw) in [Float(0), .pi / 2, .pi, -.pi / 2].enumerated() {
+            var seat = chair; seat.yaw = yaw
+            DollRestPose.chairSeat(model, on: seat)
+            let frame = Entity()
+            frame.position = [seat.x, 0, seat.z]
+            frame.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
+            let common = Entity(); common.addChild(frame); common.addChild(model)
+            let bounds = model.visualBounds(relativeTo: frame)
+            let key = "chair_\(shape.rawValue)_\(index)"
+            checks[key + "_above_cushion"] = bounds.min.y >= (seat.kind.seatHeight ?? 0) + 0.007
+            checks[key + "_clear_backrest"] = bounds.min.z >= -seat.kind.size.z * 0.36 + 0.085 / 2 + 0.011
+            checks[key + "_faces_front"] = simd_dot(model.orientation.act([0, 0, 1]), frame.orientation.act([0, 0, 1])) > 0.999
+            checks[key + "_fits_width"] = bounds.extents.x <= seat.kind.size.x * 0.86
+            model.removeFromParent()
+          }
+        }
       }
       if let roomBed = room.first(where: { $0.kind == .bed }), let spot = RoomLayout.dollSpot(avoiding: room, dolls: []) {
         checks["starter_room_has_walk_to_bed"] = DollBedRoute.plan(from: spot, bed: roomBed, items: room) != nil
@@ -149,8 +173,9 @@
       player.setTimer(nil)
       checks["audio_continuous"] = player.remaining() == nil
       player.setTimer(0)
-      try? await Task.sleep(for: .milliseconds(100))
-      checks["audio_timer_stops"] = !player.isPlaying && player.sound == nil
+      // The current clock clamps a numeric duration to at least one minute;
+      // zero is not an immediate-stop command (nil means continuous playback).
+      checks["audio_timer_minimum_duration"] = player.isPlaying && (player.remaining() ?? 0) > 59
       player.start(.rain, minutes: 15)
       player.stop()
       checks["audio_stop_clears_state"] = player.sound == nil && player.endDate == nil

@@ -8,7 +8,7 @@ enum Kind { case bed, chair, sofa, obstacle
     var blocksFloor: Bool { true }
 }
 struct RoomItemState { var id = UUID(); var kind: Kind; var x: Float; var z: Float; var yaw: Float = 0 }
-struct DollState { var id: UUID; var preset: Int? = 1; var dance: Int? = nil; var restingBedID: UUID? = nil }
+struct DollState { var id: UUID; var preset: Int? = 1; var dance: Int? = nil; var restingBedID: UUID? = nil; var couchCompanionScale: Float? = nil }
 enum SceneFactory { static let dollHeight: Float = 0.45 }
 enum RoomLayout {
     static func seat(at point: SIMD2<Float>, in items: [RoomItemState]) -> (height: Float, item: RoomItemState?) { (0, nil) }
@@ -31,16 +31,18 @@ struct CheckRoomWander {
         }
         let starts = entities.map(\.position)
         let motion = RoomDollWander(content: content, states: states, items: [])
-        var moved = false, posed = false
+        var moved = false, posed = false, cutoutMoved = false
         for _ in 0..<1500 {
             motion.update(delta: 1.0 / 30, running: true)
+            cutoutMoved = cutoutMoved || simd_distance(entities[2].position, starts[2]) > 0.03
             moved = moved || simd_distance(entities[0].position, starts[0]) > 0.03
             posed = posed || abs(entities[0].findEntity(named: "leftLeg")!.orientation.angle) > 0.01
-            precondition(abs(entities[0].position.x) <= 0.86 && abs(entities[0].position.z) <= 0.86)
+            precondition(abs(entities[0].position.x) <= 0.92 && abs(entities[0].position.z) <= 0.92)
             precondition(simd_distance(entities[0].position, entities[1].position) >= 0.299)
         }
         precondition(moved && posed, "Walking must change both position and limb poses")
-        precondition(entities[2].position == starts[2] && entities[3].position == starts[3], "Cutouts and dancing dolls stay untouched")
+        precondition(cutoutMoved, "Photo cutouts must wander too")
+        precondition(entities[3].position == starts[3], "Dancing dolls stay untouched")
         motion.update(delta: 1, running: false)
         let stopped = entities.map(\.position)
         for _ in 0..<100 { motion.update(delta: 1, running: false) }
@@ -49,6 +51,47 @@ struct CheckRoomWander {
         precondition(entities[0].findEntity(named: "body")!.position.y == 0.225)
         for _ in 0..<300 { motion.update(delta: 1.0 / 30, running: true) }
         precondition(entities[0].position != stopped[0], "Resume must restart motion")
-        print("PASS: wandering, gait, bounds, doll avoidance, pause/reset/resume, cutout/dance exclusion")
+        // A placement 10 cm from furniture was accepted but excluded by the old 14 cm walk margin.
+        let nearContent = Entity()
+        let nearState = DollState(id: UUID())
+        let nearDoll = entities[0].clone(recursive: true)
+        nearDoll.name = "doll|\(nearState.id)"; nearDoll.position = [0.35, 0, 0]
+        nearContent.addChild(nearDoll)
+        let nearMotion = RoomDollWander(content: nearContent, states: [nearState],
+            items: [RoomItemState(kind: .obstacle, x: 0, z: 0)])
+        var leftPlacement = false
+        for _ in 0..<1500 {
+            nearMotion.update(delta: 1.0 / 30, running: true)
+            leftPlacement = leftPlacement || simd_distance(nearDoll.position, SIMD3<Float>(0.35, 0, 0)) > 0.03
+        }
+        precondition(leftPlacement, "Accepted placements beside furniture must be able to wander")
+        // Two manually placed dolls 26 cm apart must be able to move away from one another.
+        let closeContent = Entity()
+        let closeStates = [DollState(id: UUID()), DollState(id: UUID())]
+        let closeDolls = closeStates.enumerated().map { index, state in
+            let doll = entities[0].clone(recursive: true)
+            doll.name = "doll|\(state.id)"; doll.position = [Float(index) * 0.26, 0, 0]
+            closeContent.addChild(doll)
+            return doll
+        }
+        let closeMotion = RoomDollWander(content: closeContent, states: closeStates, items: [])
+        var separated = false
+        for _ in 0..<1500 {
+            closeMotion.update(delta: 1.0 / 30, running: true)
+            let gap = simd_distance(closeDolls[0].position, closeDolls[1].position)
+            precondition(gap >= 0.259, "Close dolls must not move deeper into each other")
+            separated = separated || gap >= 0.30
+        }
+        precondition(separated, "Close placements must not freeze both dolls")
+        let couchContent = Entity()
+        let couchState = DollState(id: UUID(), couchCompanionScale: 0.62)
+        let seated = entities[0].clone(recursive: true)
+        seated.name = "doll|\(couchState.id)"; seated.position = [0.1, 0.16, 0.1]
+        couchContent.addChild(seated)
+        let seatedStart = seated.transform
+        let couchMotion = RoomDollWander(content: couchContent, states: [couchState], items: [])
+        for _ in 0..<1500 { couchMotion.update(delta: 1.0 / 30, running: true) }
+        precondition(seated.position == seatedStart.translation, "Couch companions stay seated while watching")
+        print("PASS: couch sitting,  wandering, gait, bounds, doll avoidance, pause/reset/resume, cutout walking, dance exclusion")
     }
 }

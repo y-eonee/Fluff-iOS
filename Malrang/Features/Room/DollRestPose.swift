@@ -3,13 +3,34 @@ import UIKit
 
 /// All poses use the same editable meshes and the user's saved materials.
 enum DollRestPose {
-  static func sitting(_ model: Entity) {
+  /// Face the chair's front (towards the desk in the starter room), and fit
+  /// the actual posed mesh in front of the backrest and above the cushion.
+  static func chairSeat(_ model: Entity, on chair: RoomItemState) {
+    sitting(model)
+    let bounds = model.visualBounds(relativeTo: model)
+    let scale = min(Float(1), chair.kind.size.x * 0.85 / max(bounds.extents.x, 0.001))
+    model.scale = SIMD3(repeating: scale)
+    model.orientation = simd_quatf(angle: chair.yaw, axis: [0, 1, 0])
+    let backrestFront = -chair.kind.size.z * 0.36 + 0.085 / 2
+    let forward = max(0.035, backrestFront + 0.012 - bounds.min.z * scale)
+    let local = SIMD3<Float>(0, (chair.kind.seatHeight ?? 0.227) + 0.008 - bounds.min.y * scale, forward)
+    model.position = SIMD3(chair.x, 0, chair.z) + model.orientation.act(local)
+  }
+
+  static func sitting(_ model: Entity, animated: Bool = false) {
+    let duration: TimeInterval = animated && !UIAccessibility.isReduceMotionEnabled ? 0.45 : 0
     for part in [DollPart.leftLeg, .rightLeg] {
-      model.findEntity(named: part.rawValue)?.orientation = simd_quatf(
-        angle: -.pi / 2, axis: [1, 0, 0])
+      if let limb = model.findEntity(named: part.rawValue) {
+        var pose = limb.transform
+        pose.rotation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
+        set(limb, pose, duration)
+      }
     }
-    model.findEntity(named: DollPart.torso.rawValue)?.orientation = simd_quatf(
-      angle: -0.08, axis: [1, 0, 0])
+    if let torso = model.findEntity(named: DollPart.torso.rawValue) {
+      var pose = torso.transform
+      pose.rotation = simd_quatf(angle: -0.08, axis: [1, 0, 0])
+      set(torso, pose, duration)
+    }
   }
 
   static func sleeping(_ entity: Entity, bed: RoomItemState, animated: Bool) {
@@ -20,8 +41,12 @@ enum DollRestPose {
     placement.rotation = simd_quatf(angle: bed.yaw, axis: [0, 1, 0])
     set(entity, placement, duration)
     var pose = body.transform
-    pose.rotation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
-    pose.translation.y = 0.12
+    let isPhotoDoll = entity.findEntity(named: DollPart.head.rawValue) == nil
+    // A photo doll has one continuous mesh: incline it onto the pillow instead
+    // of lifting a separate head, keeping its lower half beneath the duvet.
+    pose.rotation = simd_quatf(angle: -.pi / 2 + (isPhotoDoll ? 0.4 : 0), axis: [1, 0, 0])
+    pose.translation.y = isPhotoDoll ? 0.12 : 0.08
+    pose.translation.z = isPhotoDoll ? 0.09 : 0
     set(body, pose, duration)
     if let head = entity.findEntity(named: DollPart.head.rawValue), head.findEntity(named: "sleep.closed-eyes") == nil {
       let closed = Entity(); closed.name = "sleep.closed-eyes"
@@ -42,7 +67,11 @@ enum DollRestPose {
       (.head, 0.12), (.ears, 0.12),
     ] {
       guard let node = entity.findEntity(named: part.rawValue) else { continue }
-      var pose = node.transform
+      let original = node.components[SleepingOrigin.self]?.transform ?? node.transform
+      node.components.set(SleepingOrigin(transform: original))
+      var pose = original
+      // Raise the head and ears together onto the pillow; the torso stays under the duvet.
+      if part == .head || part == .ears { pose.translation.z += 0.15 }
       pose.rotation = simd_quatf(angle: angle, axis: [1, 0, 0])
       set(node, pose, duration)
     }
@@ -50,8 +79,8 @@ enum DollRestPose {
 
   static func bedPosition(_ bed: RoomItemState) -> SIMD3<Float> {
     let offset = simd_act(
-      simd_quatf(angle: bed.yaw, axis: [0, 1, 0]), SIMD3<Float>(0, 0, -0.18))
-    return SIMD3<Float>(bed.x, bed.kind.seatHeight ?? 0.32, bed.z) + offset
+      simd_quatf(angle: bed.yaw, axis: [0, 1, 0]), SIMD3<Float>(0, 0, -0.22))
+    return SIMD3<Float>(bed.x, 0.32, bed.z) + offset
   }
 
   private static func set(_ entity: Entity, _ transform: Transform, _ duration: TimeInterval) {
@@ -63,15 +92,39 @@ enum DollRestPose {
     }
   }
 
-  static func quilt(color: String? = nil) -> ModelEntity {
-    var material = PhysicallyBasedMaterial()
-    material.baseColor = .init(tint: Palette.uiColor(color ?? "#F0C9BD"))
-    material.roughness = 1.0
-    // A softly curved cover with real thickness, leaving the head visible.
-    let cover = ModelEntity(
-      mesh: .generateBox(size: [0.30, 0.05, 0.24], cornerRadius: 0.025), materials: [material])
-    cover.name = "sleep.quilt"
-    cover.position = [0, 0.145, 0.20]
-    return cover
+  private struct SleepingOrigin: Component { let transform: Transform }
+
+  enum BeddingPose { case made, open, covered }
+
+  private struct BeddingOrigin: Component {
+    let transform: Transform
+  }
+
+  /// Move the bed's own duvet (including its fold and fibers), retaining its materials.
+  static func bedding(_ bed: Entity?, pose: BeddingPose, animated: Bool) {
+    guard let bed else { return }
+    func visit(_ node: Entity) {
+      if node.name.hasPrefix("duvet") || node.name == "custom-photo" {
+        let original = node.components[BeddingOrigin.self]?.transform ?? node.transform
+        node.components.set(BeddingOrigin(transform: original))
+        var target = original
+        switch pose {
+        case .made: break
+        case .open:
+          // Gather the full-length blanket while the doll gets into bed.
+          if node.name == "custom-photo" { target.scale.y *= 0.55 }
+          else { target.scale.z *= 0.55 }
+          target.translation.z = original.translation.z * 0.55 + 0.03
+          target.translation.y += 0.06
+        case .covered:
+          target.translation.y += 0.13
+        }
+        node.stopAllAnimations()
+        set(node, target, animated && !UIAccessibility.isReduceMotionEnabled ? 0.75 : 0)
+        return // Child meshes follow their parent's movement.
+      }
+      for child in node.children { visit(child) }
+    }
+    visit(bed)
   }
 }

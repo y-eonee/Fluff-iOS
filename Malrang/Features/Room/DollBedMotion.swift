@@ -2,13 +2,14 @@ import RealityKit
 import UIKit
 
 @MainActor enum DollBedMotion {
-    static func walkAndSleep(_ model: Entity, bed: RoomItemState, items: [RoomItemState]) async {
+    static func walkAndSleep(_ model: Entity, bed: RoomItemState, bedding: Entity?, items: [RoomItemState]) async {
         guard let route = DollBedRoute.plan(from: model.position, bed: bed, items: items) else {
             // A scene rebuild can interrupt a previously validated route. The saved rest state wins.
             DollRestPose.sleeping(model, bed: bed, animated: false)
-            model.addChild(DollRestPose.quilt(color: bed.colorName))
+            DollRestPose.bedding(bedding, pose: .covered, animated: false)
             return
         }
+        DollRestPose.bedding(bedding, pose: .open, animated: true)
         let walker = Walker(model)
         for point in route { guard await walker.move(to: point, climbing: abs(model.position.y - point.y) > 0.05) else { return } }
         let inverse = simd_quatf(angle: -bed.yaw, axis: [0, 1, 0])
@@ -26,9 +27,10 @@ import UIKit
         func stop(_ entity: Entity) { entity.stopAllAnimations(); for child in entity.children { stop(child) } }
         stop(model)
         DollRestPose.sleeping(model, bed: bed, animated: false)
-        model.addChild(DollRestPose.quilt(color: bed.colorName))
+        DollRestPose.bedding(bedding, pose: .covered, animated: true)
+        do { try await Task.sleep(for: .milliseconds(800)) } catch { return }
     }
-    static func wakeAndReturn(_ model: Entity, bed: RoomItemState, destination: SIMD3<Float>, items: [RoomItemState]) async {
+    static func wakeAndReturn(_ model: Entity, bed: RoomItemState, bedding: Entity?, destination: SIMD3<Float>, items: [RoomItemState]) async {
         guard let route = DollBedRoute.plan(from: destination, bed: bed, items: items), let edge = route.last else { return }
         let walker = Walker(model)
         model.position = DollRestPose.bedPosition(bed)
@@ -37,6 +39,9 @@ import UIKit
             return (node, node.transform)
         }
         DollRestPose.sleeping(model, bed: bed, animated: false)
+        DollRestPose.bedding(bedding, pose: .covered, animated: false)
+        DollRestPose.bedding(bedding, pose: .open, animated: true)
+        do { try await Task.sleep(for: .milliseconds(800)) } catch { return }
         model.findEntity(named: "sleep.closed-eyes")?.removeFromParent()
         if let head = model.findEntity(named: DollPart.head.rawValue) {
             for eye in head.children where eye.name == "eye" { eye.isEnabled = true }
@@ -55,9 +60,34 @@ import UIKit
             SIMD3<Float>(max(-bed.kind.size.x / 2 + 0.16, min(bed.kind.size.x / 2 - 0.16, local.x)), bed.kind.seatHeight ?? 0.39,
                          max(-bed.kind.size.z / 2 + 0.16, min(bed.kind.size.z / 2 - 0.16, local.z))))
         guard await walker.move(to: mount), await walker.move(to: edge, climbing: true) else { return }
+        DollRestPose.bedding(bedding, pose: .made, animated: true)
         for point in route.reversed() { guard await walker.move(to: point) else { return } }
         guard await walker.move(to: destination, climbing: destination.y > 0.05) else { return }
         walker.reset()
+    }
+
+    static func walkAndSit(_ model: Entity, seat: RoomItemState, destination: SIMD3<Float>, scale: SIMD3<Float>, items: [RoomItemState]) async {
+        guard let route = DollBedRoute.plan(from: model.position, bed: seat, items: items) else {
+            model.position = destination; model.scale = scale
+            model.orientation = simd_quatf(angle: seat.yaw, axis: [0, 1, 0])
+            DollRestPose.sitting(model)
+            return
+        }
+        let walker = Walker(model)
+        for point in route {
+            guard await walker.move(to: point, climbing: abs(model.position.y - point.y) > 0.05) else { return }
+        }
+        guard await walker.move(to: destination, climbing: true) else { return }
+        walker.reset()
+        var pose = model.transform
+        pose.rotation = simd_quatf(angle: seat.yaw, axis: [0, 1, 0]); pose.scale = scale
+        let duration = UIAccessibility.isReduceMotionEnabled ? 0.0 : 0.45
+        model.move(to: pose, relativeTo: model.parent, duration: duration, timingFunction: .easeInOut)
+        DollRestPose.sitting(model, animated: true)
+        do { try await Task.sleep(for: .seconds(duration)) } catch { return }
+        guard !Task.isCancelled else { return }
+        model.stopAllAnimations(); model.transform = pose
+        DollRestPose.sitting(model)
     }
 
     private final class Walker {

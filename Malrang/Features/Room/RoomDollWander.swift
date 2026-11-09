@@ -24,11 +24,13 @@ final class RoomDollWander {
         func box(_ item: RoomItemState) -> DollWalkArea.Box {
             .init(center: [item.x, item.z], half: [item.kind.size.x / 2, item.kind.size.z / 2], yaw: item.yaw)
         }
-        for state in states where state.preset != nil && state.dance == nil && state.restingBedID == nil {
+        for state in states where state.dance == nil && state.restingBedID == nil && state.couchCompanionScale == nil {
             guard let entity = content.findEntity(named: "doll|\(state.id)"),
                   let body = entity.findEntity(named: "body") else { continue }
             let point = SIMD2(entity.position.x, entity.position.z)
             let support = RoomLayout.seat(at: point, in: items).item
+            // Sitting companions must not wander into the reserved sleeping area.
+            if support?.kind == .bed { continue }
             let elevated = support.flatMap { ($0.kind.seatHeight ?? 0) > 0.02 ? $0 : nil }
             var boundary = elevated.map(box) ?? .init(center: .zero, half: [1, 1])
             if let elevated, elevated.kind == .bed || elevated.kind == .chair || elevated.kind == .sofa {
@@ -43,7 +45,8 @@ final class RoomDollWander {
                 return bottom < entity.position.y + SceneFactory.dollHeight
                     && bottom + $0.kind.size.y > entity.position.y + 0.025
             }.map(box)
-            let area = DollWalkArea(boundary: boundary, obstacles: obstacles)
+            // Use the same furniture clearance as manual doll placement.
+            let area = DollWalkArea(boundary: boundary, obstacles: obstacles, radius: 0.08)
             // A tightly packed placement stays still instead of teleporting to a free space.
             guard area.contains(point) else { continue }
             let parts = [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg].compactMap { part -> (DollPart, Entity, Transform)? in
@@ -109,8 +112,12 @@ final class RoomDollWander {
 
     private func isFree(_ point: SIMD2<Float>, for entity: Entity) -> Bool {
         dolls.allSatisfy { other in
-            other === entity || abs(other.position.y - entity.position.y) > 0.3
-                || simd_distance(point, SIMD2(other.position.x, other.position.z)) >= 0.30
+            if other === entity || abs(other.position.y - entity.position.y) > 0.3 { return true }
+            let otherPoint = SIMD2(other.position.x, other.position.z)
+            let current = simd_distance(SIMD2(entity.position.x, entity.position.z), otherPoint)
+            let next = simd_distance(point, otherPoint)
+            // Dolls may be placed closer than the walking gap. Let them separate.
+            return next >= 0.30 || (current < 0.30 && next > current)
         }
     }
 

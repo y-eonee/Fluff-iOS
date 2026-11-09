@@ -133,24 +133,42 @@ enum RoomLayout {
     }
 
     /// 그 자리에서 인형이 올라설 높이와, 올라선 가구
-    static func seat(at point: SIMD2<Float>, in items: [RoomItemState]) -> (height: Float, item: RoomItemState?) {
+    static func seat(at point: SIMD2<Float>, in items: [RoomItemState], sleepingBeds: Set<UUID> = [], includingActivitySeats: Bool = false) -> (height: Float, item: RoomItemState?) {
         let candidates = items.filter { item in
-            guard item.kind.allowsDollPlacement else { return false }
+            guard item.kind.allowsDollPlacement || (includingActivitySeats && item.kind == .sofa) else { return false }
+            if item.kind == .bed { return isBedSeat(point, on: item) }
             let box = footprint(item)
             return point.x >= box.min.x && point.x <= box.max.x && point.y >= box.min.y && point.y <= box.max.y
         }
         let top = candidates.max { ($0.kind.seatHeight ?? 0) < ($1.kind.seatHeight ?? 0) }
-        return (top?.kind.seatHeight ?? 0, top)
+        return (top?.kind == .bed ? bedSeatHeight(covered: sleepingBeds.contains(top!.id)) : (top?.kind.seatHeight ?? 0), top)
     }
 
-    static func canPlaceDoll(at point: SIMD2<Float>, in items: [RoomItemState]) -> Bool {
-        !items.contains { item in
-            guard item.kind.blocksFloor && !item.kind.allowsDollPlacement else { return false }
+    /// Awake dolls sit on top of the blanket, including while it covers a sleeper.
+    static func bedSeatHeight(covered: Bool) -> Float { covered ? 0.53 : 0.40 }
+
+    /// 침대 발치만 앉는 자리로 사용한다. 잠든 인형의 머리·몸통 영역은 항상 비워 둔다.
+    static func isBedSeat(_ point: SIMD2<Float>, on bed: RoomItemState) -> Bool {
+        let offset = point - SIMD2(bed.x, bed.z)
+        let local = SIMD2(cos(bed.yaw) * offset.x - sin(bed.yaw) * offset.y,
+                          sin(bed.yaw) * offset.x + cos(bed.yaw) * offset.y)
+        return abs(local.x) <= 0.32 && local.y >= 0.28 && local.y <= 0.39
+    }
+
+    static func blockingDollPlacement(at point: SIMD2<Float>, in items: [RoomItemState]) -> RoomItemState? {
+        items.first { item in
+            guard item.kind.blocksFloor else { return false }
             let offset = point - SIMD2(item.x, item.z)
             let local = SIMD2(cos(item.yaw) * offset.x - sin(item.yaw) * offset.y,
                               sin(item.yaw) * offset.x + cos(item.yaw) * offset.y)
-            return abs(local.x) <= item.kind.size.x / 2 + 0.08 && abs(local.y) <= item.kind.size.z / 2 + 0.08
+            let inside = abs(local.x) <= item.kind.size.x / 2 + 0.08 && abs(local.y) <= item.kind.size.z / 2 + 0.08
+            if item.kind == .bed { return inside && !isBedSeat(point, on: item) }
+            return inside && !item.kind.allowsDollPlacement
         }
+    }
+
+    static func canPlaceDoll(at point: SIMD2<Float>, in items: [RoomItemState]) -> Bool {
+        blockingDollPlacement(at: point, in: items) == nil
     }
 
     /// 새 가구를 겹치지 않게 놓을 첫 빈자리

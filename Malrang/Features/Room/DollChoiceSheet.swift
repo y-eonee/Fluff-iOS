@@ -3,6 +3,10 @@ import SwiftUI
 struct DollChoiceSheet: View {
   let dolls: [Doll]
   let multiple: Bool
+  var title: String? = nil
+  var subtitle: String? = nil
+  var actionTitle: String? = nil
+  var maximumSelection: Int? = nil
   let onChoose: ([Doll]) -> Void
   @State private var selection: Set<UUID> = []
   @Environment(\.dismiss) private var dismiss
@@ -10,8 +14,8 @@ struct DollChoiceSheet: View {
     VStack(alignment: .leading, spacing: 0) {
       Capsule().fill(Color.mib.line.default).frame(width: 40, height: 4).frame(maxWidth: .infinity)
         .padding(.top, 12)
-      Text(multiple ? "같이 구경할 솜뭉치" : "누구를 재울까요?").pretendard(.bold, 17).padding(.top, 18)
-      Text(multiple ? "여러 명을 같이 골라도 돼요" : "한 번에 한 솜뭉치만 재울 수 있어요")
+      Text(title ?? (multiple ? "같이 구경할 인형" : "누구를 재울까요?")).pretendard(.bold, 17).padding(.top, 18)
+      Text(subtitle ?? (multiple ? "여러 명을 같이 골라도 돼요" : "한 번에 한 인형만 재울 수 있어요"))
         .pretendard(.medium, 13).padding(.top, 8)
       ScrollView {
         LazyVGrid(
@@ -22,7 +26,7 @@ struct DollChoiceSheet: View {
               if multiple {
                 if selection.contains(doll.id) {
                   selection.remove(doll.id)
-                } else {
+                } else if selection.count < (maximumSelection ?? Int.max) {
                   selection.insert(doll.id)
                 }
               } else {
@@ -45,12 +49,15 @@ struct DollChoiceSheet: View {
                 .overlay(alignment: .topTrailing) {
                   if selection.contains(doll.id) { D1Icon(name: "check").padding(8) }
                 }
-            }.buttonStyle(.plain).accessibilityAddTraits(
+            }.buttonStyle(.plain)
+              .disabled(multiple && !selection.contains(doll.id) && selection.count >= (maximumSelection ?? Int.max))
+              .opacity(multiple && !selection.contains(doll.id) && selection.count >= (maximumSelection ?? Int.max) ? 0.5 : 1)
+              .accessibilityAddTraits(
               selection.contains(doll.id) ? .isSelected : [])
           }
         }.padding(.vertical, 16)
       }
-      Button(multiple ? "같이 구경하기 (\(selection.count))" : "재우기") {
+      Button(actionTitle ?? (multiple ? "같이 구경하기 (\(selection.count))" : "재우기")) {
         onChoose(dolls.filter { selection.contains($0.id) })
         dismiss()
       }.buttonStyle(D1PrimaryStyle()).disabled(selection.isEmpty).padding(.bottom, 16)
