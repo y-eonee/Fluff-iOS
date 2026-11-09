@@ -2,6 +2,7 @@ import SwiftUI
 
 /// DESIGN.md Components and the supplied D1 catalog. No independent UI palette.
 enum D1 {
+  static let ctaFontSize: CGFloat = 16
   static let inset: CGFloat = 22
   static let radius: CGFloat = 14
   static let largeRadius: CGFloat = 22
@@ -31,7 +32,7 @@ struct D1IconButton: View {
 struct D1PrimaryStyle: ButtonStyle {
   @Environment(\.isEnabled) private var enabled
   func makeBody(configuration: Configuration) -> some View {
-    configuration.label.pretendard(.bold, 20)
+    configuration.label.pretendard(.bold, D1.ctaFontSize)
       .foregroundStyle(Color.mib.text.onPrimary)
       .frame(maxWidth: .infinity, minHeight: D1.buttonHeight)
       .contentShape(Rectangle())
@@ -41,7 +42,7 @@ struct D1PrimaryStyle: ButtonStyle {
 
 struct D1SecondaryStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
-    configuration.label.pretendard(.bold, 20).foregroundStyle(Color.mib.text.primary)
+    configuration.label.pretendard(.bold, D1.ctaFontSize).foregroundStyle(Color.mib.text.primary)
       .frame(maxWidth: .infinity, minHeight: D1.buttonHeight)
       .contentShape(Rectangle())
       .background(Color.mib.bg.surface, in: Capsule())
@@ -92,7 +93,7 @@ extension View {
 struct D1HomeTabs: View {
   @Binding var selection: AppTab
   private let items: [(AppTab, String, String)] = [
-    (.dolls, "솜뭉치들", "cloud"), (.home, "내 방", "homeTab"),
+    (.dolls, "인형들", "cloud"), (.home, "내 방", "homeTab"),
     (.mypage, "마이", "my"),
   ]
   var body: some View {

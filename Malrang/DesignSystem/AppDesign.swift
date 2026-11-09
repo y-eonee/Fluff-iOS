@@ -29,11 +29,39 @@ extension Color {
 }
 
 extension Font {
-    /// Resources의 NotCliche와 Pretendard 글꼴을 등록한다.
+    /// 제목용 Cloudsofa와 본문·한글용 Pretendard 글꼴을 등록한다.
     static func registerCustomFonts() {
-        for url in Bundle.main.urls(forResourcesWithExtension: "otf", subdirectory: nil) ?? [] {
-            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        for ext in ["otf", "ttf"] {
+            for url in Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) ?? [] {
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+            }
         }
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.titleTextAttributes = [.font: UIFont(name: "Pretendard-SemiBold", size: 28) ?? UIFont.systemFont(ofSize: 28)]
+        appearance.largeTitleTextAttributes = [.font: UIFont(name: "Pretendard-Bold", size: 34) ?? UIFont.systemFont(ofSize: 34)]
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+
+        // Keep iOS tab navigation, accessibility and automatic hiding; use the Figma line icons
+        // and frosted surface instead of the default filled SF Symbols.
+        let tabs = UITabBarAppearance()
+        tabs.configureWithDefaultBackground()
+        tabs.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
+        tabs.backgroundColor = UIColor(Color.mib.bg.surface).withAlphaComponent(0.9)
+        tabs.shadowColor = UIColor(Color.mib.line.default)
+        let tabFont = UIFont(name: "Pretendard-Medium", size: 13) ?? .systemFont(ofSize: 13, weight: .medium)
+        for layout in [tabs.stackedLayoutAppearance, tabs.inlineLayoutAppearance, tabs.compactInlineLayoutAppearance] {
+            for state in [layout.normal, layout.selected] {
+                state.iconColor = UIColor(Color.mib.text.primary)
+                state.titleTextAttributes = [.font: tabFont, .foregroundColor: UIColor(Color.mib.text.primary)]
+            }
+        }
+        UITabBar.appearance().standardAppearance = tabs
+        UITabBar.appearance().scrollEdgeAppearance = tabs
+        UITabBar.appearance().tintColor = UIColor(Color.mib.text.primary)
+        UITabBar.appearance().unselectedItemTintColor = UIColor(Color.mib.text.secondary)
     }
 }
 
@@ -49,9 +77,9 @@ extension View {
             .fontDesign(nil)
     }
 
-    /// A안에서 원래 사용하던 손글씨 제목.
+    /// 영어로만 구성된 화면 로고용 제목. 혼합 제목은 CozyTitleText를 사용한다.
     func notCliche(_ size: CGFloat, relativeTo style: Font.TextStyle) -> some View {
-        font(.custom("establishNotClicheOTF", size: size, relativeTo: style))
+        font(.custom("Cloudsofa_namgim-Regular", size: size, relativeTo: style))
             .fontDesign(nil)
     }
 
@@ -104,7 +132,7 @@ struct NotebookTabBar: View {
     }
 
     private let items = [
-        Item(tab: .dolls, title: "솜뭉치들", asset: nil),
+        Item(tab: .dolls, title: "인형들", asset: nil),
         Item(tab: .home, title: "내 방", asset: "a_tab_home"),
         Item(tab: .mypage, title: "마이", asset: "a_tab_my"),
     ]
@@ -229,15 +257,7 @@ extension View {
 }
 
 private struct CozyTabBarModifier: ViewModifier {
-    @Environment(AppState.self) private var appState
-
     func body(content: Content) -> some View {
-        content
-            .toolbar(.hidden, for: .tabBar)
-            .safeAreaInset(edge: .bottom) {
-                CozyHomeTabs(selection: Binding(get: { appState.tab }, set: { appState.tab = $0 }), onPaper: true)
-                    .padding(.bottom, Spacing.xs)
-                    .background { LinearGradient(colors: [Color.a.paper.opacity(0), Color.a.paper], startPoint: .top, endPoint: .bottom).ignoresSafeArea(edges: .bottom) }
-            }
+        content.toolbar(.visible, for: .tabBar)
     }
 }

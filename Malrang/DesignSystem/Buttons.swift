@@ -5,7 +5,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .pretendard(.bold, 20)
+            .pretendard(.bold, D1.ctaFontSize)
             .foregroundStyle(Color.mib.text.onPrimary)
             .frame(maxWidth: .infinity, minHeight: 60)
             .contentShape(Rectangle())
@@ -17,7 +17,7 @@ struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .pretendard(.bold, 20)
+            .pretendard(.bold, D1.ctaFontSize)
             .foregroundStyle(Color.mib.text.primary)
             .frame(maxWidth: .infinity, minHeight: 60)
             .contentShape(Rectangle())
