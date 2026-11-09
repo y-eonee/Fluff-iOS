@@ -20,6 +20,24 @@ enum CozyFurniture {
     private static var windowSky: UnlitMaterial?
     private static var windowSkyPhase: RoomDaylight.Phase?
 
+    private struct MaterialKey: Hashable {
+        var color: String
+        var scale: Float
+        var softness: Float
+        var glow: Float
+        var fiber: Bool
+        var closedSurface: Bool
+    }
+
+    // Only for paired measurements with the same executable and saved room.
+    private static var usesResourceOptimizations: Bool {
+        #if DEBUG
+        return !ProcessInfo.processInfo.arguments.contains("--render-baseline")
+        #else
+        return true
+        #endif
+    }
+
     static func make(_ item: RoomItemState, photoMaterial: any Material, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false) async -> Entity {
         if fabricColor == nil { fabricColor = await texture("CozyFabricColor", semantic: .color) }
         if fabricNormal == nil { fabricNormal = await texture("CozyFabricNormal", semantic: .normal) }
@@ -28,6 +46,7 @@ enum CozyFurniture {
         let root = Entity()
         let s = item.kind.size
         let main = item.colorName ?? defaultColor(for: item.kind)
+        var materials: [MaterialKey: any Material] = [:]
         func material(_ hex: String, part: String = "") -> any Material {
             let scale: Float
             let softness: Float
@@ -50,11 +69,19 @@ enum CozyFurniture {
             } else {
                 color = CozyRoomPalette.color(for: part, kind: item.kind, fallback: hex)
             }
-            return Self.material(color, usesWindowLighting: usesWindowLighting,
+            let glow: Float = part.hasPrefix("window") ? 0.75 : (item.kind == .lamp && part == "shade" ? -0.65 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : 0))
+            // These cushion meshes are closed with outward winding. Threads and
+            // open wall/lamp geometry still need both sides of their triangles.
+            let closed = usesResourceOptimizations && ["duvet", "duvet.fold", "pillow", "mattress", "headboard", "seat", "seat.base", "backrest", "armrest", "rug"].contains(part)
+            let key = MaterialKey(color: color, scale: scale, softness: softness, glow: glow,
+                                  fiber: part.hasSuffix(".pile"), closedSurface: closed)
+            if usesResourceOptimizations, let cached = materials[key] { return cached }
+            let value = Self.material(color, usesWindowLighting: usesWindowLighting,
                                  textureRepeat: item.kind == .floor ? 16 : scale / 1.5,
                                  softness: softness, surfaceScale: scale,
-                                 surfaceGlow: part.hasPrefix("window") ? 0.75 : (item.kind == .lamp && part == "shade" ? -0.65 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : 0)),
-                                 isFiber: part.hasSuffix(".pile"))
+                                 surfaceGlow: glow, isFiber: key.fiber, closedSurface: closed)
+            if usesResourceOptimizations { materials[key] = value }
+            return value
         }
         func box(_ name: String, _ size: SIMD3<Float>, _ at: SIMD3<Float>, _ color: String,
                  radius: Float = 0.025) {
@@ -374,6 +401,23 @@ enum CozyFurniture {
         if let model = bakedModels[kind] { return model.clone(recursive: true) }
         guard let url = Bundle.main.url(forResource: "cozy_" + kind.rawValue, withExtension: "reality"),
               let model = try? await Entity(contentsOf: url) else { return nil }
+        if usesResourceOptimizations {
+            // Only the tint is read by restoreMaterials. Keeping the exported
+            // normal/color maps here retains another copy per .reality asset.
+            func retainTintOnly(_ entity: Entity) {
+                if var component = entity.components[ModelComponent.self] {
+                    component.materials = component.materials.map { material in
+                        guard let source = material as? PhysicallyBasedMaterial else { return material }
+                        var tint = PhysicallyBasedMaterial()
+                        tint.baseColor = .init(tint: source.baseColor.tint)
+                        return tint
+                    }
+                    entity.components.set(component)
+                }
+                for child in entity.children { retainTintOnly(child) }
+            }
+            retainTintOnly(model)
+        }
         bakedModels[kind] = model
         return model.clone(recursive: true)
     }
@@ -401,7 +445,7 @@ enum CozyFurniture {
         return String(format: "#%02X%02X%02X", Int((r * 255).rounded()), Int((g * 255).rounded()), Int((b * 255).rounded()))
     }
 
-    private static func material(_ hex: String, usesWindowLighting: Bool, textureRepeat: Float, softness: Float, surfaceScale: Float, surfaceGlow: Float = 0, isFiber: Bool = false) -> any Material {
+    private static func material(_ hex: String, usesWindowLighting: Bool, textureRepeat: Float, softness: Float, surfaceScale: Float, surfaceGlow: Float = 0, isFiber: Bool = false, closedSurface: Bool = false) -> any Material {
         var material = PhysicallyBasedMaterial()
         material.baseColor = .init(tint: Palette.uiColor(hex))
         if let fabricColor { material.baseColor = .init(tint: Palette.uiColor(hex), texture: .init(fabricColor)) }
@@ -409,13 +453,13 @@ enum CozyFurniture {
         material.textureCoordinateTransform = .init(offset: .zero, scale: [textureRepeat, textureRepeat], rotation: 0)
         material.roughness = .init(floatLiteral: 0.95)
         material.metallic = .init(floatLiteral: 0)
-        material.faceCulling = .none
+        material.faceCulling = closedSurface ? .back : .none
         if usesWindowLighting, let fabricShader, var custom = try? CustomMaterial(surfaceShader: fabricShader, lightingModel: .lit) {
             custom.baseColor = .init(tint: Palette.uiColor(hex))
             if let fabricColor { custom.baseColor.texture = .init(fabricColor) }
             if let fabricNormal { custom.normal = .init(texture: .init(fabricNormal)) }
             custom.custom.value = [surfaceScale, softness, surfaceGlow, isFiber ? -2 : 1]
-            custom.faceCulling = .none
+            custom.faceCulling = closedSurface ? .back : .none
             return custom
         }
         return material
