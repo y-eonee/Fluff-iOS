@@ -77,9 +77,48 @@ enum CozyModelExporter {
             let untouched = !matches((original.findEntity(named: part)?.components[ModelComponent.self]?.materials.first as? CustomMaterial)?.baseColor.tint, expected)
             let defaultMaterial = original.findEntity(named: part)?.components[ModelComponent.self]?.materials.first as? CustomMaterial
             let paletteDefault = matches(defaultMaterial?.baseColor.tint, Palette.uiColor(kind.defaultColorName))
+            if kind == .chair, let defaultMaterial { report += auditBatching(material: defaultMaterial) }
             report.append("\(kind.rawValue): \(bundled && recolored && preserved && untouched && paletteDefault ? "PASS" : "FAIL") bundled=\(bundled), recolor=\(recolored), actual=\(String(describing: material?.baseColor.tint)), trim=\(preserved), cache=\(untouched), paletteDefault=\(paletteDefault)")
         }
         try? report.joined(separator: "\n").write(to: URL.documentsDirectory.appending(path: "cozy-model-audit.txt"), atomically: true, encoding: .utf8)
+    }
+
+    /// Regression: temporary MeshResource wrapper addresses must never group
+    /// a chair leg's cylinder with its spherical foot.
+    private static func auditBatching(material: CustomMaterial) -> [String] {
+        let root = Entity()
+        for index in 0..<8 {
+            let mesh: MeshResource = index.isMultiple(of: 2)
+                ? .generateSphere(radius: 0.05) : .generateCylinder(height: 0.3, radius: 0.02)
+            let entity = ModelEntity(mesh: mesh, materials: [material])
+            entity.name = "part-\(index)"
+            entity.position.x = Float(index) * 0.1
+            entity.scale = SIMD3(repeating: 0.5)
+            root.addChild(entity)
+        }
+        FurnitureInstances.batch(root, kind: .chair)
+        let clone = root.clone(recursive: true)
+        let models = clone.children.filter { $0.components[ModelComponent.self] != nil }
+        var x: [Float] = []
+        var scalesValid = true
+        for entity in models {
+            if let part = entity.components[MeshInstancesComponent.self]?[partIndex: 0] {
+                part.data.withTransforms { transforms in
+                    for transform in transforms {
+                        x.append(transform.columns.3.x)
+                        scalesValid = scalesValid && abs(transform.columns.0.x - 0.5) < 0.0001
+                    }
+                }
+            }
+        }
+        let positionsValid = x.sorted().enumerated().allSatisfy { abs($0.element - Float($0.offset) * 0.1) < 0.0001 }
+        let shapeHeights = models.compactMap { $0.components[ModelComponent.self]?.mesh.bounds.extents.y }.sorted()
+        let geometryValid = shapeHeights.count == 2 && abs(shapeHeights[0] - 0.1) < 0.001 && abs(shapeHeights[1] - 0.3) < 0.001
+        let namesKept = (0..<8).allSatisfy { clone.findEntity(named: "part-\($0)") != nil }
+        return [
+            "batch.distinctGeometry: \(geometryValid && clone.components[FurnitureInstances.Counts.self]?.batchedModels == 6 ? "PASS" : "FAIL")",
+            "batch.cloneTransforms: \(x.count == 8 && positionsValid && scalesValid && namesKept ? "PASS" : "FAIL")"
+        ]
     }
 
     private static func matches(_ color: UIColor?, _ expected: UIColor) -> Bool {

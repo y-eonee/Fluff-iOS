@@ -54,6 +54,7 @@ enum SceneFactory {
         } else {
             entity = await modeledFurniture(item)
         }
+        if cozy && !onFloor { FurnitureInstances.batch(entity, kind: item.kind) }
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
         entity.position = [item.x, hangs ? item.kind.hangingHeight : elevation, item.z]
