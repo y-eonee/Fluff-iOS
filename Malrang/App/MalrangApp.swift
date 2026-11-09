@@ -1,3 +1,4 @@
+import GoogleSignIn
 import SwiftData
 import SwiftUI
 
@@ -63,6 +64,7 @@ struct MalrangApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { RenderMemory.clearCaches() }
             }
+            .onOpenURL { url in _ = GIDSignIn.sharedInstance.handle(url) }
             .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
             .tint(Color.app.accent)
             .preferredColorScheme(.light)
