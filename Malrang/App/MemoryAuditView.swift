@@ -1,5 +1,6 @@
 #if DEBUG
 import Darwin
+import Metal
 import SwiftUI
 
 /// Launch with --memory-audit. Fixtures use in-memory stores and synthetic photos only.
@@ -10,6 +11,11 @@ struct MemoryAuditView: View {
     private struct Sample: Codable {
         var stage: String
         var footprintMB: Double
+        var metalMB: Double
+        var liveViews: Int
+        var visibleViews: Int
+        var fixtures: Int
+        var timestamp: Date
     }
 
     var body: some View {
@@ -22,8 +28,11 @@ struct MemoryAuditView: View {
             UIApplication.shared.isIdleTimerDisabled = true
             defer { UIApplication.shared.isIdleTimerDisabled = wasDisabled }
             sample("start")
-            for cycle in 1...3 {
-                for next in ["home-ui", "photo-cat", "running"] {
+            let arguments = ProcessInfo.processInfo.arguments
+            let cycles = arguments.first { $0.hasPrefix("--memory-cycles=") }.flatMap { Int($0.split(separator: "=").last ?? "") } ?? 3
+            let routes = arguments.first { $0.hasPrefix("--memory-route=") }.map { [String($0.split(separator: "=").last!)] } ?? ["home-ui", "photo-cat", "running"]
+            for cycle in 1...max(1, cycles) {
+                for next in routes {
                     route = next
                     try? await Task.sleep(for: .seconds(8))
                     guard !Task.isCancelled else { return }
@@ -52,8 +61,15 @@ struct MemoryAuditView: View {
             }
         }
         guard result == KERN_SUCCESS else { return }
-        let value = Sample(stage: stage, footprintMB: Double(info.phys_footprint) / 1_048_576)
+        let views = EfficientARView.auditViews.allObjects
+        let value = Sample(stage: stage, footprintMB: Double(info.phys_footprint) / 1_048_576,
+                           metalMB: Double(MTLCreateSystemDefaultDevice()?.currentAllocatedSize ?? 0) / 1_048_576,
+                           liveViews: views.count, visibleViews: views.filter { $0.window != nil }.count,
+                           fixtures: DesignPreviewData.auditFixtures.allObjects.count, timestamp: .now)
         samples.append(value)
+        if let data = try? JSONEncoder().encode(samples) {
+            try? data.write(to: URL.documentsDirectory.appending(path: "memory-audit.json"), options: .atomic)
+        }
         print("MEMORY_AUDIT \(stage) \(value.footprintMB) MB")
     }
 }

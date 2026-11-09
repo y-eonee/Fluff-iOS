@@ -48,6 +48,8 @@ struct MalrangApp: App {
             }
             .task {
                 #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--activity-audit") { DollActivityAudit.run() }
+                if ProcessInfo.processInfo.arguments.contains("--render-resource-audit") { await RenderResourceAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--furniture-audit") { await FurnitureInteractionAudit.run() }
                 await PresetModelExporter.exportIfRequested()
                 await CozyModelExporter.exportIfRequested()
@@ -62,6 +64,11 @@ struct MalrangApp: App {
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
                 RenderMemory.clearCaches()
             }
+            #if DEBUG
+            .task {
+                if ProcessInfo.processInfo.arguments.contains("--live-render-audit") { await LiveRenderAudit.run() }
+            }
+            #endif
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { RenderMemory.clearCaches() }
                 if phase == .active { Task { await AppleAccount.validateSession() } }
