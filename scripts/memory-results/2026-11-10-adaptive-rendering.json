@@ -1,0 +1,3500 @@
+{
+  "date": "2026-11-10",
+  "device": "iPhone 17 Pro, iOS 26.6.2",
+  "configuration": "Release, launched without debugger",
+  "implementationCommits": [
+    "2f676bb",
+    "c7e1cb1"
+  ],
+  "scenario": "Same saved room: 3 dolls, 10 furniture items. Camera pans for the first 10 seconds of each minute; remaining time idle. Both runs last at least 11 minutes. No saved room changes.",
+  "metric": "Physical footprint and Metal allocated bytes divided by 1048576 (MiB); CPU usage is percent of one CPU core.",
+  "beforeSummary": {
+    "durationSeconds": 662.9096225416579,
+    "footprintEndMiB": 382.0324478149414,
+    "footprintMedianAfter60SecondsMiB": 381.8761978149414,
+    "footprintSampledRangeAfter60SecondsMiB": [
+      380.4699478149414,
+      382.2668228149414
+    ],
+    "metalEndMiB": 191.3125,
+    "cpuMedianAfter60SecondsPercentOfOneCore": 37.402909412478806,
+    "thermalStates": [
+      2
+    ],
+    "renderScales": [
+      1
+    ],
+    "modelsAtEnd": 620,
+    "reducedModelComponents": 0,
+    "renderErrors": []
+  },
+  "afterSummary": {
+    "durationSeconds": 678.9119390833366,
+    "footprintEndMiB": 376.813720703125,
+    "footprintMedianAfter60SecondsMiB": 372.626220703125,
+    "footprintSampledRangeAfter60SecondsMiB": [
+      368.313720703125,
+      395.735595703125
+    ],
+    "metalEndMiB": 182.703125,
+    "cpuMedianAfter60SecondsPercentOfOneCore": 22.514601556789604,
+    "thermalStates": [
+      2
+    ],
+    "renderScales": [
+      1
+    ],
+    "modelsAtEnd": 552,
+    "reducedModelComponents": 68,
+    "renderErrors": []
+  },
+  "delta": {
+    "footprintEndMiB": -5.218727111816406,
+    "metalEndMiB": -8.609375,
+    "cpuMedianReductionPercent": 39.80521325627676
+  },
+  "limitations": [
+    "One paired run, baseline first and optimized second. This is a sampled soak, not continuous peak-memory measurement or a statistical performance study.",
+    "Both runs used the existing thermal render budget at scale 1 and bloom off because iOS reported serious thermal state (2). Normal quality remains scale 1.5 with bloom. Do not compare these figures directly to earlier 600 MB observations at unknown rendering conditions.",
+    "No surface temperature or power measurement was available; reduced CPU load does not by itself prove lower device temperature.",
+    "Baseline observedFPS counts SceneEvents.Update callbacks; optimized observedFPS counts completed GPU presentation commands. It is not a direct display-refresh or GPU-time comparison.",
+    "The 68 fewer ModelComponents demonstrate scene batching; actual GPU draw-call counts were not captured.",
+    "The optimized run captured one local room screenshot near 20 seconds for visual verification. No screenshot or personal doll artwork is included in this report."
+  ],
+  "verification": {
+    "releaseDeviceMetalBuild": "passed",
+    "debugSimulatorMetalBuild": "passed",
+    "furnitureChecks": "94 passed",
+    "homeDragChecks": "14 passed, including occupied-bed foot, sofa rejection, chair orientation, trash and undo",
+    "batchRegression": "distinct meshes and cloned instance transforms passed",
+    "cozyModelAudit": "Metal functions/pipelines, recoloring and bedding passed",
+    "uiAutomation": "home tools, tab switching, doll CTA spacing and decorate entry passed",
+    "visualInspection": "simulator daylight room, focus room snapshot with dim/blur, and actual iPhone night room passed"
+  },
+  "before": {
+    "configuration": "Release",
+    "durationRequested": 660,
+    "finished": true,
+    "legacyRenderer": true,
+    "samples": [
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 45.27021931742919,
+        "dolls": 3,
+        "footprintMiB": 378.2043228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 53.19644029588508,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 10.282642916659825,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 39.0493799236059,
+        "dolls": 3,
+        "footprintMiB": 381.6261978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 55.5983550872043,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 20.30092491666437,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 38.16693164217428,
+        "dolls": 3,
+        "footprintMiB": 382.5793228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 55.30645046776603,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 30.335920749988873,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.89318219622645,
+        "dolls": 3,
+        "footprintMiB": 381.8293228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 53.32428522792306,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 40.38762604165822,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.93913426529543,
+        "dolls": 3,
+        "footprintMiB": 382.2668228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 55.206676569766024,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 50.42264416668331,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 38.25740039124964,
+        "dolls": 3,
+        "footprintMiB": 382.2668228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 56.21556052020858,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 60.49103083333466,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.84066573621078,
+        "dolls": 3,
+        "footprintMiB": 381.5168228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 51.85917154439536,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 70.57603575001121,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.445002350889894,
+        "dolls": 3,
+        "footprintMiB": 381.8293228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 51.761508435385295,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 81.02781770832371,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.34179481693646,
+        "dolls": 3,
+        "footprintMiB": 381.8449478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.942373978519115,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 91.17951775001711,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.256935389412256,
+        "dolls": 3,
+        "footprintMiB": 381.8449478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 50.08770335227892,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 101.58127237501321,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.5055573441516,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.76037028721378,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 111.87058487499598,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.432047383652446,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.814019785198106,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 122.188965166657,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.61860879749609,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.54822747622716,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 132.24082545834244,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.39254879847285,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.50069705837332,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 142.32149158333777,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.15783884116299,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.487138276207126,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 152.88989416667027,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.15838026425806,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.33359602926638,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 163.0249753333337,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 36.979100191544845,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.74809381888274,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 173.07665041668224,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.26234431469859,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.39438593053583,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 183.19925829165732,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.37903338457448,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.10472379567594,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 193.84270366668352,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.23691715636935,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.02644449210319,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 203.89850120834308,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 36.995307702524315,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.64811785820699,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 214.17639112501638,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 36.988668495531385,
+        "dolls": 3,
+        "footprintMiB": 381.8605728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.60379130606052,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 224.40193087499938,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 36.97031142406807,
+        "dolls": 3,
+        "footprintMiB": 381.8605728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.76580071812581,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 234.73704262499814,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.197441896286406,
+        "dolls": 3,
+        "footprintMiB": 381.8605728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.678150132933325,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 245.1934794166591,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.31389355153441,
+        "dolls": 3,
+        "footprintMiB": 381.8605728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 47.95498762444816,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 255.39054179168306,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.57874859360152,
+        "dolls": 3,
+        "footprintMiB": 381.8605728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.24723395935298,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 265.56729100001394,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.723781696287325,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.10975484563148,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 275.75233562500216,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.4069070521889,
+        "dolls": 3,
+        "footprintMiB": 381.8293228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 47.792419264189526,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 285.77484562501195,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.65763100847214,
+        "dolls": 3,
+        "footprintMiB": 381.5793228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.806843726846516,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 295.83491020833026,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.71602867683578,
+        "dolls": 3,
+        "footprintMiB": 381.5949478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.15088043631362,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 305.9074155416747,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.74162367396863,
+        "dolls": 3,
+        "footprintMiB": 381.5949478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.244823218859594,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 316.1883113333315,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 38.26415524846989,
+        "dolls": 3,
+        "footprintMiB": 380.4699478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 53.92435871075035,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 326.36923908334575,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.98036602294829,
+        "dolls": 3,
+        "footprintMiB": 380.5480728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 52.59045938273476,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 336.5041572083428,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.873196160169755,
+        "dolls": 3,
+        "footprintMiB": 381.7355728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 50.29471002257511,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 346.66427145834314,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.51227204024674,
+        "dolls": 3,
+        "footprintMiB": 381.7511978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 47.79454822203039,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 356.7909494583437,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.93923818811435,
+        "dolls": 3,
+        "footprintMiB": 381.9386978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.13046882660149,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 366.88850329167326,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.871884730546476,
+        "dolls": 3,
+        "footprintMiB": 381.7980728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.34276109220244,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 377.1485709583503,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.85604257314783,
+        "dolls": 3,
+        "footprintMiB": 381.6105728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.983333495668724,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 387.19191870832583,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.74049319785797,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 47.913081135802656,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 397.33528641666635,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.64836333516734,
+        "dolls": 3,
+        "footprintMiB": 381.9386978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 47.21011168916628,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 407.5661454999936,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.60158660750449,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 47.27818150368382,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 417.65536604166846,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.28690845310306,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.78085307533861,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 427.89459787501255,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.39891177276872,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.8018123258334,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 437.97967741667526,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.28730290558214,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.855241177555975,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 448.1813109583454,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.22272985734424,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.88273197291351,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 458.4622817916679,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.67249409204273,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.925831836262816,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 468.77643033332424,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.31922380195155,
+        "dolls": 3,
+        "footprintMiB": 381.9543228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.97880007154622,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 478.84480158332735,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.526586503848435,
+        "dolls": 3,
+        "footprintMiB": 381.9699478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.54146191441857,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 489.0507551666815,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.22278722945268,
+        "dolls": 3,
+        "footprintMiB": 381.9699478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.41677515427043,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 499.1764047500037,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.25191041639384,
+        "dolls": 3,
+        "footprintMiB": 381.9855728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.748178627689384,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 509.50835808334523,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.3748352546689,
+        "dolls": 3,
+        "footprintMiB": 381.9855728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.618476348228505,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 519.8476063333219,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.347741425745454,
+        "dolls": 3,
+        "footprintMiB": 381.9855728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.95731773398265,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 529.8992877916608,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.275797860923824,
+        "dolls": 3,
+        "footprintMiB": 381.9855728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.512293714569935,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 540.305138833326,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.5237768611154,
+        "dolls": 3,
+        "footprintMiB": 381.9855728149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 45.502024105713275,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 550.348648083338,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.34186941192039,
+        "dolls": 3,
+        "footprintMiB": 381.8761978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.61611071927266,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 560.6669692083378,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.922521518802085,
+        "dolls": 3,
+        "footprintMiB": 381.5636978149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 48.463751108875186,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 570.8395206250134,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 38.15816115993668,
+        "dolls": 3,
+        "footprintMiB": 380.7668228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 52.43397130854781,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 581.195402250014,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 38.22586557534648,
+        "dolls": 3,
+        "footprintMiB": 381.1418228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 51.78032771831863,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 591.7013226250128,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.97561315602853,
+        "dolls": 3,
+        "footprintMiB": 380.5793228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 51.483035857565945,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 601.8988564583415,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 38.00120210213339,
+        "dolls": 3,
+        "footprintMiB": 381.7043228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 49.204473870308924,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 612.1215041250107,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.087406392316105,
+        "dolls": 3,
+        "footprintMiB": 382.0168228149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.26815826550185,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 622.2148386666668,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.067525711632676,
+        "dolls": 3,
+        "footprintMiB": 382.0324478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.19501636342084,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 632.4540384166758,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.25740585662173,
+        "dolls": 3,
+        "footprintMiB": 382.0324478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.22606357158356,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 642.686361125001,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.10444310400734,
+        "dolls": 3,
+        "footprintMiB": 382.0324478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.133823810063504,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 652.8741140833299,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          false
+        ],
+        "batchedModelReduction": 0,
+        "cpuPercentOfOneCore": 37.04210918097676,
+        "dolls": 3,
+        "footprintMiB": 382.0324478149414,
+        "furniture": 10,
+        "instances": 0,
+        "lowPower": false,
+        "metalMiB": 191.3125,
+        "models": 620,
+        "observedFPS": 46.13617754621884,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 662.9096225416579,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      }
+    ],
+    "scenario": "Saved room, first 10 seconds of each minute camera pan at 60 FPS, remaining time idle at 30 FPS; no saved data changes.",
+    "unbatchedFurniture": true
+  },
+  "after": {
+    "configuration": "Release",
+    "durationRequested": 660,
+    "finished": true,
+    "legacyRenderer": false,
+    "samples": [
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 49.49018823750492,
+        "dolls": 3,
+        "footprintMiB": 389.360595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 44.57469015964657,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 10.364626166672679,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 44.82507525864426,
+        "dolls": 3,
+        "footprintMiB": 367.860595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 31.742234821840434,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 20.603350749996025,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 22.54788256491499,
+        "dolls": 3,
+        "footprintMiB": 372.454345703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 32.3546577707691,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 30.802809583343333,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.61187637978253,
+        "dolls": 3,
+        "footprintMiB": 371.204345703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.995007761579192,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 40.90449058334343,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.857204295922966,
+        "dolls": 3,
+        "footprintMiB": 371.204345703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.988153474106916,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 51.275252499995986,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.990212791194125,
+        "dolls": 3,
+        "footprintMiB": 388.094970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 33.64369975223588,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 61.41087975000846,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 29.924998620317727,
+        "dolls": 3,
+        "footprintMiB": 371.594970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 58.63267503086348,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 71.42236225001398,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.68091769415471,
+        "dolls": 3,
+        "footprintMiB": 371.673095703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.977222487891698,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 81.56339516668231,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.398240253458816,
+        "dolls": 3,
+        "footprintMiB": 371.235595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.996601521413034,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 92.19793320834287,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.76335016232398,
+        "dolls": 3,
+        "footprintMiB": 372.454345703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.030966191372656,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 102.22092074999819,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.595983944736563,
+        "dolls": 3,
+        "footprintMiB": 371.391845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.9579662722107,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 112.4018521666585,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 22.514601556789604,
+        "dolls": 3,
+        "footprintMiB": 385.485595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 36.72719934545002,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 122.42167416666052,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 28.34340342260468,
+        "dolls": 3,
+        "footprintMiB": 368.360595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 54.6243157784642,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 132.81997375001083,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.63089617112666,
+        "dolls": 3,
+        "footprintMiB": 372.532470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.9406157198143,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 143.1404027916724,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.838269299679673,
+        "dolls": 3,
+        "footprintMiB": 372.532470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.096436382967518,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 153.27449295832776,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.826230977612372,
+        "dolls": 3,
+        "footprintMiB": 371.891845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.956952401383614,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 163.42238770832773,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.72123113286917,
+        "dolls": 3,
+        "footprintMiB": 368.391845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.029984939928312,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 173.5789029583393,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 34.412576993591756,
+        "dolls": 3,
+        "footprintMiB": 389.798095703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 33.04186888897814,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 183.77808391666622,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 38.415401079329236,
+        "dolls": 3,
+        "footprintMiB": 368.391845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 43.982247273864814,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 194.41874074999942,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 48.24297671404058,
+        "dolls": 3,
+        "footprintMiB": 368.391845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.997379799172876,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 205.08633912500227,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 30.00283710301339,
+        "dolls": 3,
+        "footprintMiB": 371.001220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.957531329798964,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 215.1005154166778,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.813592252287318,
+        "dolls": 3,
+        "footprintMiB": 372.563720703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.994832202284613,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 225.20225554166245,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.330441709868193,
+        "dolls": 3,
+        "footprintMiB": 371.313720703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.001179516278263,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 235.735174750007,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 25.63954136096367,
+        "dolls": 3,
+        "footprintMiB": 385.532470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 47.02659590829271,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 246.02722312501282,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 25.175394945154007,
+        "dolls": 3,
+        "footprintMiB": 372.563720703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 44.21875627263004,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 256.4074336666672,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.52479039844545,
+        "dolls": 3,
+        "footprintMiB": 368.391845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.994879673126018,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 266.60917487498955,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.594649760008632,
+        "dolls": 3,
+        "footprintMiB": 371.329345703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.99487783541871,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 276.81091670834576,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.469994491253857,
+        "dolls": 3,
+        "footprintMiB": 371.407470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.9948202572603,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 287.0126781250001,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.701515749924056,
+        "dolls": 3,
+        "footprintMiB": 371.344970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.9876815308531,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 297.21686812498956,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 48.205394590376805,
+        "dolls": 3,
+        "footprintMiB": 389.844970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 36.842957810886496,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 307.42234625000856,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 54.15722816304239,
+        "dolls": 3,
+        "footprintMiB": 372.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 33.452454080904964,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 317.70559779167525,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 51.72179779656892,
+        "dolls": 3,
+        "footprintMiB": 372.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.040215752091964,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 328.3579846666835,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 51.62262463064404,
+        "dolls": 3,
+        "footprintMiB": 372.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.9453412958522,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 338.40963166666916,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 51.563142315005585,
+        "dolls": 3,
+        "footprintMiB": 372.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.047032421824667,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 348.7600714583241,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 51.527269769071005,
+        "dolls": 3,
+        "footprintMiB": 372.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.944775005795325,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 359.41301508332253,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 59.65258501888743,
+        "dolls": 3,
+        "footprintMiB": 389.860595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 39.18143672517912,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 369.8261094999907,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 23.269965791117407,
+        "dolls": 3,
+        "footprintMiB": 372.438720703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 33.05768523570498,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 380.41366266665864,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.325706820972393,
+        "dolls": 3,
+        "footprintMiB": 372.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.951676431425305,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 391.03076454167604,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 51.64950517793182,
+        "dolls": 3,
+        "footprintMiB": 372.641845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.935732386334422,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 401.4196869166626,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 52.08028850475419,
+        "dolls": 3,
+        "footprintMiB": 372.641845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.98644077403228,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 411.9244347916683,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 53.358128639223445,
+        "dolls": 3,
+        "footprintMiB": 389.876220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 31.95790434880229,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 422.4069744583394,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 54.68856313436024,
+        "dolls": 3,
+        "footprintMiB": 368.469970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 38.64070776601205,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 432.4223189583281,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.066805778118415,
+        "dolls": 3,
+        "footprintMiB": 371.657470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.95176283181708,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 442.7055200416653,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.18265496651229,
+        "dolls": 3,
+        "footprintMiB": 371.626220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.99191400964232,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 453.27503554167924,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.64496238120505,
+        "dolls": 3,
+        "footprintMiB": 371.157470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.99815619889187,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 463.4089917083329,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.261348485284117,
+        "dolls": 3,
+        "footprintMiB": 372.376220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.959880100372906,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 473.4223829166731,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 23.840330206909055,
+        "dolls": 3,
+        "footprintMiB": 385.219970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 40.220440639052065,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 483.6907935416675,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 44.25346747011727,
+        "dolls": 3,
+        "footprintMiB": 370.923095703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 40.147762013209565,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 493.8283449166629,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.57811514106689,
+        "dolls": 3,
+        "footprintMiB": 372.641845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.93984101581686,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 504.2158416250022,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.85966130192127,
+        "dolls": 3,
+        "footprintMiB": 372.641845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.994043339848904,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 514.4178672916605,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.702824398328982,
+        "dolls": 3,
+        "footprintMiB": 372.641845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.03903354384133,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 524.737773208326,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.389230249384415,
+        "dolls": 3,
+        "footprintMiB": 368.313720703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.952762980911682,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 535.3211040416791,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 51.97804969256495,
+        "dolls": 3,
+        "footprintMiB": 394.719970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 35.084865400057744,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 545.4109247083252,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 42.336685477864386,
+        "dolls": 3,
+        "footprintMiB": 374.329345703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 35.2511045428079,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 555.5098990416736,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 21.121580866784548,
+        "dolls": 3,
+        "footprintMiB": 378.548095703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.991595125004444,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 565.712757500005,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 29.21803651432639,
+        "dolls": 3,
+        "footprintMiB": 376.766845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.89008518973236,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 575.7495305000048,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 49.553412342143524,
+        "dolls": 3,
+        "footprintMiB": 376.766845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.99590450451609,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 586.4176535416627,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 49.27429395252388,
+        "dolls": 3,
+        "footprintMiB": 376.751220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.019109246356656,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 596.9775937916711,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 56.246371575708565,
+        "dolls": 3,
+        "footprintMiB": 395.735595703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 36.748243115528155,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          60
+        ],
+        "seconds": 607.3998607500107,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 34.20806295334952,
+        "dolls": 3,
+        "footprintMiB": 377.126220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 33.52459034524271,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 617.4223545833374,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.3460463574524,
+        "dolls": 3,
+        "footprintMiB": 378.751220703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.081649588962424,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 627.4949405000079,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.38745865023949,
+        "dolls": 3,
+        "footprintMiB": 377.594970703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.96987740107085,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 637.5049914583506,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.829595798709928,
+        "dolls": 3,
+        "footprintMiB": 374.423095703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.06477726757025,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 647.9491067499912,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.75985663172359,
+        "dolls": 3,
+        "footprintMiB": 377.266845703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.925254625473343,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 658.4084997916652,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 20.87169816764812,
+        "dolls": 3,
+        "footprintMiB": 374.157470703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 29.958386303487764,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 668.422390291671,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      },
+      {
+        "active": true,
+        "adaptive": [
+          true
+        ],
+        "batchedModelReduction": 68,
+        "cpuPercentOfOneCore": 38.274353642264984,
+        "dolls": 3,
+        "footprintMiB": 376.813720703125,
+        "furniture": 10,
+        "instances": 90,
+        "lowPower": false,
+        "metalMiB": 182.703125,
+        "models": 552,
+        "observedFPS": 30.029890346692664,
+        "renderErrors": [],
+        "renderScales": [
+          1
+        ],
+        "requestedFPS": [
+          30
+        ],
+        "seconds": 678.9119390833366,
+        "thermalState": 2,
+        "visibleRenderers": 1
+      }
+    ],
+    "scenario": "Saved room, first 10 seconds of each minute camera pan at 60 FPS, remaining time idle at 30 FPS; no saved data changes.",
+    "unbatchedFurniture": false
+  }
+}
