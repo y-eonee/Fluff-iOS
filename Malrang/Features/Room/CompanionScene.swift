@@ -5,14 +5,16 @@ import SwiftUI
 struct CompanionScene: UIViewRepresentable {
   enum Kind: Equatable {
     case window(hour: Int, weather: Int)
+    case couch
     case radio(playing: Bool)
+    case radioArtwork(playing: Bool)
   }
   let dolls: [DollState]
   let kind: Kind
   var windowFrameColor: String? = nil
   func makeCoordinator() -> Coordinator { Coordinator() }
   func makeUIView(context: Context) -> ARView {
-    let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
+    let view = EfficientARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
     view.renderOptions = [.disableMotionBlur, .disableDepthOfField]
     view.environment.background = .color(Palette.uiColor("#FFFDF8"))
     context.coordinator.view = view
@@ -101,11 +103,6 @@ struct CompanionScene: UIViewRepresentable {
           Palette.uiColor(night ? "#263450" : sunset ? "#EDB6A4" : "#ABD9E8"))
         light.light.color = Palette.uiColor(night ? "#B5C6EE" : "#FFE5B8")
         light.light.intensity = night ? 500 : 1600
-        _ = box([2.6, 0.12, 0.50], [0, 0.05, 0], frameColor ?? "#F5DFBA")
-        _ = box([0.10, 2.6, 0.16], [-0.89, 1.2, -0.18], frameColor ?? "#F5DFBA")
-        _ = box([0.10, 2.6, 0.16], [0.89, 1.2, -0.18], frameColor ?? "#F5DFBA")
-        _ = box([0.035, 2.6, 0.10], [0, 1.2, -0.22], frameColor ?? "#F5DFBA", radius: 0.01)
-        _ = box([2.6, 0.6, 0.2], [0, -0.31, -0.10], "#E5B8B1")
         for i in 0..<5 {
           let x = Float(i) - 2
           _ = ball(
@@ -138,6 +135,36 @@ struct CompanionScene: UIViewRepresentable {
           companions.append(model)
         }
         camera.look(at: [0, 0.77, -1.0], from: [0, 0.68, 2.15], relativeTo: nil)
+      } else if case .couch = kind {
+        view.environment.background = .color(.clear)
+        view.isOpaque = false
+        let chosen = Array(dolls.prefix(2))
+        for (index, doll) in chosen.enumerated() {
+          let model = await model(doll)
+          DollRestPose.sitting(model)
+          let bounds = model.visualBounds(relativeTo: nil)
+          let scale: Float = 0.23 / max(bounds.extents.y, 0.01)
+          model.scale = SIMD3(repeating: scale)
+          model.position = [(Float(index) - Float(chosen.count - 1) / 2) * 0.26, 0.10 - bounds.min.y * scale, 0]
+          root.addChild(model)
+          companions.append(model)
+        }
+        camera.look(at: [0, 0.17, 0], from: [0, 0.17, 1.0], relativeTo: nil)
+      } else if case .radioArtwork(let playing) = kind {
+        view.environment.background = .color(.clear)
+        view.isOpaque = false
+        if let doll = dolls.first {
+          let model = await model(doll)
+          root.addChild(model)
+          companions.append(model)
+          if playing {
+            model.findEntity(named: DollPart.rightArm.rawValue)?.orientation = simd_quatf(
+              angle: -0.9, axis: [0, 0, 1])
+          }
+          let bounds = model.visualBounds(relativeTo: nil)
+          let distance = max(bounds.extents.y, bounds.extents.x) / (2 * tan(Float.pi / 9)) * 1.15
+          camera.look(at: bounds.center, from: bounds.center + [0, 0.015, distance], relativeTo: nil)
+        }
       } else {
         view.environment.background = .color(Palette.uiColor("#FFFDF8"))
         _ = box([2.0, 0.08, 1.5], [0, -0.05, 0], "#F4E7CF")
@@ -202,7 +229,7 @@ struct CompanionScene: UIViewRepresentable {
       }
     }
     private func model(_ doll: DollState) async -> Entity {
-      if let config = doll.preset { return await PresetDollModel.make(config) }
+      if let config = doll.preset { return await PresetDollModel.make(config, detail: .room) }
       return await PlushCutoutModel.make(doll.imageData)
     }
   }

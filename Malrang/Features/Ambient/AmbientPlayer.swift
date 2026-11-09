@@ -20,11 +20,11 @@ nonisolated enum AmbientSound: String, CaseIterable, Identifiable {
 final class AmbientPlayer {
   static let shared = AmbientPlayer()
   private(set) var sound: AmbientSound?
-  private(set) var isPlaying = false
-  private(set) var endDate: Date?
-  private(set) var duration: TimeInterval?
+  private var clock = AmbientPlaybackClock()
+  var isPlaying: Bool { clock.isPlaying }
+  var endDate: Date? { clock.endDate }
+  var duration: TimeInterval? { clock.duration }
   private(set) var error: String?
-  private var pausedRemaining: TimeInterval?
   private var player: AVAudioPlayer?
   private var previewPlayer: AVAudioPlayer?
   private var previewTask: Task<Void, Never>?
@@ -54,13 +54,18 @@ final class AmbientPlayer {
   }
 
   func remaining(at date: Date = .now) -> TimeInterval? {
-    endDate.map { max(0, $0.timeIntervalSince(date)) } ?? pausedRemaining
+    clock.remaining(at: date)
   }
   func timeLabel(at date: Date = .now) -> String {
     guard let remaining = remaining(at: date) else { return "계속" }
     let seconds = Int(remaining.rounded(.up))
     return String(format: "%02d:%02d", seconds / 60, seconds % 60)
   }
+  func elapsedLabel(at date: Date = .now) -> String {
+    let seconds = Int(clock.elapsed(at: date))
+    return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+  }
+  func progress(at date: Date = .now) -> Double { clock.progress(at: date) }
   private func load(_ sound: AmbientSound) throws -> AVAudioPlayer {
     guard let url = Bundle.main.url(forResource: "ambient_\(sound.rawValue)", withExtension: "wav")
     else {
@@ -82,12 +87,16 @@ final class AmbientPlayer {
     do {
       try activate()
       previewPlayer = try load(sound)
-      previewPlayer?.play()
+      guard previewPlayer?.play() == true else { throw CocoaError(.fileReadCorruptFile) }
+      error = nil
       previewTask = Task { [weak self] in
         do { try await Task.sleep(for: .seconds(2.5)) } catch { return }
         self?.stopPreview()
       }
-    } catch { self.error = "미리듣기를 시작하지 못했어요. 다시 눌러 주세요." }
+    } catch {
+      stopPreview()
+      self.error = "미리듣기를 시작하지 못했어요. 다시 눌러 주세요."
+    }
   }
   func stopPreview() {
     previewTask?.cancel()
@@ -105,15 +114,34 @@ final class AmbientPlayer {
       player?.stop()
       player = next
       self.sound = sound
-      isPlaying = true
+      clock.start(minutes: minutes, at: .now)
       error = nil
-      setTimer(minutes)
+      scheduleExpiry()
     } catch { self.error = "소리를 재생하지 못했어요. 다시 시도해 주세요." }
   }
+  /// Replace only the audio; retain the timer and paused/running state.
+  func changeSound(_ sound: AmbientSound) {
+    guard self.sound != nil else { return }
+    reconcile()
+    guard self.sound != nil else { return }
+    do {
+      let next = try load(sound)
+      if isPlaying {
+        try activate()
+        guard next.play() else { throw CocoaError(.fileReadCorruptFile) }
+      }
+      stopPreview()
+      player?.stop()
+      player = next
+      self.sound = sound
+      error = nil
+    } catch { self.error = "소리를 바꾸지 못했어요. 다시 시도해 주세요." }
+  }
   func setTimer(_ minutes: Int?) {
-    duration = minutes.map { TimeInterval($0 * 60) }
-    pausedRemaining = isPlaying ? nil : duration
-    endDate = isPlaying ? duration.map { Date.now.addingTimeInterval($0) } : nil
+    reconcile()
+    guard sound != nil else { return }
+    clock.setTimer(minutes, at: .now)
+    error = nil
     scheduleExpiry()
   }
   private func scheduleExpiry() {
@@ -129,33 +157,41 @@ final class AmbientPlayer {
   }
   func pause() {
     guard isPlaying else { return }
-    pausedRemaining = remaining()
-    endDate = nil
+    clock.pause(at: .now)
     expiryTask?.cancel()
     player?.pause()
-    isPlaying = false
   }
   func resume() {
     guard sound != nil else { return }
     do {
       try activate()
       guard player?.play() == true else { throw CocoaError(.fileReadCorruptFile) }
-      isPlaying = true
-      endDate = pausedRemaining.map { Date.now.addingTimeInterval($0) }
-      pausedRemaining = nil
+      clock.resume(at: .now)
+      error = nil
       scheduleExpiry()
     } catch { self.error = "재생을 다시 시작하지 못했어요." }
   }
   func toggle() { if isPlaying { pause() } else { resume() } }
   func stop() {
+    clock = AmbientPlaybackClock()
+    stopPreview()
     expiryTask?.cancel()
     player?.stop()
     player = nil
     sound = nil
-    isPlaying = false
-    endDate = nil
-    pausedRemaining = nil
-    duration = nil
+    error = nil
   }
   func reconcile() { if let endDate, endDate <= .now { stop() } }
+
+  #if DEBUG
+  static func designPreview(paused: Bool) -> AmbientPlayer {
+    let instance = AmbientPlayer()
+    instance.start(.rain, minutes: 40)
+    instance.player?.volume = 0
+    instance.clock.start(minutes: 40, at: .now.addingTimeInterval(-1752))
+    instance.scheduleExpiry()
+    if paused { instance.pause() }
+    return instance
+  }
+  #endif
 }

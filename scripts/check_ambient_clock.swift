@@ -1,0 +1,43 @@
+import Foundation
+
+@main
+struct AmbientClockAudit {
+    static func main() {
+        let start = Date(timeIntervalSince1970: 1000)
+        var clock = AmbientPlaybackClock()
+        clock.start(minutes: 30, at: start)
+        precondition(clock.remaining(at: start.addingTimeInterval(120)) == 1680)
+        precondition(clock.elapsed(at: start.addingTimeInterval(120)) == 120)
+        clock.pause(at: start.addingTimeInterval(120))
+        precondition(clock.remaining(at: start.addingTimeInterval(600)) == 1680)
+        precondition(clock.elapsed(at: start.addingTimeInterval(600)) == 120)
+        clock.resume(at: start.addingTimeInterval(600))
+        precondition(clock.remaining(at: start.addingTimeInterval(660)) == 1620)
+        precondition(clock.elapsed(at: start.addingTimeInterval(660)) == 180)
+        clock.setTimer(15, at: start.addingTimeInterval(660))
+        precondition(clock.remaining(at: start.addingTimeInterval(720)) == 840)
+        precondition(clock.elapsed(at: start.addingTimeInterval(720)) == 240)
+        precondition(abs(clock.progress(at: start.addingTimeInterval(720)) - 1.0 / 15) < 0.0001)
+        clock.pause(at: start.addingTimeInterval(720))
+        clock.setTimer(60, at: start.addingTimeInterval(900))
+        precondition(!clock.isPlaying && clock.endDate == nil)
+        precondition(clock.remaining(at: start.addingTimeInterval(1200)) == 3600)
+        precondition(clock.elapsed(at: start.addingTimeInterval(1200)) == 240)
+        clock.resume(at: start.addingTimeInterval(1200))
+        precondition(clock.remaining(at: start.addingTimeInterval(4801)) == 0)
+        precondition(clock.elapsed(at: start.addingTimeInterval(4801)) == 3840, "Elapsed time stops at automatic expiry")
+        clock.start(minutes: nil, at: start)
+        precondition(clock.remaining(at: start.addingTimeInterval(7200)) == nil)
+        precondition(clock.elapsed(at: start.addingTimeInterval(7200)) == 7200)
+        clock.pause(at: start.addingTimeInterval(7200))
+        clock.resume(at: start.addingTimeInterval(8000))
+        precondition(clock.endDate == nil && clock.elapsed(at: start.addingTimeInterval(8060)) == 7260)
+        clock.setTimer(5, at: start.addingTimeInterval(8060))
+        precondition(clock.remaining(at: start.addingTimeInterval(8120)) == 240)
+        clock.setTimer(nil, at: start.addingTimeInterval(8120))
+        precondition(clock.endDate == nil && clock.duration == nil)
+        clock.start(minutes: 30, at: start.addingTimeInterval(8200))
+        precondition(clock.elapsed(at: start.addingTimeInterval(8200)) == 0, "A new session resets accumulated listening")
+        print("Ambient clock: pause/resume, timer replacement, expiry, unlimited playback and restart passed")
+    }
+}
