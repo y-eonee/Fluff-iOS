@@ -89,16 +89,20 @@ struct FocusFlowView: View {
         ZStack {
             Color.mib.text.primary.opacity(0.28).ignoresSafeArea()
             VStack(alignment: .leading, spacing: 16) {
-                Text("집중 화면에서 나갈까요?").pretendard(.bold, 21)
+                Text("집중 화면에서 나갈까요?").pretendard(.bold, 20)
                 Text("지금까지의 집중 시간은 기록에 남아요.\n나가면 집중 메인으로 돌아가요.")
-                    .pretendard(.medium, 13).foregroundStyle(FocusStyle.muted)
-                HStack(spacing: 10) {
+                    .pretendard(.regular, 16).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: Spacing.s) {
                     Button("나가기") { session.stop(); showMain = true; confirmingExit = false }
-                        .buttonStyle(FocusCompactButton())
+                        .buttonStyle(FocusCompactButton(subdued: true))
                     Button("머무르기") { confirmingExit = false }
                         .buttonStyle(FocusCompactButton(primary: true))
                 }
-            }.padding(22).focusPanel().padding(.horizontal, 22)
+            }.foregroundStyle(FocusStyle.ink)
+                .padding(Spacing.l)
+                .background(FocusStyle.paper, in: RoundedRectangle(cornerRadius: D1.largeRadius))
+                .overlay(RoundedRectangle(cornerRadius: D1.largeRadius).strokeBorder(Color.mib.text.onPrimary))
+                .padding(.horizontal, D1.inset)
                 .accessibilityAddTraits(.isModal)
         }.accessibilityAction(.escape) { confirmingExit = false }
     }
@@ -106,12 +110,13 @@ struct FocusFlowView: View {
 
 struct FocusCompactButton: ButtonStyle {
     var primary = false
+    var subdued = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.pretendard(.bold, 16)
-            .foregroundStyle(primary ? Color.mib.text.onPrimary : FocusStyle.ink)
+            .foregroundStyle(primary ? Color.mib.text.onPrimary : subdued ? FocusStyle.muted : FocusStyle.ink)
             .frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
             .background(primary ? FocusStyle.sage : FocusStyle.paper, in: Capsule())
-            .overlay(Capsule().strokeBorder(primary ? Color.clear : Color.mib.line.selected, lineWidth: 1.4))
+            .overlay(Capsule().strokeBorder(primary ? Color.clear : subdued ? FocusStyle.line : Color.mib.line.selected, lineWidth: 1.4))
     }
 }
 
