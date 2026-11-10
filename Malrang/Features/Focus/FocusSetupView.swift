@@ -65,13 +65,13 @@ extension FocusFlowView {
                         Text("집중 시간 설정").pretendard(.bold, 17)
                         VStack(alignment: .leading, spacing: 8) {
                             Text("집중 시간").pretendard(.regular, 16)
-                            timeStepper(minutes: session.record.focusMinutes, range: 1...180, label: "집중 시간") {
+                            timeStepper(minutes: session.record.focusMinutes, range: 1...180, step: 5, label: "집중 시간") {
                                 session.configure(focus: $0, rest: session.record.restMinutes); session.confirmTime()
                             }
                         }
                         VStack(alignment: .leading, spacing: 8) {
                             Text("쉬는 시간").pretendard(.regular, 16)
-                            timeStepper(minutes: session.record.restMinutes, range: 1...60, label: "쉬는 시간") {
+                            timeStepper(minutes: session.record.restMinutes, range: 1...60, step: 1, label: "쉬는 시간") {
                                 session.configure(focus: session.record.focusMinutes, rest: $0); session.confirmTime()
                             }
                         }
@@ -116,9 +116,9 @@ extension FocusFlowView {
         }.buttonStyle(.plain).accessibilityAddTraits(chosen ? .isSelected : [])
     }
 
-    private func timeStepper(minutes: Int, range: ClosedRange<Int>, label: String, set: @escaping (Int) -> Void) -> some View {
+    private func timeStepper(minutes: Int, range: ClosedRange<Int>, step: Int, label: String, set: @escaping (Int) -> Void) -> some View {
         HStack {
-            Button { set(max(range.lowerBound, minutes - 5)); customTime = true } label: { D1Icon(name: "minus").frame(width: 44, height: 44).contentShape(Rectangle()) }
+            Button { set(FocusSession.steppedMinutes(minutes, by: -step, within: range)); customTime = true } label: { D1Icon(name: "minus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                 .disabled(minutes <= range.lowerBound).accessibilityLabel("\(label) 줄이기")
             Button { session.confirmTime() } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -126,7 +126,7 @@ extension FocusFlowView {
                     Text("분").pretendard(.regular, 16)
                 }.frame(maxWidth: .infinity).frame(height: 44)
             }.accessibilityLabel("\(label) \(minutes)분으로 설정")
-            Button { set(min(range.upperBound, minutes + 5)); customTime = true } label: { D1Icon(name: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
+            Button { set(FocusSession.steppedMinutes(minutes, by: step, within: range)); customTime = true } label: { D1Icon(name: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
                 .disabled(minutes >= range.upperBound).accessibilityLabel("\(label) 늘리기")
         }.buttonStyle(.plain).padding(4).d1Surface(radius: 10)
 

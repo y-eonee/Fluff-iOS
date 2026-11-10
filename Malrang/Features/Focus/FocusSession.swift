@@ -62,6 +62,12 @@ final class FocusSession {
         guard !active else { return }
         record.focusMinutes = min(180, max(1, focus)); record.restMinutes = min(60, max(1, rest)); save()
     }
+    static func steppedMinutes(_ minutes: Int, by step: Int, within range: ClosedRange<Int>) -> Int {
+        // Snap to the next interval so the one-minute minimum never produces 6, 11, ...
+        let interval = abs(step)
+        let next = step > 0 ? (minutes / interval + 1) * interval : ((minutes - 1) / interval) * interval
+        return min(range.upperBound, max(range.lowerBound, next))
+    }
     func start(at date: Date = .now) {
         guard canStart else { return }
         record.phase = .focusing; record.seconds = 0; record.checkpoint = date; save()

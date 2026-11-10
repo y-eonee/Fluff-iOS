@@ -7,6 +7,25 @@ struct FocusSessionAudit {
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         let session = FocusSession(defaults: defaults)
+        let focusRange = 1...180, restRange = 1...60
+        var minutes = 25
+        for expected in [20, 15, 10, 5, 1, 1] {
+            minutes = FocusSession.steppedMinutes(minutes, by: -5, within: focusRange)
+            precondition(minutes == expected, "Focus decrement must reach and stay at one minute")
+        }
+        for expected in [5, 10, 15] {
+            minutes = FocusSession.steppedMinutes(minutes, by: 5, within: focusRange)
+            precondition(minutes == expected, "Focus increments must return to five-minute multiples")
+        }
+        for legacy in [6, 11, 179] {
+            precondition(FocusSession.steppedMinutes(legacy, by: -5, within: focusRange) == legacy / 5 * 5)
+            precondition(FocusSession.steppedMinutes(legacy, by: 5, within: focusRange) == (legacy / 5 + 1) * 5)
+        }
+        precondition(FocusSession.steppedMinutes(180, by: 5, within: focusRange) == 180)
+        for value in restRange {
+            precondition(FocusSession.steppedMinutes(value, by: 1, within: restRange) == min(60, value + 1))
+            precondition(FocusSession.steppedMinutes(value, by: -1, within: restRange) == max(1, value - 1))
+        }
         // Keep the first session away from midnight regardless of when this audit runs.
         // Use tomorrow so restoring the session cannot accrue real wall-clock time.
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: .now)!
@@ -71,6 +90,6 @@ struct FocusSessionAudit {
         let migrated = FocusSession(defaults: defaults)
         precondition(migrated.activity == .study && migrated.total(with: first) == 1500 && migrated.paused)
         precondition(migrated.record.daily == session.record.daily)
-        print("PASS: activities, locked running settings, pause/resume, bounded offline credit, no prop rewards, persistence, per-companion totals, legacy migration, midnight split")
+        print("PASS: minute-step boundaries and legacy values, activities, locked running settings, pause/resume, bounded offline credit, no prop rewards, persistence, per-companion totals, legacy migration, midnight split")
     }
 }
