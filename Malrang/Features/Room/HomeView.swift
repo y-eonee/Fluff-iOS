@@ -166,7 +166,7 @@ struct HomeView: View {
                     print(text)
                     try? text.write(to: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("home-drag-audit.txt"), atomically: true, encoding: .utf8)
                 }
-                if ProcessInfo.processInfo.arguments.contains("--design-preview=home-ui"), isSceneReady {
+                if (ProcessInfo.processInfo.arguments.contains("--design-preview=home-ui") || ProcessInfo.processInfo.arguments.contains("--design-preview=tabs-ui")), isSceneReady {
                     if ProcessInfo.processInfo.arguments.contains("--furniture-preview=guide") { showGuide = true }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=sleep"), sleeper == nil, let doll = placedDolls.first { showGuide = false; putToBed(doll) }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=window") { showGuide=false;windowSelection=placedDolls.map(\.state);showingWindow=true }
@@ -290,6 +290,18 @@ struct HomeView: View {
         }
         .safeAreaInset(edge: .bottom) { bottomBar.accessibilityHidden(showGuide) }
         .overlay { if !appState.roomToolsOpen { furnitureOverlays } }
+        .overlay(alignment: .bottom) {
+            if showGuide {
+                Button("확인했어요") {
+                    showFurnitureHint = false
+                    didSeeFurnitureGuide = true
+                    showGuide = false
+                }
+                .buttonStyle(D1PrimaryStyle())
+                .padding(.horizontal, D1.inset)
+                .padding(.bottom, Spacing.l)
+            }
+        }
         .overlay(alignment: .bottom) { removalTarget }
         .overlay(alignment: .topTrailing) {
             if couch.current != nil, !couch.choosing, !showingCouch, appState.tab == .home, placementStart == nil,
@@ -774,7 +786,6 @@ extension HomeView {
                                 .position(x:min(max(rect.midX,110),geometry.size.width-110),y:min(rect.maxY-30,geometry.size.height-180))
                         }
                     }
-                    VStack { Spacer();Button("확인했어요") { showFurnitureHint=false;didSeeFurnitureGuide=true;showGuide=false }.buttonStyle(D1PrimaryStyle()).padding(.horizontal,22).padding(.bottom,32) }
                 }
             }
         }.ignoresSafeArea()
