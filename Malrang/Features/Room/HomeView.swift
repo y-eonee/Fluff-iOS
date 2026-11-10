@@ -771,19 +771,24 @@ extension HomeView {
                         .position(x:geometry.size.width/2,y:geometry.size.height-130)
                 }
                 if showGuide {
+                    let guideFurniture = ["창문", "액자", "침대", "책상", "소파"]
                     Color.mib.text.primary.opacity(0.28).ignoresSafeArea()
                     VStack(spacing:6) {
                         Text("가구를 두 번 톡톡 눌러보세요").pretendard(.bold,17)
                         Text("인형이랑 함께 할 수 있는 게 생겨요").pretendard(.medium,13)
                     }.foregroundStyle(Color.mib.text.onPrimary).frame(maxWidth:.infinity).padding(.top,64)
-                    ForEach(["창문","액자","침대","책상"],id:\.self) { name in
+                    ForEach(guideFurniture, id: \.self) { name in
                         if let rect=furnitureRects[name] {
                             RoundedRectangle(cornerRadius:22).stroke(Color.mib.line.selected,style:StrokeStyle(lineWidth:2,dash:[6,4]))
                                 .frame(width:rect.width,height:rect.height).position(x:rect.midX,y:rect.midY)
+                        }
+                    }
+                    ForEach(guideFurniture, id: \.self) { name in
+                        if let rect=furnitureRects[name] {
                             VStack(alignment:.leading,spacing:4) {
-                                Text(name);Text(name == "책상" ? "함께 집중하기 · 시간 설정" : name == "창문" ? "같이 바깥 구경하기" : name == "침대" ? "재우기 · 깨우기" : "AR 카메라 · 사진 넣기 · 크기 조절")
+                                Text(name);Text(name == "책상" ? "함께 집중하기 · 시간 설정" : name == "창문" ? "같이 바깥 구경하기" : name == "침대" ? "재우기 · 깨우기" : name == "소파" ? "유튜브 같이 보기 · 앉아서 쉬기" : "AR 카메라 · 사진 넣기 · 크기 조절")
                             }.pretendard(.medium,13).padding(8).d1Surface(radius:10)
-                                .position(x:min(max(rect.midX,110),geometry.size.width-110),y:min(rect.maxY-30,geometry.size.height-180))
+                                .position(x:min(max(rect.midX,110),geometry.size.width-110),y:min(name == "소파" ? rect.midY : rect.maxY-30,geometry.size.height-180))
                         }
                     }
                 }
