@@ -3,7 +3,6 @@ import SwiftUI
 
 struct RootView: View {
     @AppStorage("isSignedIn") private var isSignedIn = false
-    @AppStorage("nickname") private var nickname = ""
     @AppStorage("didRestoreIllustrationShelf") private var didRestoreIllustrationShelf = false
     @AppStorage("didApplyCozyRoomLayout") private var didApplyCozyRoomLayout = false
     @AppStorage("didMatchHomeReferenceComposition") private var didMatchHomeReferenceComposition = false
@@ -14,9 +13,7 @@ struct RootView: View {
     @State private var appState = AppState()
 
     var body: some View {
-        if isSignedIn && nickname.isEmpty {
-            NavigationStack { ProfileEditView(isCreating: true) }
-        } else if isSignedIn {
+        if isSignedIn {
             MainTabs()
             .environment(appState)
             .task {
@@ -128,7 +125,10 @@ struct RootView: View {
                 }
             }
         } else {
-            OnboardingView { isSignedIn = true }
+            OnboardingView {
+                appState = AppState()
+                isSignedIn = true
+            }
         }
     }
 }

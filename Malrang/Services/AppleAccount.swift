@@ -74,6 +74,7 @@ final class AppleAccount {
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw StorageError.failed }
         UserDefaults.standard.removeObject(forKey: "couch.videoLibrary")
+        UserDefaults.standard.removeObject(forKey: "didSeeFurnitureGuideV2")
         signOut()
     }
 

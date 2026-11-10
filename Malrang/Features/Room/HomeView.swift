@@ -104,7 +104,7 @@ struct HomeView: View {
             .task(id: isDecorating) {
                 if !isDecorating { relocateBlockedDolls() }
             }
-            .task(id: isSceneReady) { await sceneReady() }
+            .task(id: isSceneReady && !items.isEmpty) { await sceneReady() }
             .background(Color.a.pinkLight)
             .navigationTitle("내 방")
             .toolbar(.hidden, for: .navigationBar)
@@ -150,7 +150,7 @@ struct HomeView: View {
     }
 
     private func sceneReady() async {
-                if isSceneReady && !placedDolls.isEmpty && !didSeeFurnitureGuide { showGuide = true }
+                if isSceneReady && !items.isEmpty && !didSeeFurnitureGuide { showGuide = true }
                 #if DEBUG
                 if isSceneReady, ProcessInfo.processInfo.arguments.contains("--home-drag-audit") {
                     showGuide = false
@@ -262,7 +262,7 @@ struct HomeView: View {
             .overlay { holdTooltip }
             .ignoresSafeArea()
         }
-        .overlay(alignment: .top) { topOverlay.accessibilityHidden(showGuide) }
+        .overlay(alignment: .top) { if !showGuide { topOverlay } }
         .overlay {
             if !isSceneReady, !appState.isShowingAR {
                 VStack(spacing: Spacing.s) {

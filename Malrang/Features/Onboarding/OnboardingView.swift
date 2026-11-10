@@ -1,7 +1,7 @@
 import AuthenticationServices
 import SwiftUI
 
-/// Apple 인증이 성공한 뒤에만 프로필과 방으로 이동한다.
+/// Apple 인증이 성공한 뒤에만 홈으로 이동한다.
 struct OnboardingView: View {
     let onStart: () -> Void
     @State private var account = AppleAccount()

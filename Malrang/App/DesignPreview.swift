@@ -9,6 +9,7 @@ final class DesignPreviewData {
     static let auditFixtures = NSHashTable<DesignPreviewData>.weakObjects()
     let route: String
     let container: ModelContainer
+    let defaults: UserDefaults
     let session: FocusSession
     let draft: DollDraft
     let ambient: AmbientPlayer
@@ -21,11 +22,18 @@ final class DesignPreviewData {
         ambient = route.hasPrefix("radio-") && !["radio-setup", "radio-scroll"].contains(route)
             ? AmbientPlayer.designPreview(paused: route == "radio-paused") : AmbientPlayer()
         container = try! ModelContainer(for: Doll.self, RoomItem.self, DecorPhoto.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let domain = "fluff.design-preview.\(UUID())"
-        let defaults = UserDefaults(suiteName: domain)!
+        let domain = route == "signup" ? "fluff.signup-preview" : "fluff.design-preview.\(UUID())"
+        defaults = UserDefaults(suiteName: domain)!
+        if route == "signup", ProcessInfo.processInfo.arguments.contains("--reset-signup-preview") {
+            defaults.removePersistentDomain(forName: domain)
+        }
         couch = CouchSession(library: CouchLibrary(defaults: defaults))
         session = FocusSession(defaults: defaults)
         draft = DollDraft()
+        if route == "signup" {
+            defaults.set(true, forKey: "isSignedIn")
+            return
+        }
         draft.shape = route.hasSuffix("rabbit") ? .rabbit : route.hasSuffix("bear") ? .bear : .cat
         draft.preset.shape = draft.shape
         if route == "create-custom" { draft.shape = .pillow; draft.photo = UIImage(data: Self.cutoutCharacter()); draft.cutout = draft.photo }
@@ -161,7 +169,8 @@ struct DesignPreview: View {
     private var draft: DollDraft { fixture.draft }
     var body: some View {
         Group {
-            if route == "korean-title" { NavigationStack { Color.mib.bg.screen.cozyPageTitle("AR로 함께하기") } }
+            if route == "signup" { RootView().defaultAppStorage(fixture.defaults) }
+            else if route == "korean-title" { NavigationStack { Color.mib.bg.screen.cozyPageTitle("AR로 함께하기") } }
             else if route == "doll-list" { DollListView() }
             else if ["doll-profile", "doll-history"].contains(route), let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first {
                 DollActionSheet(doll: doll, initiallyShowsHistory: route == "doll-history")
