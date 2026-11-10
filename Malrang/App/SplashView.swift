@@ -7,10 +7,7 @@ struct SplashView: View {
             let width = min(geometry.size.width * 0.82, geometry.size.height * 0.62, 360)
             ZStack {
                 Color.mib.bg.screen
-                Image("fluff_splash_lockup")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: width)
+                FluffLogo().frame(width: width)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -20,35 +17,14 @@ struct SplashView: View {
     }
 }
 
-struct FluffBackdrop: View {
-    var body: some View {
-        GeometryReader { geometry in
-            let width = min(geometry.size.width, geometry.size.height * 0.75, 540)
-            ZStack(alignment: .top) {
-                Color("splash_paper")
-                Image("splash_grid").resizable(resizingMode: .tile)
-                Image("splash_curtain")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: width * 0.23, alignment: .bottom)
-                    .clipped()
-            }
-        }
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
-    }
-}
-
+/// 스플래시와 로그인에서 승인된 동일한 브랜드 이미지를 사용한다.
 struct FluffLogo: View {
     var body: some View {
-        ZStack {
-            Image("splash_orbit").resizable().scaledToFit()
-            Image("splash_logo").resizable().scaledToFit()
-                .scaleEffect(0.88 / 0.92)
-        }
-        .aspectRatio(1022.369 / 521.637, contentMode: .fit)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Fluff")
+        Image("fluff_splash_lockup")
+            .resizable()
+            .scaledToFit()
+            .accessibilityLabel("Fluff")
+            .accessibilityIdentifier("fluff-brand-mark")
     }
 }
 
