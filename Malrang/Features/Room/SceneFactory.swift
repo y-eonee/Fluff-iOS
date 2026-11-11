@@ -54,7 +54,8 @@ enum SceneFactory {
         } else {
             entity = await modeledFurniture(item)
         }
-        if cozy && !onFloor { FurnitureInstances.batch(entity, kind: item.kind) }
+        // 꾸미기 화면(cutaway)은 매 프레임 그림자 범위를 바꾸는데, 인스턴싱한 부품의 경계가 아직 없으면 RealityKit 그림자 계산이 크래시한다.
+        if cozy && !onFloor && !cutaway { FurnitureInstances.batch(entity, kind: item.kind) }
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
         entity.position = [item.x, hangs ? item.kind.hangingHeight : elevation, item.z]
