@@ -4,16 +4,15 @@ struct PresetPhotoControls: View {
     @Bindable var draft: DollDraft
 
     var body: some View {
-        HStack(spacing: Spacing.s) {
-            Text("얼굴 테두리").pretendard(.bold, 14).frame(width: 74, alignment: .leading)
+        HStack(spacing: 0) {
+            Text("얼굴 테두리").pretendard(.medium, 12).frame(width: 67.09, alignment: .leading)
             CreationSlider(value: Binding(get: { draft.preset.openingScale }, set: {
                 draft.preset.faceOpeningScale = ($0 * 20).rounded() / 20
                 draft.snapshot = nil
-            }), range: 0.8...1.1, label: "얼굴 테두리 크기").frame(height: 30)
+            }), range: 0.8...1.1, label: "얼굴 테두리 크기", neutralValue: 1, neutralPosition: 0.58).frame(height: 30)
             Text("\(Int((draft.preset.openingScale * 100).rounded()))%")
-                .appFont(.caption).monospacedDigit().frame(width: 42)
-        }.padding(.horizontal, Spacing.s).frame(height: 44)
-            .creationOutline(fill: Color.a.card, radius: 8)
+                .pretendard(.medium, 12).monospacedDigit().frame(width: 44, alignment: .trailing)
+        }.padding(.trailing, 10).frame(height: 34)
     }
 }
 

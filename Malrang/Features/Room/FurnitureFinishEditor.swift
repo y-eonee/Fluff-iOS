@@ -1,0 +1,66 @@
+import PhotosUI
+import SwiftUI
+
+/// The same color/photo panel is shared by walls, floors and editable furniture.
+struct FurnitureFinishEditor: View {
+    @Bindable var item: RoomItem
+    let initialPhotoMode: Bool?
+    @State private var photoMode: Bool
+    init(item: RoomItem, initialPhotoMode: Bool? = nil) {
+        self.item = item; self.initialPhotoMode = initialPhotoMode
+        _photoMode = State(initialValue: initialPhotoMode ?? (item.photoData != nil))
+    }
+    @State private var selection: PhotosPickerItem?
+    var body: some View {
+        VStack(spacing: photoMode ? (item.photoData == nil ? 20 : 8) : 12) {
+            HStack(spacing: 8) {
+                D1Choice(title: "컬러", selected: !photoMode, fillsWidth: true, height: 37, fontSize: 14) { photoMode = false }
+                D1Choice(title: "사진", selected: photoMode, fillsWidth: true, height: 37, fontSize: 14) { photoMode = true }
+            }.padding(.leading, 5.34).padding(.trailing, 10.35)
+            if photoMode {
+                if let data = item.photoData {
+                    HStack(spacing: 12) {
+                        DollThumbnail(data: data, fillsFrame: true).frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        Text("적용된 사진").pretendard(.bold, 14)
+                        Spacer()
+                    }.padding(.horizontal, 10).padding(.vertical, 9)
+                        .background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.rep4.c07))
+                        .padding(.leading, 5.34).padding(.trailing, 10.35)
+                    HStack(spacing: 12) {
+                        Button { item.photoData = nil } label: {
+                            Text("사진 빼기").pretendard(.medium, 16).foregroundStyle(Color.mib.semantic.error)
+                                .frame(maxWidth: .infinity).frame(height: 60)
+                                .background(Color.rep4.c11, in: Capsule())
+                                .overlay(Capsule().strokeBorder(Color.mib.semantic.error))
+                                .contentShape(Capsule())
+                        }.buttonStyle(.plain)
+                        PhotosPicker(selection: $selection, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle())
+                    }.padding(.top, 8)
+                } else {
+                    PhotosPicker(selection: $selection, matching: .images) {
+                        VStack(spacing: 6) {
+                            Image("rep4_photo_add").resizable().frame(width: 22, height: 22)
+                                .frame(width: 44, height: 44)
+                                .background { RepresentativeGradientFill(definition: RepresentativeGradients.cta).clipShape(Circle()) }
+                            Text("사진 추가하기").pretendard(.bold, 15)
+                            Text("\(item.kind.label)에 사진을 붙일 수 있어요").pretendard(.medium, 13).foregroundStyle(Color.rep4.c29)
+                        }.frame(maxWidth: .infinity).frame(height: 136)
+                            .background(Color.rep4.c11, in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.rep4.c29, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
+                    }.buttonStyle(.plain).padding(.leading, 5.34).padding(.trailing, 10.35)
+                }
+            } else { FurnitureColorChoices(item: item).padding(.leading, 5.34).padding(.trailing, 10.35) }
+        }.padding(.top, photoMode ? 6.83 : 0)
+            .onAppear { photoMode = initialPhotoMode ?? (item.photoData != nil) }
+            .task(id: selection) {
+                guard let selection, let data = try? await selection.loadTransferable(type: Data.self),
+                      let image = await ImageDownsampling.load(data, maxPixel: 1024),
+                      let normalized = image.jpegData(compressionQuality: 0.85), !Task.isCancelled else { return }
+                item.photoData = normalized; item.photoScale = 1; item.photoOffsetX = 0; item.photoOffsetY = 0
+                self.selection = nil
+            }
+    }
+}
+#Preview { FurnitureFinishEditor(item: RoomItem(kind: .wall)).padding() }

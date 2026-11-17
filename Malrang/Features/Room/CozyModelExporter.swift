@@ -10,6 +10,13 @@ enum CozyModelExporter {
     static func auditIfRequested() async {
         guard ProcessInfo.processInfo.arguments.contains("--audit-cozy-models") else { return }
         var report: [String] = []
+        for cutaway in [false, true] {
+            let panel = CozyRoomShell.panel(size: [0.055, 2.04], center: [-1.025, 0], cutaway: cutaway)
+            let expected: Float = cutaway ? 1.493096 : CozyRoomShell.cornerHeight
+            report.append("room.shell.\(cutaway ? "cutaway" : "interior"): \(abs(panel.bounds.extents.y - expected) < 0.001 ? "PASS" : "FAIL")")
+        }
+        let floor = await CozyFurniture.make(RoomItemState(id: UUID(), kind: .floor, x: 0, z: 0), photoMaterial: PhysicallyBasedMaterial())
+        report.append("room.floor.singleSurface: \(floor.children.filter { $0.components[ModelComponent.self] != nil }.count == 1 ? "PASS" : "FAIL")")
         if let device = MTLCreateSystemDefaultDevice(), let library = device.makeDefaultLibrary() {
             let names = ["cozyFabric", "cozyCopyColor", "cozyExtractLight", "cozyCompositeLight", "plushExtractLight", "plushCompositeLight"]
             for name in names {
@@ -76,7 +83,22 @@ enum CozyModelExporter {
             let original = await CozyFurniture.make(state, photoMaterial: PhysicallyBasedMaterial())
             let untouched = !matches((original.findEntity(named: part)?.components[ModelComponent.self]?.materials.first as? CustomMaterial)?.baseColor.tint, expected)
             let defaultMaterial = original.findEntity(named: part)?.components[ModelComponent.self]?.materials.first as? CustomMaterial
-            let paletteDefault = matches(defaultMaterial?.baseColor.tint, Palette.uiColor(kind.defaultColorName))
+            let paletteDefault = matches(defaultMaterial?.baseColor.tint, Palette.uiColor(CozyFurniture.defaultColor(for: kind, cutaway: false)))
+            if kind == .bed {
+                let footboard = original.findEntity(named: "footboard")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                let fabric = matches(footboard?.baseColor.tint, Palette.uiColor(CozyRoomPalette.ivory)) && (footboard?.custom.value.y ?? -1) >= 0
+                report.append("bed.footboard.fabric: \(fabric ? "PASS" : "FAIL")")
+            }
+            if kind == .chair {
+                let interiorLeg = original.findEntity(named: "leg")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                report.append("chair.interior.timberLeg: \(matches(interiorLeg?.baseColor.tint, Palette.uiColor("#A17450")) && (interiorLeg?.custom.value.y ?? 0) < 0 ? "PASS" : "FAIL")")
+                var pinkChair = state; pinkChair.colorName = "#FF99BB"
+                let cutaway = await CozyFurniture.make(pinkChair, photoMaterial: PhysicallyBasedMaterial(), cutaway: true)
+                let leg = cutaway.findEntity(named: "leg")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                let back = cutaway.findEntity(named: "backrest")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                report.append("chair.cutaway.timberLeg: \(matches(leg?.baseColor.tint, Palette.uiColor("#DEB883")) && (leg?.custom.value.y ?? 0) < 0 ? "PASS" : "FAIL")")
+                report.append("chair.cutaway.customUpholstery: \(matches(back?.baseColor.tint, Palette.uiColor("#FF99BB")) ? "PASS" : "FAIL")")
+            }
             if kind == .chair, let defaultMaterial { report += auditBatching(material: defaultMaterial) }
             report.append("\(kind.rawValue): \(bundled && recolored && preserved && untouched && paletteDefault ? "PASS" : "FAIL") bundled=\(bundled), recolor=\(recolored), actual=\(String(describing: material?.baseColor.tint)), trim=\(preserved), cache=\(untouched), paletteDefault=\(paletteDefault)")
         }
@@ -139,7 +161,7 @@ enum CozyModelExporter {
             for kind in kinds {
                 let state = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
                 let model = await CozyFurniture.make(state, photoMaterial: PhysicallyBasedMaterial(),
-                                                     usesWindowLighting: false, useBakedModels: false)
+                                                     usesWindowLighting: false, useBakedModels: false, cutaway: true)
                 model.name = "cozy_" + kind.rawValue
                 let url = directory.appending(path: model.name + ".reality")
                 try await model.write(to: url)

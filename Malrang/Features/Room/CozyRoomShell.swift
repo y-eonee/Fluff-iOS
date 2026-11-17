@@ -1,23 +1,29 @@
 import RealityKit
 
-/// The reference uses a rising ceiling; a level ceiling cannot reproduce its
-/// cornice lines and the downward view of the furniture with the same camera.
+/// Full-height interior and the lower dollhouse view share the same floor plan.
+/// Keeping the shell independent of furniture preserves saved placements.
 enum CozyRoomShell {
-    static let cornerHeight: Float = 1.48
-    static let riseX: Float = 0.2644
-    static let riseZ: Float = 0.3976
+    static let cornerHeight: Float = 2.60
+    static let riseX: Float = 0
+    static let riseZ: Float = 0
     static let maximumHeight = cornerHeight + 2 * (riseX + riseZ)
 
     static func height(x: Float, z: Float) -> Float {
         cornerHeight + riseX * (x + 1) + riseZ * (z + 1)
     }
 
+    // The reference dollhouse has a lower back corner and rising front edges.
+    // Model that silhouette directly so the floor and furniture keep one camera.
+    static func cutawayHeight(x: Float, z: Float) -> Float {
+        1.1085 + 0.1567 * (x + 1) + 0.1902 * (z + 1)
+    }
+
     static func panel(size: SIMD2<Float>, center: SIMD2<Float>, cutaway: Bool = false) -> MeshResource {
         let lo = center - size / 2, hi = center + size / 2
         let vertices: [SIMD3<Float>] = [
             [lo.x, 0, lo.y], [hi.x, 0, lo.y], [hi.x, 0, hi.y], [lo.x, 0, hi.y],
-            [lo.x, (cutaway ? 1.50 : height(x: lo.x, z: lo.y)), lo.y], [hi.x, (cutaway ? 1.50 : height(x: hi.x, z: lo.y)), lo.y],
-            [hi.x, (cutaway ? 1.50 : height(x: hi.x, z: hi.y)), hi.y], [lo.x, (cutaway ? 1.50 : height(x: lo.x, z: hi.y)), hi.y]
+            [lo.x, (cutaway ? cutawayHeight(x: lo.x, z: lo.y) : height(x: lo.x, z: lo.y)), lo.y], [hi.x, (cutaway ? cutawayHeight(x: hi.x, z: lo.y) : height(x: hi.x, z: lo.y)), lo.y],
+            [hi.x, (cutaway ? cutawayHeight(x: hi.x, z: hi.y) : height(x: hi.x, z: hi.y)), hi.y], [lo.x, (cutaway ? cutawayHeight(x: lo.x, z: hi.y) : height(x: lo.x, z: hi.y)), hi.y]
         ]
         let faces = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]]
         var positions: [SIMD3<Float>] = [], normals: [SIMD3<Float>] = []

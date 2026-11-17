@@ -9,19 +9,19 @@ struct PhotoPickStep: View {
     @State private var isLoading = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
+        VStack(alignment: .leading, spacing: 12.2) {
             Text("얼굴이나 캐릭터가 잘 보이는 사진이 좋아요")
-                .appFont(.footnote)
+                .pretendard(.regular, 14, tracking: -0.7).frame(height: 20.3)
                 .foregroundStyle(Color.app.inkSecondary)
-                .padding(.horizontal, Spacing.m)
+                .padding(.horizontal, 30)
             PhotosPicker("사진 선택", selection: $selection, matching: .images, photoLibrary: .shared())
                 .photosPickerStyle(.inline)
                 .photosPickerDisabledCapabilities(.selectionActions)
                 .photosPickerAccessoryVisibility(.hidden, edges: .all)
-            VStack(spacing: Spacing.xs) {
+            VStack(spacing: 9.75) {
                 Text(draft.photo == nil ? "사진 1장을 골라 주세요" : "1장 선택됨")
-                    .appFont(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
+                    .pretendard(.medium, 12).frame(height: 17.4)
+                    .foregroundStyle(Color.rep4.c08)
                 Button {
                     onNext()
                 } label: {
@@ -32,7 +32,7 @@ struct PhotoPickStep: View {
 
             }
             .frame(maxWidth: .infinity)
-            .padding(Spacing.m)
+            .padding(.horizontal, 18).padding(.top, 16).padding(.bottom, 18)
         }
         .background { AppBackground() }
         .cozyPageTitle("making fluff")

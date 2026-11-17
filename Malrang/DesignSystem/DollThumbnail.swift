@@ -4,6 +4,7 @@ import SwiftUI
 struct DollThumbnail: View {
     let data: Data
     var maxPixel = 420
+    var fillsFrame = false
     @State private var image: UIImage?
     private static let cache: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
@@ -16,7 +17,7 @@ struct DollThumbnail: View {
 
     var body: some View {
         Group {
-            if let image { Image(uiImage: image).resizable().scaledToFit() }
+            if let image { Image(uiImage: image).resizable().aspectRatio(contentMode: fillsFrame ? .fill : .fit) }
             else { Image(systemName: "teddybear").foregroundStyle(Color.a.soft) }
         }
         .onDisappear { image = nil }

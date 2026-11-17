@@ -7,6 +7,7 @@ struct DollChoiceSheet: View {
   var subtitle: String? = nil
   var actionTitle: String? = nil
   var maximumSelection: Int? = nil
+  var sourceLayout = false
   let onChoose: ([Doll]) -> Void
   @State private var selection: Set<UUID> = []
   @Environment(\.dismiss) private var dismiss
@@ -14,9 +15,10 @@ struct DollChoiceSheet: View {
     VStack(alignment: .leading, spacing: 0) {
       Capsule().fill(Color.mib.line.default).frame(width: 40, height: 4).frame(maxWidth: .infinity)
         .padding(.top, 12)
-      Text(title ?? (multiple ? "같이 구경할 인형" : "누구를 재울까요?")).pretendard(.bold, 17).padding(.top, 18)
+      Text(title ?? (multiple ? "같이 구경할 인형" : "누구를 재울까요?")).pretendard(.bold, 17)
+        .frame(height: sourceLayout ? 25 : nil).padding(.top, sourceLayout ? 24 : 18)
       Text(subtitle ?? (multiple ? "여러 명을 같이 골라도 돼요" : "한 번에 한 인형만 재울 수 있어요"))
-        .pretendard(.medium, 13).padding(.top, 8)
+        .pretendard(.medium, 13).frame(height: sourceLayout ? 19 : nil).padding(.top, 8)
       ScrollView {
         LazyVGrid(
           columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 12
@@ -37,15 +39,7 @@ struct DollChoiceSheet: View {
                 DollThumbnail(data: doll.imageData).frame(height: 80)
                 Text(doll.name).pretendard(.regular, 16).lineLimit(1)
               }.frame(maxWidth: .infinity).frame(height: 128)
-                .background(
-                  selection.contains(doll.id) ? Color.mib.bg.mintSoft : Color.mib.bg.surface,
-                  in: RoundedRectangle(cornerRadius: 14)
-                )
-                .overlay(
-                  RoundedRectangle(cornerRadius: 14).strokeBorder(
-                    selection.contains(doll.id) ? Color.mib.line.selected : Color.mib.line.default,
-                    lineWidth: 1.4)
-                )
+                .modifier(RepresentativeSelectionSurface(selected: selection.contains(doll.id), radius: 14, neutral: Color.rep4.c11))
                 .overlay(alignment: .topTrailing) {
                   if selection.contains(doll.id) { D1Icon(name: "check").padding(8) }
                 }
@@ -55,17 +49,39 @@ struct DollChoiceSheet: View {
               .accessibilityAddTraits(
               selection.contains(doll.id) ? .isSelected : [])
           }
-        }.padding(.vertical, 16)
+        }.padding(.vertical, sourceLayout ? 12 : 16)
       }
       Button(actionTitle ?? (multiple ? "같이 구경하기 (\(selection.count))" : "재우기")) {
         onChoose(dolls.filter { selection.contains($0.id) })
         dismiss()
-      }.buttonStyle(D1PrimaryStyle()).disabled(selection.isEmpty).padding(.bottom, 16)
+      }.buttonStyle(D1PrimaryStyle()).disabled(selection.isEmpty)
+        .padding(.top, sourceLayout ? 13 : 0).padding(.bottom, sourceLayout ? 32 : 16)
     }.padding(.horizontal, 22).background(Color.mib.bg.surface).foregroundStyle(
       Color.mib.text.primary
     )
     .presentationDetents([.height(489), .large]).presentationDragIndicator(.hidden)
       .presentationCornerRadius(22)
     .onAppear { if let first = dolls.first { selection = [first.id] } }
+  }
+}
+
+/// The couch source has a full-width sheet, independent of the OS sheet margins.
+struct CouchChoicePresentation<Content: View>: View {
+  @Environment(\.dismiss) private var dismiss
+  @ViewBuilder let content: Content
+
+  var body: some View {
+    GeometryReader { geometry in
+      ZStack(alignment: .bottom) {
+        Color.black.opacity(0.12).ignoresSafeArea().onTapGesture { dismiss() }
+        content.frame(height: min(489, geometry.size.height + geometry.safeAreaInsets.bottom))
+          .background(Color.mib.bg.surface)
+          .clipShape(UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+          .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
+            if value.startLocation.y < 100 && value.translation.height > 60 { dismiss() }
+          })
+          .accessibilityAction(.escape) { dismiss() }
+      }.frame(width: geometry.size.width, height: geometry.size.height + geometry.safeAreaInsets.bottom)
+    }
   }
 }

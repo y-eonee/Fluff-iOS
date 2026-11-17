@@ -14,6 +14,8 @@ struct MemoryAuditView: View {
         var metalMB: Double
         var liveViews: Int
         var visibleViews: Int
+        var roomRenderViews: Int
+        var visibleRoomRenderViews: Int
         var fixtures: Int
         var timestamp: Date
     }
@@ -62,9 +64,11 @@ struct MemoryAuditView: View {
         }
         guard result == KERN_SUCCESS else { return }
         let views = EfficientARView.auditViews.allObjects
+        let roomViews = RoomRenderView.liveViews.allObjects
         let value = Sample(stage: stage, footprintMB: Double(info.phys_footprint) / 1_048_576,
                            metalMB: Double(MTLCreateSystemDefaultDevice()?.currentAllocatedSize ?? 0) / 1_048_576,
                            liveViews: views.count, visibleViews: views.filter { $0.window != nil }.count,
+                           roomRenderViews: roomViews.count, visibleRoomRenderViews: roomViews.filter { $0.window != nil }.count,
                            fixtures: DesignPreviewData.auditFixtures.allObjects.count, timestamp: .now)
         samples.append(value)
         if let data = try? JSONEncoder().encode(samples) {

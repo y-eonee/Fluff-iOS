@@ -4,25 +4,14 @@ struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .pretendard(.bold, D1.ctaFontSize)
-            .foregroundStyle(Color.mib.text.onPrimary)
-            .frame(maxWidth: .infinity, minHeight: 60)
-            .contentShape(Rectangle())
-            .background(isEnabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 30))
+        configuration.label.modifier(RepresentativeActionSurface(primary: true))
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .pretendard(.bold, D1.ctaFontSize)
-            .foregroundStyle(Color.mib.text.primary)
-            .frame(maxWidth: .infinity, minHeight: 60)
-            .contentShape(Rectangle())
-            .background(Color.a.card, in: RoundedRectangle(cornerRadius: 30))
-            .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(Color.mib.line.selected, lineWidth: 1.4))
+        configuration.label.modifier(RepresentativeActionSurface(primary: false))
     }
 }
 
@@ -119,10 +108,7 @@ struct Chip: View {
             .frame(maxWidth: isCompact ? .infinity : nil)
             .padding(.horizontal, isCompact ? Spacing.xxs : Spacing.s)
             .frame(minHeight: 44)
-            .background(isSelected ? Color.mib.bg.mintSoft : Color.mib.bg.surface,
-                        in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
-                .stroke(isSelected ? Color.mib.line.selected : Color.mib.line.default))
+            .modifier(RepresentativeSelectionSurface(selected: isSelected, radius: Radius.small))
         }
         .buttonStyle(.plain)
     }

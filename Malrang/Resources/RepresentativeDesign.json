@@ -1,0 +1,3046 @@
+{
+  "schemaVersion": 2,
+  "source": {
+    "fileKey": "y50EtliLp7YMR80gHuJRLb",
+    "designSystemNode": "1675:3945",
+    "paletteCollectionId": "VariableCollectionId:1678:4013",
+    "activeSpecification": "DESIGN.md",
+    "referenceScreens": {
+      "ROOM": "1646:5442",
+      "FOCUS": "1654:10121",
+      "MAKING": "1654:10366",
+      "COUCH": "1655:4987"
+    },
+    "scope": "Resources, asset catalogs, shared UI and visible implementation flow states in 1727:21665; later user clarifications override older source states.",
+    "implementationFlowNode": "1727:21665"
+  },
+  "colors": {
+    "c01": {
+      "value": "#FFFFFF",
+      "rgba": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4014",
+      "figmaName": "source/255-255-255-100",
+      "usage": "전체 시트·카드·버튼·텍스트",
+      "screens": "ROOM / MAKING / COUCH"
+    },
+    "c02": {
+      "value": "#FFFFFF",
+      "rgba": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.7400000095367432
+      },
+      "figmaVariableId": "VariableID:1678:4015",
+      "figmaName": "source/255-255-255-74",
+      "usage": "반투명 되돌리기·다시하기",
+      "screens": "ROOM"
+    },
+    "c03": {
+      "value": "#000000",
+      "rgba": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4016",
+      "figmaName": "source/0-0-0-100",
+      "usage": "본문·아이콘·벡터",
+      "screens": "ROOM / MAKING / COUCH"
+    },
+    "c04": {
+      "value": "#B2DDEA",
+      "rgba": {
+        "r": 0.6970935463905334,
+        "g": 0.8650071620941162,
+        "b": 0.916672945022583,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4017",
+      "figmaName": "source/178-221-234-100",
+      "usage": "선택 가구·칩 테두리",
+      "screens": "ROOM / MAKING"
+    },
+    "c05": {
+      "value": "#F2F2F2",
+      "rgba": {
+        "r": 0.9503455758094788,
+        "g": 0.9503455758094788,
+        "b": 0.9503455758094788,
+        "a": 0.699999988079071
+      },
+      "figmaVariableId": "VariableID:1678:4018",
+      "figmaName": "source/242-242-242-70",
+      "usage": "가구 비선택 카드",
+      "screens": "ROOM"
+    },
+    "c06": {
+      "value": "#000000",
+      "rgba": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 0.7799999713897705
+      },
+      "figmaVariableId": "VariableID:1678:4019",
+      "figmaName": "source/0-0-0-78",
+      "usage": "가구 카드의 비선택 텍스트",
+      "screens": "ROOM"
+    },
+    "c07": {
+      "value": "#E5E5E5",
+      "rgba": {
+        "r": 0.8961839079856873,
+        "g": 0.8961839079856873,
+        "b": 0.8961839079856873,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4020",
+      "figmaName": "source/229-229-229-100",
+      "usage": "일부 카드 테두리",
+      "screens": "ROOM"
+    },
+    "c08": {
+      "value": "#181818",
+      "rgba": {
+        "r": 0.0941176488995552,
+        "g": 0.0941176488995552,
+        "b": 0.0941176488995552,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4021",
+      "figmaName": "source/24-24-24-100",
+      "usage": "텍스트·홈 인디케이터",
+      "screens": "ROOM / MAKING"
+    },
+    "c09": {
+      "value": "#6B4A3E",
+      "rgba": {
+        "r": 0.41960784792900085,
+        "g": 0.29019609093666077,
+        "b": 0.24313725531101227,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4022",
+      "figmaName": "source/107-74-62-100",
+      "usage": "캐릭터 도형·아이콘",
+      "screens": "ROOM"
+    },
+    "c10": {
+      "value": "#080808",
+      "rgba": {
+        "r": 0.030480017885565758,
+        "g": 0.030480017885565758,
+        "b": 0.030480017885565758,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4023",
+      "figmaName": "source/8-8-8-100",
+      "usage": "화면 제목",
+      "screens": "ROOM / MAKING"
+    },
+    "c11": {
+      "value": "#F9F9F9",
+      "rgba": {
+        "r": 0.9750037789344788,
+        "g": 0.9750037789344788,
+        "b": 0.9750037789344788,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4024",
+      "figmaName": "source/249-249-249-100",
+      "usage": "집중/제작 기본 바탕",
+      "screens": "FOCUS / MAKING / COUCH"
+    },
+    "c12": {
+      "value": "#000000",
+      "rgba": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 0.20000000298023224
+      },
+      "figmaVariableId": "VariableID:1678:4025",
+      "figmaName": "source/0-0-0-20",
+      "usage": "집중 Frame 배경의 별도 Fill",
+      "screens": "FOCUS"
+    },
+    "c13": {
+      "value": "#000000",
+      "rgba": {
+        "r": 0,
+        "g": 0,
+        "b": 0,
+        "a": 0.4000000059604645
+      },
+      "figmaVariableId": "VariableID:1678:4026",
+      "figmaName": "source/0-0-0-40",
+      "usage": "집중 숨겨진 디밍 레이어의 Fill (활성 아님)",
+      "screens": "FOCUS"
+    },
+    "c14": {
+      "value": "#CDB8A6",
+      "rgba": {
+        "r": 0.8039215803146362,
+        "g": 0.7215686440467834,
+        "b": 0.6509804129600525,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4027",
+      "figmaName": "source/205-184-166-100",
+      "usage": "숨겨진 작업대 구조의 색",
+      "screens": "FOCUS"
+    },
+    "c15": {
+      "value": "#E8DDCB",
+      "rgba": {
+        "r": 0.9098039269447327,
+        "g": 0.8666666746139526,
+        "b": 0.7960784435272217,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4028",
+      "figmaName": "source/232-221-203-100",
+      "usage": "숨겨진 바닥 연장 레이어",
+      "screens": "FOCUS"
+    },
+    "c16": {
+      "value": "#4A352A",
+      "rgba": {
+        "r": 0.29019609093666077,
+        "g": 0.2078431397676468,
+        "b": 0.16470588743686676,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4029",
+      "figmaName": "source/74-53-42-100",
+      "usage": "집중 상태 표시줄 등 브라운",
+      "screens": "FOCUS / COUCH"
+    },
+    "c17": {
+      "value": "#6E5244",
+      "rgba": {
+        "r": 0.4313725531101227,
+        "g": 0.32156863808631897,
+        "b": 0.2666666805744171,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4030",
+      "figmaName": "source/110-82-68-100",
+      "usage": "집중 홈 인디케이터",
+      "screens": "FOCUS"
+    },
+    "c18": {
+      "value": "#8FB8AE",
+      "rgba": {
+        "r": 0.5607843399047852,
+        "g": 0.7215686440467834,
+        "b": 0.6823529601097107,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4031",
+      "figmaName": "source/143-184-174-100",
+      "usage": "집중 숨겨진 원형 버튼 Fill",
+      "screens": "FOCUS"
+    },
+    "c19": {
+      "value": "#FFFFFF",
+      "rgba": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.30000001192092896
+      },
+      "figmaVariableId": "VariableID:1678:4032",
+      "figmaName": "source/255-255-255-30",
+      "usage": "집중 원형 일시정지 배경·반투명",
+      "screens": "FOCUS"
+    },
+    "c20": {
+      "value": "#D9D9D9",
+      "rgba": {
+        "r": 0.8500000238418579,
+        "g": 0.8500000238418579,
+        "b": 0.8500000238418579,
+        "a": 0.20000000298023224
+      },
+      "figmaVariableId": "VariableID:1678:4033",
+      "figmaName": "source/217-217-217-20",
+      "usage": "집중 진행 트랙",
+      "screens": "FOCUS"
+    },
+    "c21": {
+      "value": "#D4EEF6",
+      "rgba": {
+        "r": 0.8313725590705872,
+        "g": 0.9333333373069763,
+        "b": 0.9647058844566345,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4034",
+      "figmaName": "source/212-238-246-100",
+      "usage": "집중 채움·제작 진행 막대",
+      "screens": "FOCUS / MAKING"
+    },
+    "c22": {
+      "value": "#7A7A7A",
+      "rgba": {
+        "r": 0.47980767488479614,
+        "g": 0.47980767488479614,
+        "b": 0.47980767488479614,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4035",
+      "figmaName": "source/122-122-122-100",
+      "usage": "일부 상태 테두리",
+      "screens": "FOCUS"
+    },
+    "c23": {
+      "value": "#9A9A9A",
+      "rgba": {
+        "r": 0.6023324728012085,
+        "g": 0.6023324728012085,
+        "b": 0.6023324728012085,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4036",
+      "figmaName": "source/154-154-154-100",
+      "usage": "제작 미완료 단계 텍스트",
+      "screens": "MAKING"
+    },
+    "c24": {
+      "value": "#D9D9D9",
+      "rgba": {
+        "r": 0.8509804010391235,
+        "g": 0.8509804010391235,
+        "b": 0.8509804010391235,
+        "a": 0.6000000238418579
+      },
+      "figmaVariableId": "VariableID:1678:4037",
+      "figmaName": "source/217-217-217-60",
+      "usage": "인형제작 상단 진행 트랙",
+      "screens": "MAKING"
+    },
+    "c25": {
+      "value": "#1F1F1F",
+      "rgba": {
+        "r": 0.12263371050357819,
+        "g": 0.12263371050357819,
+        "b": 0.12263371050357819,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4038",
+      "figmaName": "source/31-31-31-100",
+      "usage": "인형제작 보조 버튼 텍스트",
+      "screens": "MAKING"
+    },
+    "c26": {
+      "value": "#F9FAFA",
+      "rgba": {
+        "r": 0.9764705896377563,
+        "g": 0.9803921580314636,
+        "b": 0.9803921580314636,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4039",
+      "figmaName": "source/249-250-250-100",
+      "usage": "소파 상태 표시줄",
+      "screens": "COUCH"
+    },
+    "c27": {
+      "value": "#FFFDF8",
+      "rgba": {
+        "r": 1,
+        "g": 0.9921568632125854,
+        "b": 0.9725490212440491,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4040",
+      "figmaName": "source/255-253-248-100",
+      "usage": "소파 상태바 부분 바탕",
+      "screens": "COUCH"
+    },
+    "c28": {
+      "value": "#F0F5F8",
+      "rgba": {
+        "r": 0.9411764740943909,
+        "g": 0.9607843160629272,
+        "b": 0.9725490212440491,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4041",
+      "figmaName": "source/240-245-248-100",
+      "usage": "이전/다음 영상 컨트롤 배경",
+      "screens": "COUCH"
+    },
+    "c29": {
+      "value": "#707070",
+      "rgba": {
+        "r": 0.4387817680835724,
+        "g": 0.4387817680835724,
+        "b": 0.4387817680835724,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4042",
+      "figmaName": "source/112-112-112-100",
+      "usage": "그만 보기 텍스트",
+      "screens": "COUCH"
+    },
+    "c30": {
+      "value": "#DFF2F8",
+      "rgba": {
+        "r": 0.8745098114013672,
+        "g": 0.9490196108818054,
+        "b": 0.9725490212440491,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4043",
+      "figmaName": "source/223-242-248-100",
+      "usage": "인형 선택 보조 바탕·소파 중앙 재생",
+      "screens": "MAKING / COUCH"
+    },
+    "c31": {
+      "value": "#FFF5D9",
+      "rgba": {
+        "r": 1,
+        "g": 0.9599999785423279,
+        "b": 0.8500000238418579,
+        "a": 0.8999999761581421
+      },
+      "figmaVariableId": "VariableID:1678:4044",
+      "figmaName": "source/255-245-217-90",
+      "usage": "영상 아트의 달",
+      "screens": "COUCH"
+    },
+    "c32": {
+      "value": "#DCFFD1",
+      "rgba": {
+        "r": 0.8614099025726318,
+        "g": 1,
+        "b": 0.819230318069458,
+        "a": 0.550000011920929
+      },
+      "figmaVariableId": "VariableID:1678:4045",
+      "figmaName": "source/220-255-209-55",
+      "usage": "영상 아트의 언덕",
+      "screens": "COUCH"
+    },
+    "c33": {
+      "value": "#F25454",
+      "rgba": {
+        "r": 0.949999988079071,
+        "g": 0.33000001311302185,
+        "b": 0.33000001311302185,
+        "a": 1
+      },
+      "figmaVariableId": "VariableID:1678:4046",
+      "figmaName": "source/242-84-84-100",
+      "usage": "YouTube 마크",
+      "screens": "COUCH"
+    },
+    "c34": {
+      "value": "#FFFFFF",
+      "rgba": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.8999999761581421
+      },
+      "figmaVariableId": "VariableID:1678:4047",
+      "figmaName": "source/255-255-255-90",
+      "usage": "플레이어 출처 텍스트",
+      "screens": "COUCH"
+    },
+    "c35": {
+      "value": "#FFFFFF",
+      "rgba": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "a": 0.4000000059604645
+      },
+      "figmaVariableId": "VariableID:1678:4048",
+      "figmaName": "source/255-255-255-40",
+      "usage": "동영상 진행 트랙",
+      "screens": "COUCH"
+    }
+  },
+  "gradients": {
+    "roomBackground": {
+      "sourceNode": "1646:5442",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.9974356293678284,
+            "g": 0.9974356293678284,
+            "b": 0.9974356293678284,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.8804274201393127,
+            "g": 0.9718652963638306,
+            "b": 1,
+            "a": 1
+          },
+          "position": 0.9697805643081665,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          0.05214189738035202,
+          1,
+          -0.03526473790407181
+        ],
+        [
+          -0.999656081199646,
+          1.15305525730632e-15,
+          1.176089882850647
+        ]
+      ]
+    },
+    "selected": {
+      "sourceNode": "1654:10409",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.9974356293678284,
+            "g": 0.9974356293678284,
+            "b": 0.9974356293678284,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.7713926434516907,
+            "g": 0.9364060759544373,
+            "b": 0.9871793985366821,
+            "a": 1
+          },
+          "position": 0.9697805643081665,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          0.03376460447907448,
+          0.6303068399429321,
+          0.5005324482917786
+        ],
+        [
+          -0.6303068399429321,
+          0.004156933166086674,
+          0.9231472611427307
+        ]
+      ]
+    },
+    "cta": {
+      "sourceNode": "1654:10395",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.26923051476478577,
+            "g": 0.26923051476478577,
+            "b": 0.26923051476478577,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.12941177189350128,
+            "g": 0.13333334028720856,
+            "b": 0.14901961386203766,
+            "a": 1
+          },
+          "position": 1,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          0.09827205538749695,
+          1.4356260299682617,
+          -0.49346286058425903
+        ],
+        [
+          -1.4356260299682617,
+          0.012098758481442928,
+          1.332823634147644
+        ]
+      ]
+    },
+    "focusTimer": {
+      "sourceNode": "1654:10133",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0.019999999552965164
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.09031224995851517,
+            "g": 0.18399469554424286,
+            "b": 0.21282026171684265,
+            "a": 1
+          },
+          "position": 1,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          -1,
+          0,
+          1
+        ]
+      ]
+    },
+    "focusGoal": {
+      "sourceNode": "1654:10142",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 0.5799999833106995,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.3233736455440521,
+            "g": 0.3233736455440521,
+            "b": 0.3233736455440521,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.41180890798568726,
+            "g": 0.41180890798568726,
+            "b": 0.41180890798568726,
+            "a": 1
+          },
+          "position": 1,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          6.123234262925839e-17,
+          1,
+          0
+        ],
+        [
+          -1,
+          6.123234262925839e-17,
+          1
+        ]
+      ]
+    },
+    "focusTrackStroke": {
+      "sourceNode": "1654:10145",
+      "property": "strokes",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "position": 1,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          1.951875925064087,
+          0.01515449583530426,
+          -1.059226632118225
+        ],
+        [
+          -19.84952163696289,
+          1.951875925064087,
+          12.276605606079102
+        ]
+      ]
+    },
+    "screenOverlay": {
+      "sourceNode": "1654:10366",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 0.25,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.9974356293678284,
+            "g": 0.9974356293678284,
+            "b": 0.9974356293678284,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.8713451027870178,
+            "g": 0.9150838851928711,
+            "b": 0.928541898727417,
+            "a": 1
+          },
+          "position": 0.9697805643081665,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          0.05214189738035202,
+          1,
+          -0.03526473790407181
+        ],
+        [
+          -0.999656081199646,
+          1.15305525730632e-15,
+          1.176089882850647
+        ]
+      ]
+    },
+    "previousStroke": {
+      "sourceNode": "1654:10394",
+      "property": "strokes",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.9330679178237915,
+            "g": 0.9330679178237915,
+            "b": 0.9330679178237915,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.9111515879631042,
+            "g": 0.9111515879631042,
+            "b": 0.9111515879631042,
+            "a": 1
+          },
+          "position": 1,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          -0.04213855415582657,
+          0.5697650909423828,
+          0.4038947522640228
+        ],
+        [
+          -0.5697650909423828,
+          -0.005187882110476494,
+          0.8827174305915833
+        ]
+      ]
+    },
+    "video": {
+      "sourceNode": "1655:5003",
+      "property": "fills",
+      "type": "GRADIENT_LINEAR",
+      "opacity": 1,
+      "visible": true,
+      "gradientStops": [
+        {
+          "color": {
+            "r": 0.9820509552955627,
+            "g": 0.9255343675613403,
+            "b": 0.8548884391784668,
+            "a": 1
+          },
+          "position": 0,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.8274509906768799,
+            "g": 0.929411768913269,
+            "b": 0.9607843160629272,
+            "a": 1
+          },
+          "position": 0.37980708479881287,
+          "boundVariables": {}
+        },
+        {
+          "color": {
+            "r": 0.1568627506494522,
+            "g": 0.7450980544090271,
+            "b": 0.9803921580314636,
+            "a": 1
+          },
+          "position": 1,
+          "boundVariables": {}
+        }
+      ],
+      "gradientTransform": [
+        [
+          0.800000011920929,
+          0.6000000238418579,
+          0
+        ],
+        [
+          -0.6000000238418579,
+          0.800000011920929,
+          0.30000001192092896
+        ]
+      ]
+    }
+  },
+  "typography": {
+    "t01": {
+      "sourceNode": "1654:10137",
+      "screen": "FOCUS",
+      "role": "00:18:42",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 62,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 80
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -5
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t02": {
+      "sourceNode": "1655:4992",
+      "screen": "COUCH",
+      "role": "couch time",
+      "fontName": {
+        "family": "Gmarket Sans TTF",
+        "style": "Medium"
+      },
+      "fontSize": 28,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -4
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t03": {
+      "sourceNode": "1646:5499",
+      "screen": "ROOM",
+      "role": "edit my room",
+      "fontName": {
+        "family": "Gmarket Sans TTF",
+        "style": "Medium"
+      },
+      "fontSize": 25.396791458129883,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -7
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t04": {
+      "sourceNode": "1654:10134",
+      "screen": "FOCUS",
+      "role": "현재 집중 시간",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Bold"
+      },
+      "fontSize": 17,
+      "fontWeight": 700,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 26
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -5
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t05": {
+      "sourceNode": "I1654:10394;1398:4243",
+      "screen": "MAKING",
+      "role": "이전으로",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 15.999969482421875,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 27.99994659423828
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 5
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t06": {
+      "sourceNode": "I1655:4998;1398:4243",
+      "screen": "COUCH",
+      "role": "홈에서 계속 보기",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 15.999969482421875,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 27.99994659423828
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t07": {
+      "sourceNode": "1654:10143",
+      "screen": "FOCUS",
+      "role": "목표 62%",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "SemiBold"
+      },
+      "fontSize": 15.789474487304688,
+      "fontWeight": 600,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 145.00000476837158
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -5
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t08": {
+      "sourceNode": "1655:5006",
+      "screen": "COUCH",
+      "role": "영상 제목",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Bold"
+      },
+      "fontSize": 15,
+      "fontWeight": 700,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 22
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t09": {
+      "sourceNode": "1646:5463",
+      "screen": "ROOM",
+      "role": "초기화",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -3
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t10": {
+      "sourceNode": "1646:5488",
+      "screen": "ROOM",
+      "role": "9:41",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "SemiBold"
+      },
+      "fontSize": 13.999999046325684,
+      "fontWeight": 600,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 145.00000476837158
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t11": {
+      "sourceNode": "1654:10413",
+      "screen": "MAKING",
+      "role": "인형 모양 안내",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 145.00000476837158
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -5
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t12": {
+      "sourceNode": "1655:5016",
+      "screen": "COUCH",
+      "role": "전체화면 아이콘",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "fontWeight": 700,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 16
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t13": {
+      "sourceNode": "I1655:5018;1398:4243",
+      "screen": "COUCH",
+      "role": "빈 버튼 텍스트 레이어",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 13.99997329711914,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 27.99994659423828
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t14": {
+      "sourceNode": "1655:5026",
+      "screen": "COUCH",
+      "role": "플레이 리스트 변경",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 13.99997329711914,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 27.99994659423828
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t15": {
+      "sourceNode": "1646:5470",
+      "screen": "ROOM",
+      "role": "말풍선 안내",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 13,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 135.0000023841858
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -3
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t16": {
+      "sourceNode": "I1654:10131;1070:1435",
+      "screen": "FOCUS",
+      "role": "9:41",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 13,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 20
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t17": {
+      "sourceNode": "1654:10408",
+      "screen": "MAKING",
+      "role": "동물 모양 칩",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 12.742514610290527,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 150
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -5
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t18": {
+      "sourceNode": "I1646:5478;1590:2233",
+      "screen": "ROOM",
+      "role": "가구 썸네일 이름",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 12.284998893737793,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t19": {
+      "sourceNode": "1654:10399",
+      "screen": "MAKING",
+      "role": "프리셋·커스텀",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 12.167330741882324,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 150
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": -5
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t20": {
+      "sourceNode": "1654:10382",
+      "screen": "MAKING",
+      "role": "제작 5단계 레이블",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 12.000000953674316,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 145.00000476837158
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "CENTER"
+    },
+    "t21": {
+      "sourceNode": "1655:4999",
+      "screen": "COUCH",
+      "role": "그만 보기",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 12,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 27.99994659423828
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t22": {
+      "sourceNode": "1655:5011",
+      "screen": "COUCH",
+      "role": "YouTube 출처",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 12,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 18
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t23": {
+      "sourceNode": "1655:5015",
+      "screen": "COUCH",
+      "role": "재생 시간",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Medium"
+      },
+      "fontSize": 11,
+      "fontWeight": 500,
+      "lineHeight": {
+        "unit": "PIXELS",
+        "value": 16
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t24": {
+      "sourceNode": "1654:10151",
+      "screen": "FOCUS",
+      "role": "휴식까지 / 세트 레이블",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 10.5,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 145.00000476837158
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    },
+    "t25": {
+      "sourceNode": "1654:10153",
+      "screen": "FOCUS",
+      "role": "05:18 / 18:01",
+      "fontName": {
+        "family": "Pretendard",
+        "style": "Regular"
+      },
+      "fontSize": 10.5,
+      "fontWeight": 400,
+      "lineHeight": {
+        "unit": "PERCENT",
+        "value": 114.99999761581421
+      },
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "textAlignHorizontal": "LEFT"
+    }
+  },
+  "compatibilityColors": {
+    "primitive/mint/50": {
+      "value": "#F2F7F5",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/mint/100": {
+      "value": "#E3EEEA",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/mint/300": {
+      "value": "#C3DAD3",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/mint/500": {
+      "value": "#8FB8AE",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/mint/600": {
+      "value": "#5F8D83",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/ivory/50": {
+      "value": "#FFFDF8",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/ivory/100": {
+      "value": "#FBF7EF",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/ivory/200": {
+      "value": "#F4EDE0",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/ivory/300": {
+      "value": "#E8DDCB",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/brown/100": {
+      "value": "#F0E6DD",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/brown/300": {
+      "value": "#CDB8A6",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/brown/500": {
+      "value": "#9B8274",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/brown/700": {
+      "value": "#6E5244",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/brown/900": {
+      "value": "#4A352A",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "primitive/white": {
+      "value": "#FFFFFF",
+      "status": "LEGACY_CONTENT",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "bg/screen": {
+      "alias": "c11",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "bg/surface": {
+      "alias": "c01",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "bg/sunken": {
+      "alias": "c28",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "bg/mint-soft": {
+      "alias": "c30",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "bg/mint-subtle": {
+      "alias": "c28",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "bg/brown-soft": {
+      "value": "#F0E6DD",
+      "status": "UNVERIFIED",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "action/primary": {
+      "value": "#212226",
+      "rgba": {
+        "r": 0.12941177189350128,
+        "g": 0.13333334028720856,
+        "b": 0.14901961386203766,
+        "a": 1
+      },
+      "sourceGradient": "cta",
+      "compatibility": "Final CTA gradient stop for Color-only callers; does not render the full gradient."
+    },
+    "action/primary-light": {
+      "alias": "c21",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "action/secondary": {
+      "alias": "c25",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "action/disabled": {
+      "value": "#CDB8A6",
+      "status": "UNVERIFIED",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "line/default": {
+      "alias": "c07",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "line/selected": {
+      "alias": "c04",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "line/strong": {
+      "alias": "c03",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "text/primary": {
+      "alias": "c08",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "text/secondary": {
+      "alias": "c29",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "text/disabled": {
+      "value": "#CDB8A6",
+      "status": "UNVERIFIED",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    },
+    "text/accent": {
+      "alias": "c03",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "text/on-primary": {
+      "alias": "c01",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "icon/default": {
+      "alias": "c03",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "icon/on-dark": {
+      "alias": "c01",
+      "status": "COMPATIBILITY_ALIAS"
+    },
+    "semantic/error": {
+      "value": "#AD4141",
+      "status": "UNVERIFIED",
+      "reason": "No equivalent role/state is specified by the four-screen design system; preserved for existing callers."
+    }
+  },
+  "assetAliases": {
+    "background": "bg/screen",
+    "surface": "bg/surface",
+    "ink": "text/primary",
+    "inkSecondary": "text/secondary",
+    "brandAccent": "action/primary",
+    "AccentColor": "action/primary",
+    "danger": "semantic/error",
+    "Splash/brand_background": "bg/screen"
+  },
+  "unverified": {
+    "responsiveConstraints": null,
+    "note": "Disabled opacity is confirmed by the newer flow; responsive constraints remain unverified."
+  },
+  "components": {
+    "room.undo": {
+      "sourceNode": "1646:5456",
+      "visible": true,
+      "opacity": 1,
+      "x": 23.234375,
+      "y": 494,
+      "width": 37,
+      "height": 37,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 0.7400000095367432,
+          "visible": true
+        }
+      ],
+      "effects": [
+        {
+          "type": "GLASS",
+          "visible": true,
+          "radius": 3.5999999046325684,
+          "boundVariables": {},
+          "refraction": 0.800000011920929,
+          "depth": 18,
+          "lightAngle": -45,
+          "lightIntensity": 0.800000011920929,
+          "dispersion": 0.5,
+          "splay": 0
+        }
+      ],
+      "cornerRadius": 42,
+      "strokeWeight": 0.8999999761581421,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "room.redo": {
+      "sourceNode": "1646:5459",
+      "visible": true,
+      "opacity": 1,
+      "x": 71,
+      "y": 494,
+      "width": 37,
+      "height": 37,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 0.7400000095367432,
+          "visible": true
+        }
+      ],
+      "effects": [
+        {
+          "type": "GLASS",
+          "visible": true,
+          "radius": 3.5999999046325684,
+          "boundVariables": {},
+          "refraction": 0.800000011920929,
+          "depth": 18,
+          "lightAngle": -45,
+          "lightIntensity": 0.800000011920929,
+          "dispersion": 0.5,
+          "splay": 0
+        }
+      ],
+      "cornerRadius": 42,
+      "strokeWeight": 0.8999999761581421,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "room.reset": {
+      "sourceNode": "1646:5462",
+      "visible": true,
+      "opacity": 1,
+      "x": 296,
+      "y": 493.9169921875,
+      "width": 74,
+      "height": 38,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "opacity": 1,
+          "visible": false
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 19,
+      "strokeWeight": 1.100000023841858,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "room.tooltip": {
+      "sourceNode": "1646:5465",
+      "visible": true,
+      "opacity": 1,
+      "x": 207.99998474121094,
+      "y": 254.8874969482422,
+      "width": 100,
+      "height": 60.00000762939453,
+      "effects": [],
+      "cornerRadius": 0,
+      "strokeWeight": 1,
+      "layoutMode": "VERTICAL",
+      "itemSpacing": -1,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "room.editorSheet": {
+      "sourceNode": "1646:5472",
+      "visible": true,
+      "opacity": 1,
+      "x": -0.16796875,
+      "y": 544,
+      "width": 390,
+      "height": 325,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "opacity": 1,
+          "visible": false
+        }
+      ],
+      "effects": [],
+      "strokeWeight": 1,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "room.furnitureSelected": {
+      "sourceNode": "1646:5478",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": -26,
+      "width": 104.89498901367188,
+      "height": 83.15999603271484,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.772549033164978,
+            "g": 0.9254902005195618,
+            "b": 0.9764705896377563
+          },
+          "opacity": 0.6899999976158142,
+          "visible": false
+        },
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9974356293678284,
+                "g": 0.9974356293678284,
+                "b": 0.9974356293678284,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.7713926434516907,
+                "g": 0.9364060759544373,
+                "b": 0.9871793985366821,
+                "a": 1
+              },
+              "position": 0.9697805643081665,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.03376460447907448,
+              0.6303068399429321,
+              0.5005324482917786
+            ],
+            [
+              -0.6303068399429321,
+              0.004156933166086674,
+              0.9231472611427307
+            ]
+          ]
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "opacity": 1,
+          "visible": false
+        },
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.6970935463905334,
+            "g": 0.8650071620941162,
+            "b": 0.916672945022583
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 13.229999542236328,
+      "strokeWeight": 0.5249999761581421,
+      "layoutMode": "VERTICAL",
+      "itemSpacing": 3.7799997329711914,
+      "paddingTop": 5.669999599456787,
+      "paddingRight": 5.669999599456787,
+      "paddingBottom": 5.669999599456787,
+      "paddingLeft": 5.669999599456787,
+      "effectiveVisible": true
+    },
+    "room.furnitureDefault": {
+      "sourceNode": "1646:5480",
+      "visible": true,
+      "opacity": 0.6899999976158142,
+      "x": 116.70703125,
+      "y": -26,
+      "width": 104.89498901367188,
+      "height": 83.15999603271484,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.9503455758094788,
+            "g": 0.9503455758094788,
+            "b": 0.9503455758094788
+          },
+          "opacity": 0.699999988079071,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "opacity": 1,
+          "visible": false
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 13.229999542236328,
+      "strokeWeight": 0.5249999761581421,
+      "layoutMode": "VERTICAL",
+      "itemSpacing": 3.7799997329711914,
+      "paddingTop": 5.669999599456787,
+      "paddingRight": 5.669999599456787,
+      "paddingBottom": 5.669999599456787,
+      "paddingLeft": 5.669999599456787,
+      "effectiveVisible": true
+    },
+    "focus.goal": {
+      "sourceNode": "1654:10142",
+      "visible": true,
+      "opacity": 1,
+      "x": 31.765625,
+      "y": 125,
+      "width": 326,
+      "height": 66,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 0.5799999833106995,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.3233736455440521,
+                "g": 0.3233736455440521,
+                "b": 0.3233736455440521,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.41180890798568726,
+                "g": 0.41180890798568726,
+                "b": 0.41180890798568726,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              6.123234262925839e-17,
+              1,
+              0
+            ],
+            [
+              -1,
+              6.123234262925839e-17,
+              1
+            ]
+          ]
+        }
+      ],
+      "effects": [
+        {
+          "type": "GLASS",
+          "visible": true,
+          "radius": 11,
+          "boundVariables": {},
+          "refraction": 0.25,
+          "depth": 84,
+          "lightAngle": 315,
+          "lightIntensity": 0,
+          "dispersion": 0.20000000298023224,
+          "splay": 0
+        }
+      ],
+      "cornerRadius": 15,
+      "strokeWeight": 2.3087353706359863,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 16,
+      "paddingTop": 24,
+      "paddingRight": 16,
+      "paddingBottom": 24,
+      "paddingLeft": 16,
+      "effectiveVisible": true
+    },
+    "focus.timerOverlay": {
+      "sourceNode": "1654:10133",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 422,
+      "width": 390,
+      "height": 424,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 0.019999999552965164
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.09031224995851517,
+                "g": 0.18399469554424286,
+                "b": 0.21282026171684265,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              -1,
+              0,
+              1
+            ]
+          ]
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 0,
+      "strokeWeight": 1,
+      "effectiveVisible": true
+    },
+    "focus.pause": {
+      "sourceNode": "1654:10139",
+      "visible": true,
+      "opacity": 1,
+      "x": 287.7470947265392,
+      "y": 638.3744750976621,
+      "width": 73.56269836425781,
+      "height": 73.56269836425781,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 0.30000001192092896,
+          "visible": true
+        }
+      ],
+      "effects": [
+        {
+          "type": "GLASS",
+          "visible": true,
+          "radius": 3.5999999046325684,
+          "boundVariables": {},
+          "refraction": 0.800000011920929,
+          "depth": 18,
+          "lightAngle": -45,
+          "lightIntensity": 0.800000011920929,
+          "dispersion": 0.5,
+          "splay": 0
+        }
+      ],
+      "cornerRadius": 0,
+      "strokeWeight": 0.8999999761581421,
+      "effectiveVisible": true
+    },
+    "focus.setProgress": {
+      "sourceNode": "1654:10147",
+      "visible": true,
+      "opacity": 1,
+      "x": 32.99609375,
+      "y": 735.9898071289062,
+      "width": 324,
+      "height": 37.357421875,
+      "effects": [],
+      "effectiveVisible": true
+    },
+    "making.steps": {
+      "sourceNode": "1654:10380",
+      "visible": true,
+      "opacity": 1,
+      "x": 23.810546875,
+      "y": 128.250244140625,
+      "width": 342.0000305175781,
+      "height": 35.000003814697266,
+      "effects": [],
+      "cornerRadius": 0,
+      "strokeWeight": 1,
+      "layoutMode": "NONE",
+      "itemSpacing": 6.000000476837158,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "making.hero": {
+      "sourceNode": "1654:10404",
+      "visible": true,
+      "opacity": 1,
+      "x": 26.748046875,
+      "y": 186.982421875,
+      "width": 334.9201965332031,
+      "height": 383.3076171875,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [
+        {
+          "type": "GLASS",
+          "visible": true,
+          "radius": 6.349197864532471,
+          "boundVariables": {},
+          "refraction": 0.800000011920929,
+          "depth": 31.745988845825195,
+          "lightAngle": -45,
+          "lightIntensity": 0.800000011920929,
+          "dispersion": 0.5,
+          "splay": 0
+        }
+      ],
+      "cornerRadius": 22,
+      "strokeWeight": 0.7936497330665588,
+      "effectiveVisible": true
+    },
+    "making.previous": {
+      "sourceNode": "1654:10394",
+      "visible": true,
+      "opacity": 1,
+      "x": 0,
+      "y": 0,
+      "width": 170.9996795654297,
+      "height": 59.99988555908203,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": false,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9974356293678284,
+                "g": 0.9974356293678284,
+                "b": 0.9974356293678284,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.7713926434516907,
+                "g": 0.9364060759544373,
+                "b": 0.9871793985366821,
+                "a": 1
+              },
+              "position": 0.9697805643081665,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.03376460447907448,
+              0.6303068399429321,
+              0.5005324482917786
+            ],
+            [
+              -0.6303068399429321,
+              0.004156933166086674,
+              0.9231472611427307
+            ]
+          ]
+        },
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        },
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.7634465098381042,
+            "g": 0.7634465098381042,
+            "b": 0.7634465098381042
+          },
+          "opacity": 0.20000000298023224,
+          "visible": false
+        }
+      ],
+      "strokes": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9330679178237915,
+                "g": 0.9330679178237915,
+                "b": 0.9330679178237915,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.9111515879631042,
+                "g": 0.9111515879631042,
+                "b": 0.9111515879631042,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              -0.04213855415582657,
+              0.5697650909423828,
+              0.4038947522640228
+            ],
+            [
+              -0.5697650909423828,
+              -0.005187882110476494,
+              0.8827174305915833
+            ]
+          ]
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 31.745927810668945,
+      "strokeWeight": 0.9999967217445374,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 0,
+      "paddingTop": 11.999977111816406,
+      "paddingRight": 11.999977111816406,
+      "paddingBottom": 11.999977111816406,
+      "paddingLeft": 11.999977111816406,
+      "effectiveVisible": true
+    },
+    "making.next": {
+      "sourceNode": "1654:10395",
+      "visible": true,
+      "opacity": 1,
+      "x": 182.9996795654297,
+      "y": 0,
+      "width": 170.9996795654297,
+      "height": 59.99988555908203,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.26923051476478577,
+                "g": 0.26923051476478577,
+                "b": 0.26923051476478577,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.12941177189350128,
+                "g": 0.13333334028720856,
+                "b": 0.14901961386203766,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.09827205538749695,
+              1.4356260299682617,
+              -0.49346286058425903
+            ],
+            [
+              -1.4356260299682617,
+              0.012098758481442928,
+              1.332823634147644
+            ]
+          ]
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 31.745927810668945,
+      "strokeWeight": 0.9999967217445374,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 0,
+      "paddingTop": 11.999977111816406,
+      "paddingRight": 11.999977111816406,
+      "paddingBottom": 11.999977111816406,
+      "paddingLeft": 11.999977111816406,
+      "effectiveVisible": true
+    },
+    "making.segmentedControl": {
+      "sourceNode": "1654:10397",
+      "visible": true,
+      "opacity": 1,
+      "x": 20.884765625,
+      "y": 587,
+      "width": 133.0529022216797,
+      "height": 38.74972915649414,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 27.936471939086914,
+      "strokeWeight": 0.8730147480964661,
+      "effectiveVisible": true
+    },
+    "making.segmentSelected": {
+      "sourceNode": "1654:10398",
+      "visible": true,
+      "opacity": 1,
+      "x": 25.435546875,
+      "y": 590.6233887672424,
+      "width": 61.91901779174805,
+      "height": 31.275888442993164,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.8117647171020508,
+            "g": 0.9098039269447327,
+            "b": 0.9490196108818054
+          },
+          "opacity": 1,
+          "visible": false
+        },
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9974356293678284,
+                "g": 0.9974356293678284,
+                "b": 0.9974356293678284,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.7713926434516907,
+                "g": 0.9364060759544373,
+                "b": 0.9871793985366821,
+                "a": 1
+              },
+              "position": 0.9697805643081665,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.03376460447907448,
+              0.6303068399429321,
+              0.5005324482917786
+            ],
+            [
+              -0.6303068399429321,
+              0.004156933166086674,
+              0.9231472611427307
+            ]
+          ]
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        },
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.6970935463905334,
+            "g": 0.8650071620941162,
+            "b": 0.916672945022583
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 24.444412231445312,
+      "strokeWeight": 0.8730147480964661,
+      "effectiveVisible": true
+    },
+    "making.shapeDefault": {
+      "sourceNode": "1654:10407",
+      "visible": true,
+      "opacity": 1,
+      "x": 200.572265625,
+      "y": 669.42578125,
+      "width": 76.79989624023438,
+      "height": 31.08567237854004,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.0941176488995552,
+            "g": 0.0941176488995552,
+            "b": 0.0941176488995552
+          },
+          "opacity": 1,
+          "visible": false
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 18.285690307617188,
+      "strokeWeight": 0.9142845273017883,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "making.shapeSelected": {
+      "sourceNode": "1654:10409",
+      "visible": true,
+      "opacity": 1,
+      "x": 24.001953125,
+      "y": 669.42578125,
+      "width": 84.11418151855469,
+      "height": 32.91423797607422,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.8745098114013672,
+            "g": 0.9490196108818054,
+            "b": 0.9725490212440491
+          },
+          "opacity": 1,
+          "visible": false
+        },
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9974356293678284,
+                "g": 0.9974356293678284,
+                "b": 0.9974356293678284,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.7713926434516907,
+                "g": 0.9364060759544373,
+                "b": 0.9871793985366821,
+                "a": 1
+              },
+              "position": 0.9697805643081665,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.03376460447907448,
+              0.6303068399429321,
+              0.5005324482917786
+            ],
+            [
+              -0.6303068399429321,
+              0.004156933166086674,
+              0.9231472611427307
+            ]
+          ]
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.6970935463905334,
+            "g": 0.8650071620941162,
+            "b": 0.916672945022583
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 18.285690307617188,
+      "strokeWeight": 0.699999988079071,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "couch.card": {
+      "sourceNode": "1655:4993",
+      "visible": true,
+      "opacity": 1,
+      "x": 16.458984375,
+      "y": 338.796875,
+      "width": 358,
+      "height": 363.994140625,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": false,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9974356293678284,
+                "g": 0.9974356293678284,
+                "b": 0.9974356293678284,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.7713926434516907,
+                "g": 0.9364060759544373,
+                "b": 0.9871793985366821,
+                "a": 1
+              },
+              "position": 0.9697805643081665,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.03376460447907448,
+              0.6303068399429321,
+              0.5005324482917786
+            ],
+            [
+              -0.6303068399429321,
+              0.004156933166086674,
+              0.9231472611427307
+            ]
+          ]
+        },
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.7686274647712708,
+            "g": 0.9254902005195618,
+            "b": 0.9764705896377563
+          },
+          "opacity": 1,
+          "visible": false
+        }
+      ],
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "visible": false,
+          "radius": 10.300000190734863,
+          "boundVariables": {},
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0.25
+          },
+          "offset": {
+            "x": 0,
+            "y": 4
+          },
+          "spread": 0,
+          "blendMode": "NORMAL",
+          "showShadowBehindNode": false
+        }
+      ],
+      "cornerRadius": 21,
+      "strokeWeight": 8,
+      "effectiveVisible": true
+    },
+    "couch.player": {
+      "sourceNode": "1655:5003",
+      "visible": true,
+      "opacity": 1,
+      "x": 31,
+      "y": 353,
+      "width": 329,
+      "height": 184,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.9820509552955627,
+                "g": 0.9255343675613403,
+                "b": 0.8548884391784668,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.8274509906768799,
+                "g": 0.929411768913269,
+                "b": 0.9607843160629272,
+                "a": 1
+              },
+              "position": 0.37980708479881287,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.1568627506494522,
+                "g": 0.7450980544090271,
+                "b": 0.9803921580314636,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.800000011920929,
+              0.6000000238418579,
+              0
+            ],
+            [
+              -0.6000000238418579,
+              0.800000011920929,
+              0.30000001192092896
+            ]
+          ]
+        }
+      ],
+      "strokes": [
+        {
+          "type": "GRADIENT_RADIAL",
+          "opacity": 1,
+          "visible": false,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.476421982049942,
+                "g": 0.5331388711929321,
+                "b": 0.5490196347236633,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.7199443578720093,
+                "g": 0.9367344975471497,
+                "b": 0.9974356293678284,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              6.123234262925839e-17,
+              1,
+              0
+            ],
+            [
+              -1,
+              6.123234262925839e-17,
+              1
+            ]
+          ]
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 14,
+      "strokeWeight": 9,
+      "layoutMode": "NONE",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "couch.previous": {
+      "sourceNode": "1655:4994",
+      "visible": true,
+      "opacity": 1,
+      "x": 99,
+      "y": 567.2529296875,
+      "width": 44,
+      "height": 44,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.9411764740943909,
+            "g": 0.9607843160629272,
+            "b": 0.9725490212440491
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 22,
+      "strokeWeight": 1,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "couch.next": {
+      "sourceNode": "1655:4995",
+      "visible": true,
+      "opacity": 1,
+      "x": 247,
+      "y": 567.736328125,
+      "width": 44,
+      "height": 44,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0.9411764740943909,
+            "g": 0.9607843160629272,
+            "b": 0.9725490212440491
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 22,
+      "strokeWeight": 1,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "paddingLeft": 0,
+      "effectiveVisible": true
+    },
+    "couch.pause": {
+      "sourceNode": "1655:5000",
+      "visible": true,
+      "opacity": 1,
+      "x": 165.771484375,
+      "y": 560.2667236328125,
+      "width": 58.45683288574219,
+      "height": 58.45683288574219,
+      "effects": [],
+      "effectiveVisible": true
+    },
+    "couch.cta": {
+      "sourceNode": "1655:4998",
+      "visible": true,
+      "opacity": 1,
+      "x": 23.500320434570312,
+      "y": 717.45703125,
+      "width": 342.99871826171875,
+      "height": 45.99991226196289,
+      "fills": [
+        {
+          "type": "GRADIENT_LINEAR",
+          "opacity": 1,
+          "visible": true,
+          "gradientStops": [
+            {
+              "color": {
+                "r": 0.26923051476478577,
+                "g": 0.26923051476478577,
+                "b": 0.26923051476478577,
+                "a": 1
+              },
+              "position": 0,
+              "boundVariables": {}
+            },
+            {
+              "color": {
+                "r": 0.12941177189350128,
+                "g": 0.13333334028720856,
+                "b": 0.14901961386203766,
+                "a": 1
+              },
+              "position": 1,
+              "boundVariables": {}
+            }
+          ],
+          "gradientTransform": [
+            [
+              0.09827205538749695,
+              1.4356260299682617,
+              -0.49346286058425903
+            ],
+            [
+              -1.4356260299682617,
+              0.012098758481442928,
+              1.332823634147644
+            ]
+          ]
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 31.745927810668945,
+      "strokeWeight": 0.9999967217445374,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 0,
+      "paddingTop": 11.999977111816406,
+      "paddingRight": 11.999977111816406,
+      "paddingBottom": 11.999977111816406,
+      "paddingLeft": 11.999977111816406,
+      "effectiveVisible": true
+    },
+    "couch.playlist": {
+      "sourceNode": "1655:5018",
+      "visible": true,
+      "opacity": 1,
+      "x": 30,
+      "y": 640.845703125,
+      "width": 329.9993591308594,
+      "height": 45.99982452392578,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0
+          },
+          "opacity": 1,
+          "visible": false
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 46.999908447265625,
+      "strokeWeight": 0.5249989628791809,
+      "layoutMode": "HORIZONTAL",
+      "itemSpacing": 3.7799925804138184,
+      "paddingTop": 5.669988632202148,
+      "paddingRight": 5.669988632202148,
+      "paddingBottom": 5.669988632202148,
+      "paddingLeft": 5.669988632202148,
+      "effectiveVisible": true
+    },
+    "couch.progressTrack": {
+      "sourceNode": "1655:5012",
+      "visible": true,
+      "opacity": 1,
+      "x": 10,
+      "y": 167.06640625,
+      "width": 312.099609375,
+      "height": 3.867403268814087,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 0.4000000059604645,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 2,
+      "strokeWeight": 1,
+      "effectiveVisible": true
+    },
+    "couch.progressFill": {
+      "sourceNode": "1655:5013",
+      "visible": true,
+      "opacity": 1,
+      "x": 10,
+      "y": 168,
+      "width": 108,
+      "height": 4,
+      "fills": [
+        {
+          "type": "SOLID",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "opacity": 1,
+          "visible": true
+        }
+      ],
+      "effects": [],
+      "cornerRadius": 2,
+      "strokeWeight": 1,
+      "effectiveVisible": true
+    }
+  },
+  "fontResources": [
+    {
+      "file": "GmarketSansTTFBold.ttf",
+      "postScriptName": "GmarketSansTTFBold",
+      "sha256": "ff7c354dd1a324e4cecc1223c4f71e74fa81be7027e0c7f6324c475909cacefc",
+      "usage": "ADDITIONAL_WEIGHT"
+    },
+    {
+      "file": "GmarketSansTTFLight.ttf",
+      "postScriptName": "GmarketSansTTFLight",
+      "sha256": "7e8e8c70349ed94acf3ea4c6962a56417fdfa0a8803bc6cf9dc36324d5656849",
+      "usage": "ADDITIONAL_WEIGHT"
+    },
+    {
+      "file": "GmarketSansTTFMedium.ttf",
+      "postScriptName": "GmarketSansTTFMedium",
+      "sha256": "c6b9a2c10bfdb55975948ce191f9cf638955b5cfdc99149969add5b579262fc1",
+      "usage": "SOURCE_TYPOGRAPHY"
+    },
+    {
+      "file": "Pretendard-Black.otf",
+      "postScriptName": "Pretendard-Black",
+      "sha256": "94628b0bcea8936b6e5c30d98d685eb9bbaffb0fe2ed255542ecc656c248e021",
+      "usage": "ADDITIONAL_WEIGHT"
+    },
+    {
+      "file": "Pretendard-Bold.otf",
+      "postScriptName": "Pretendard-Bold",
+      "sha256": "2e91915fab54df71cc9598ebf608b2bdb54c6fe3c066ac61dff0bc44fca71cc7",
+      "usage": "SOURCE_TYPOGRAPHY"
+    },
+    {
+      "file": "Pretendard-Medium.otf",
+      "postScriptName": "Pretendard-Medium",
+      "sha256": "d39e50e4bb52b4993b6a4eeb821a171254745bd824446af01e1f616b89fface0",
+      "usage": "SOURCE_TYPOGRAPHY"
+    },
+    {
+      "file": "Pretendard-Regular.otf",
+      "postScriptName": "Pretendard-Regular",
+      "sha256": "3ffbacde6ab8411f1d2db54bb9b1f0b3ee2a738932033722cf0388c06aed1c93",
+      "usage": "SOURCE_TYPOGRAPHY"
+    },
+    {
+      "file": "Pretendard-SemiBold.otf",
+      "postScriptName": "Pretendard-SemiBold",
+      "sha256": "c89bc43027dc7cde5726e96223376f8eec09302b2fc1f8147fd5b57cfc376118",
+      "usage": "SOURCE_TYPOGRAPHY"
+    }
+  ],
+  "resourceFiles": {
+    "layers": "RepresentativeLayers.json",
+    "assets": "RepresentativeAssets.json"
+  },
+  "buttonStates": {
+    "disabled": {
+      "opacity": 0.35,
+      "sourceNodes": [
+        "1727:22363",
+        "1727:22562"
+      ]
+    }
+  },
+  "interactionRules": {
+    "couch": {
+      "maximumCompanions": 1,
+      "selectionMode": "single",
+      "onSelectingAnother": "replace",
+      "source": "User clarification on 2026-11-17; overrides older two-companion source states."
+    }
+  }
+}

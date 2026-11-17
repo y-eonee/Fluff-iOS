@@ -13,19 +13,6 @@ struct DollHistoryCard: View {
     var body: some View {
         let history = doll.history
         VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 12) {
-                information("처음 만난 날", value: firstMet)
-                information("누른 횟수", value: "\(history[.touch])회")
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                Text("\(doll.name.josa("과", "와")) 함께한 시간").pretendard(.bold, 15)
-                HStack(spacing: 12) {
-                    activity("책상", icon: "book", count: history[.desk])
-                    activity("창문", icon: "window", count: history[.window])
-                    activity("소파", icon: "sofa", count: history[.sofa])
-                    activity("침대", icon: "bed", count: history[.bed])
-                }
-            }
             VStack(alignment: .leading, spacing: 12) {
                 Text("\(doll.name) 상태").pretendard(.bold, 15)
                 HStack(spacing: 8) {
@@ -36,7 +23,7 @@ struct DollHistoryCard: View {
             }
         }.padding(.horizontal, 16).padding(.vertical, 18)
             .foregroundStyle(Color.mib.text.primary)
-            .background(Color.mib.bg.surface, in: RoundedRectangle(cornerRadius: 24))
+
     }
 
     private func information(_ title: String, value: String) -> some View {
@@ -59,12 +46,18 @@ struct DollHistoryCard: View {
 
     private func stat(_ title: String, icon: String, score: Int, source: String) -> some View {
         VStack(spacing: 3) {
-            Image("history_\(icon)").resizable().scaledToFit().frame(width: 20, height: 20).accessibilityHidden(true)
+            Image("history_\(icon)").renderingMode(.template).resizable().scaledToFit()
+                .foregroundStyle(Color.rep4.c03)
+                .frame(width: icon == "book" ? 24 : 20, height: icon == "book" ? 27 : 20).accessibilityHidden(true)
             Text(title).pretendard(.semiBold, 12)
             Text("\(score) / 100").pretendard(.semiBold, 13)
             Text(source).pretendard(.regular, 10).foregroundStyle(Color.mib.text.secondary)
         }.frame(maxWidth: .infinity).frame(minHeight: 99)
-            .background(Color.mib.bg.mintSoft, in: RoundedRectangle(cornerRadius: 15))
+            .background(alignment: .bottom) {
+                Color.rep4.c01
+                RepresentativeGradientFill(definition: RepresentativeGradients.selected)
+                    .frame(height: 99 * CGFloat(min(100, max(0, score))) / 100)
+            }.clipShape(RoundedRectangle(cornerRadius: 18.286))
             .accessibilityElement(children: .combine)
             .accessibilityHint("\(source) 활동 1회마다 1점, 최대 100점")
     }

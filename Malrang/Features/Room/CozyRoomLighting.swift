@@ -21,7 +21,8 @@ enum CozyRoomLighting {
     format.scale = 1
     let image = UIGraphicsImageRenderer(size: size, format: format).image { renderer in
       // Keep the night sky dark while giving the room readable, soft ambient light.
-      let ambientSky = profile.phase == .night ? ["#9295B4", "#B9B0B4", "#D5C8BB"] : profile.sky
+      let ambientSky = profile.phase == .night ? ["#9295B4", "#B9B0B4", "#D5C8BB"]
+        : profile.phase == .day ? ["#DDEBFA", "#F5F5F3", "#E8E4DE"] : profile.sky
       let colors = (ambientSky + [ambientSky.last!]).map { Palette.uiColor($0).cgColor }
       if let gradient = CGGradient(
         colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray,
@@ -37,10 +38,12 @@ enum CozyRoomLighting {
     return environment
   }
 
-  static func apply(_ profile: RoomDaylight, to root: Entity) async {
-    let color = UIColor(
-      red: CGFloat(profile.tint.x), green: CGFloat(profile.tint.y), blue: CGFloat(profile.tint.z),
+  static func apply(_ profile: RoomDaylight, to root: Entity, cutaway: Bool = false) async {
+    let directTint = cutaway ? simd_mix(profile.tint, SIMD3<Float>(repeating: 1), SIMD3<Float>(repeating: 0.65)) : profile.tint
+    let directColor = UIColor(
+      red: CGFloat(directTint.x), green: CGFloat(directTint.y), blue: CGFloat(directTint.z),
       alpha: 1)
+    let color = UIColor(red: CGFloat(profile.tint.x), green: CGFloat(profile.tint.y), blue: CGFloat(profile.tint.z), alpha: 1)
     let texture: TextureResource?
     if daylightTint == profile.tint, let cached = daylightTexture {
       texture = cached
@@ -64,8 +67,10 @@ enum CozyRoomLighting {
     func update(_ entity: Entity) {
       if let light = entity as? SpotLight {
         if light.name == "window-sunlight" || light.name == "window-desk-fill" {
-          light.light.color = color
-          light.light.intensity = (light.name == "window-sunlight" ? 4400 : 3200) * profile.strength
+          light.light.color = directColor
+          let windowIntensity: Float = cutaway ? 4200 : 2600
+          let deskIntensity: Float = cutaway ? 2400 : 1600
+          light.light.intensity = (light.name == "window-sunlight" ? windowIntensity : deskIntensity) * profile.strength
         }
       }
       if let lamp = entity as? PointLight, lamp.name == "desk-lamp-light" {
@@ -93,7 +98,7 @@ enum CozyRoomLighting {
     let sun = SpotLight()
     sun.name = "window-sunlight"
     sun.light.color = Palette.uiColor("#FFE1BA")
-    sun.light.intensity = 4400
+    sun.light.intensity = 2600
     sun.light.attenuationRadius = 4
     sun.light.innerAngleInDegrees = 14
     sun.light.outerAngleInDegrees = 34
@@ -107,7 +112,7 @@ enum CozyRoomLighting {
     let deskFill = SpotLight()
     deskFill.name = "window-desk-fill"
     deskFill.light.color = Palette.uiColor("#FFE3BC")
-    deskFill.light.intensity = 3200
+    deskFill.light.intensity = 1600
     deskFill.light.attenuationRadius = 4
     deskFill.light.innerAngleInDegrees = 10
     deskFill.light.outerAngleInDegrees = 26

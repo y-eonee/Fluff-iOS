@@ -9,7 +9,7 @@ final class DollDraft {
     var cutout: UIImage?
     /// 지우기·복원으로 다듬은 결과
     var editedCutout: UIImage?
-    var shape = DollShape.pillow
+    var shape = DollShape.bear
     var preset = PresetConfiguration()
     var usesPresetPhoto = false
     var snapshot: UIImage?
@@ -93,14 +93,14 @@ struct CreateFlowView: View {
             PhotoPickStep(draft: draft) { path.append(.cutout) }
                 .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 0) }
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) { exitButton }
+                    ToolbarItem(placement: .topBarLeading) { exitButton }.sharedBackgroundVisibility(.hidden)
                 }
                 .navigationDestination(for: CreateStep.self) { step in
                     destination(step)
                         .background { AppBackground() }
                         .navigationBarBackButtonHidden()
                         .toolbar {
-                            if !isDone(step) { ToolbarItem(placement: .topBarLeading) { exitButton } }
+                            if !isDone(step) { ToolbarItem(placement: .topBarLeading) { exitButton }.sharedBackgroundVisibility(.hidden) }
                         }
                         .safeAreaInset(edge: .top, spacing: 0) {
                             if step == .cutout || step == .ready || step == .method {
@@ -110,6 +110,7 @@ struct CreateFlowView: View {
                 }
         }
         .interactiveDismissDisabled()
+
         .accessibilityHidden(confirmingExit)
         .overlay { if confirmingExit { exitDialog } }
     }
@@ -119,28 +120,14 @@ struct CreateFlowView: View {
     }
 
     private var exitButton: some View {
-        Button { confirmingExit = true } label: { D1Icon(name: "back").frame(width: 44, height: 44) }
-            .accessibilityLabel("인형 만들기 나가기")
+        CreationBackButton(label: "인형 만들기 나가기") { confirmingExit = true }
     }
 
     private var exitDialog: some View {
-        ZStack {
-            Color.mib.text.primary.opacity(0.28).ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 19) {
-                Text("인형 만들기를 그만할까요?").pretendard(.bold, 20).foregroundStyle(Color.mib.text.primary)
-                Text("지금까지 만든 내용은 저장되지 않아요.").pretendard(.regular, 14).foregroundStyle(Color.mib.text.secondary)
-                Spacer(minLength: 24)
-                HStack(spacing: 12) {
-                    Button("머무르기") { confirmingExit = false }.buttonStyle(FocusCompactButton())
-                    Button("나가기") {
-                        draft.releaseImages(); confirmingExit = false
-                        returnToDollList(); dismiss(); onExit()
-                    }.buttonStyle(FocusCompactButton(primary: true))
-                }.frame(height: 52)
-            }.padding(.horizontal, 24).padding(.vertical, 30).frame(height: 248)
-                .background(Color.mib.bg.surface, in: RoundedRectangle(cornerRadius: 28))
-                .padding(.horizontal, 24).accessibilityAddTraits(.isModal)
-        }.accessibilityAction(.escape) { confirmingExit = false }
+        RepresentativeConfirmDialog(title: "인형 만들기를 그만할까요?", message: "지금까지 만든 내용은 저장되지 않아요.", onLeave: {
+            draft.releaseImages(); confirmingExit = false
+            returnToDollList(); dismiss(); onExit()
+        }, onStay: { confirmingExit = false })
     }
 
     @ViewBuilder
@@ -148,7 +135,7 @@ struct CreateFlowView: View {
         switch step {
         case .method:
             CreateMethodStep(draft: draft, onPrevious: { path.removeLast() }, onPreset: {
-                if draft.shape == .pillow { draft.shape = .cat }
+                if draft.shape == .pillow { draft.shape = .bear }
                 draft.usesPresetPhoto = true
                 draft.snapshot = nil
                 path.append(.customize)

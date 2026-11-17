@@ -45,13 +45,20 @@ final class YouTubePlayer: NSObject {
         if let playlist = source.playlistID { vars["listType"] = "playlist"; vars["list"] = playlist }
         let settings: [String: Any] = ["width": "100%", "height": "100%", "videoId": source.videoID ?? "", "playerVars": vars]
         let json = String(data: try! JSONSerialization.data(withJSONObject: settings), encoding: .utf8)!
+        let previewMute: String = {
+            #if DEBUG
+            return ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--design-preview=") }) ? "player.mute();" : ""
+            #else
+            return ""
+            #endif
+        }()
         // A base URL supplies the app's Referer identity for locally loaded embedded HTML.
         webView.loadHTMLString("""
         <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><style>html,body,#player{margin:0;width:100%;height:100%;overflow:hidden;background:#000}</style></head><body><div id="player"></div><script>
         let player; let allowed=true;
         function send(o){window.webkit.messageHandlers.player.postMessage(o)}
         function state(){if(!player || !player.getVideoData)return;let d=player.getVideoData(),l=player.getPlaylist();send({type:'state',playing:player.getPlayerState()===1,time:player.getCurrentTime()||0,duration:player.getDuration()||0,title:d.title||'',videoID:d.video_id||'',index:player.getPlaylistIndex()||0,count:l?l.length:0})}
-        function onYouTubeIframeAPIReady(){let c=\(json);c.events={onReady:function(){send({type:'ready'});if(allowed)player.playVideo();state()},onStateChange:function(e){if(e.data===1&&!allowed)player.pauseVideo();state()},onError:function(e){send({type:'error',code:e.data})},onAutoplayBlocked:function(){send({type:'blocked'})}};player=new YT.Player('player',c)}
+        function onYouTubeIframeAPIReady(){let c=\(json);c.events={onReady:function(){send({type:'ready'});\(previewMute)if(allowed)player.playVideo();state()},onStateChange:function(e){if(e.data===1&&!allowed)player.pauseVideo();state()},onError:function(e){send({type:'error',code:e.data})},onAutoplayBlocked:function(){send({type:'blocked'})}};player=new YT.Player('player',c)}
         setInterval(state,750);
         </script><script src="https://www.youtube.com/iframe_api"></script></body></html>
         """, baseURL: URL(string: origin))

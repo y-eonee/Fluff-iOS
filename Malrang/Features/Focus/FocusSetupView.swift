@@ -5,8 +5,9 @@ extension FocusFlowView {
         ZStack(alignment: .bottom) {
                 Color.clear.contentShape(Rectangle()).ignoresSafeArea().onTapGesture { dismiss() }
                 VStack(spacing: 0) {
-                    Capsule().fill(Color.mib.bg.mintSoft).frame(width: 40, height: 4).padding(.top, 12)
-                    Text("함께 집중할 인형 선택").pretendard(.bold, 17).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 20).padding(.bottom, 24)
+                    Text("함께 집중할 인형 선택").pretendard(.bold, 17, tracking: -0.85)
+                        .frame(maxWidth: .infinity, alignment: .leading).frame(height: 26)
+                        .padding(.leading, 4).padding(.top, 31).padding(.bottom, 25)
                     ScrollView {
                         if dolls.isEmpty {
                             VStack(spacing: 16) {
@@ -24,12 +25,20 @@ extension FocusFlowView {
                         session.select(selection); showMain = true
                     }.buttonStyle(D1PrimaryStyle())
                         .disabled(selection == nil || !dolls.contains { $0.id == selection })
-                        .padding(.top, 20).padding(.bottom, 32)
-                }.padding(.horizontal, 22).frame(height: dolls.count <= 2 ? 334 : 474)
+                        .padding(.top, 25).padding(.bottom, 32)
+                }.padding(.horizontal, 22).frame(height: dolls.count <= 2 ? 327 : 467)
                     .background(FocusStyle.paper, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
-                    .background(.ultraThinMaterial, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+                    .overlay(alignment: .top) {
+                        Capsule().fill(Color(uiColor: Palette.uiColor("#FFFDF8"))).frame(width: 40, height: 4).offset(y: -10)
+                    }
                     .accessibilityAction(.escape) { dismiss() }
         }.ignoresSafeArea(edges: .bottom)
+        .overlay(alignment: .topLeading) {
+            HStack(spacing: 8) {
+                Image("home_logo_icon")
+                Text("my room").notCliche(25.397, relativeTo: .title).tracking(-1.778)
+            }.foregroundStyle(Color.rep4.c01).padding(.horizontal, 40).padding(.top, 24)
+        }
         .background {
             roomBackground.ignoresSafeArea()
         }.fullScreenCover(isPresented: $creating) { CreateFlowView(onExit: { dismiss() }) { doll in selection = doll.id } }
@@ -42,8 +51,7 @@ extension FocusFlowView {
                 DollThumbnail(data: doll.imageData, maxPixel: 280).frame(height: 80)
                 Text(doll.name).pretendard(.regular, 16)
             }.frame(maxWidth: .infinity).frame(height: 128)
-                .background(chosen ? Color.mib.bg.mintSoft : FocusStyle.paper, in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.mib.line.selected, lineWidth: chosen ? 2 : 1.4))
+                .modifier(RepresentativeSelectionSurface(selected: chosen, radius: 14, neutral: Color.rep4.c11))
                 .overlay(alignment: .topTrailing) { if chosen { D1Icon(name: "check").padding(8) } }
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityLabel(doll.name).accessibilityAddTraits(chosen ? .isSelected : [])
@@ -52,65 +60,72 @@ extension FocusFlowView {
     func main(_ doll: Doll) -> some View {
         VStack(spacing: 0) {
             header { showMain = false }
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     companionPreview(doll)
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("오늘 \(doll.name.josa("이랑", "랑")) 할 공부").pretendard(.bold, 17)
-                        HStack(spacing: 8) {
+                        Text("오늘 \(doll.name.josa("이랑", "랑")) 할 공부").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
+                        HStack(spacing: 10) {
                             ForEach(StudyActivity.allCases) { activity in activityCard(activity) }
-                        }
+                        }.padding(.trailing, 12)
+
                     }
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("집중 시간 설정").pretendard(.bold, 17)
+                        Text("집중 시간 설정").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("집중 시간").pretendard(.regular, 16)
+                            Text("집중 시간").pretendard(.regular, 14, tracking: -0.7).frame(height: 20)
                             timeStepper(minutes: session.record.focusMinutes, range: 1...180, step: 5, label: "집중 시간") {
                                 session.configure(focus: $0, rest: session.record.restMinutes); session.confirmTime()
                             }
                         }
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("쉬는 시간").pretendard(.regular, 16)
+                            Text("쉬는 시간").pretendard(.regular, 14, tracking: -0.7).frame(height: 20)
                             timeStepper(minutes: session.record.restMinutes, range: 1...60, step: 1, label: "쉬는 시간") {
                                 session.configure(focus: session.record.focusMinutes, rest: $0); session.confirmTime()
                             }
                         }
-                    }
-                }.padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 24)
+                    }.id("focus-time-settings")
+                }.padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 32).id("focus-content")
             }.scrollIndicators(.hidden)
+                #if DEBUG
+                .task {
+                    if ProcessInfo.processInfo.arguments.contains("--design-preview=main-scroll") {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        proxy.scrollTo("focus-content", anchor: .bottom)
+                    }
+                }
+                #endif
+            }
             Button("집중 시작하기") { session.start() }.buttonStyle(D1PrimaryStyle())
                 .disabled(!session.canStart)
                 .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 16)
+                .background(Color.white).padding(.bottom, -18)
         }
     }
 
     private func companionPreview(_ doll: Doll) -> some View {
-        ZStack(alignment: .top) {
-            roomBackground
+        ZStack {
+            Color.white
+            Image("rep4_focus_halo").resizable().frame(width: 277.26, height: 201.95).blur(radius: 21.674).offset(x: -3.15, y: 10)
             Group {
                 if let configuration = doll.presetConfiguration {
-                    PresetDollView(configuration: configuration, cameraDistance: 0.88, cameraTarget: 0.19, fitsModel: true)
+                    PresetDollView(configuration: configuration, cameraDistance: 0.88, cameraTarget: 0.19, fitsModel: true, fitMargin: 0.90)
                         .renderedOnlyWhileVisible(background: .clear)
                 } else { Image(uiImage: doll.image).resizable().scaledToFit() }
-            }.frame(width: 128, height: 174).padding(.top, 8)
-        }.frame(maxWidth: .infinity).frame(height: 188)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .padding(.horizontal, 11).padding(.vertical, 10)
-            .background(Color.mib.bg.surface, in: RoundedRectangle(cornerRadius: 22))
+            }.frame(width: 170, height: 190)
+        }.frame(height: 208).clipShape(RoundedRectangle(cornerRadius: 22))
     }
 
     private func activityCard(_ activity: StudyActivity) -> some View {
         let chosen = session.activity == activity
         return Button { session.selectActivity(activity); session.confirmTime() } label: {
             VStack(spacing: 4) {
-                D1Icon(name: activity.icon).frame(width: 48, height: 48)
-                    .background(Color.mib.bg.mintSoft, in: RoundedRectangle(cornerRadius: 14))
-                Text(activity.title).pretendard(.regular, 16)
-                Text("추천 \(activity.recommendedMinutes)분").pretendard(.medium, 13).foregroundStyle(FocusStyle.muted)
-            }.frame(maxWidth: .infinity).frame(height: 128)
-                .background(chosen ? Color.mib.bg.mintSoft : FocusStyle.paper, in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(FocusStyle.line))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(chosen ? Color.mib.line.selected : Color.clear, lineWidth: 2))
+                D1Icon(name: activity.icon, tint: chosen ? Color.rep4.c03 : Color.rep4.c04).frame(width: 48, height: 48)
+                Text(activity.title).pretendard(.regular, 14, tracking: -0.7).frame(height: 20.3)
+                Text("추천 \(activity.recommendedMinutes)분").pretendard(.regular, 14, tracking: -0.7).foregroundStyle(Color.rep4.c08).frame(height: 20.3)
+            }.padding(.top, 12).frame(maxWidth: .infinity).frame(height: 128, alignment: .top)
+                .modifier(RepresentativeSelectionSurface(selected: chosen, radius: 14, neutral: Color.rep4.c01))
                 .overlay(alignment: .topTrailing) { if chosen { D1Icon(name: "check").padding(8) } }
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityAddTraits(chosen ? .isSelected : [])
@@ -118,17 +133,18 @@ extension FocusFlowView {
 
     private func timeStepper(minutes: Int, range: ClosedRange<Int>, step: Int, label: String, set: @escaping (Int) -> Void) -> some View {
         HStack {
-            Button { set(FocusSession.steppedMinutes(minutes, by: -step, within: range)); customTime = true } label: { D1Icon(name: "minus").frame(width: 44, height: 44).contentShape(Rectangle()) }
+            Button { set(FocusSession.steppedMinutes(minutes, by: -step, within: range)); customTime = true } label: { Image("rep4_focus_minus").resizable().frame(width: 24, height: 24).frame(width: 44, height: 44).contentShape(Rectangle()) }
                 .disabled(minutes <= range.lowerBound).accessibilityLabel("\(label) 줄이기")
             Button { session.confirmTime() } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(minutes)").pretendard(.bold, 21)
-                    Text("분").pretendard(.regular, 16)
+                    Text("\(minutes)").pretendard(.bold, 17, tracking: -0.85)
+                    Text("분").pretendard(.regular, 14, tracking: -0.7)
                 }.frame(maxWidth: .infinity).frame(height: 44)
             }.accessibilityLabel("\(label) \(minutes)분으로 설정")
-            Button { set(FocusSession.steppedMinutes(minutes, by: step, within: range)); customTime = true } label: { D1Icon(name: "plus").frame(width: 44, height: 44).contentShape(Rectangle()) }
+            Button { set(FocusSession.steppedMinutes(minutes, by: step, within: range)); customTime = true } label: { Image("rep4_focus_plus").resizable().frame(width: 24, height: 24).frame(width: 44, height: 44).contentShape(Rectangle()) }
                 .disabled(minutes >= range.upperBound).accessibilityLabel("\(label) 늘리기")
-        }.buttonStyle(.plain).padding(4).d1Surface(radius: 10)
+        }.buttonStyle(.plain).padding(.horizontal, 8).padding(.vertical, 4)
+            .background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 14))
 
     }
 }

@@ -85,6 +85,7 @@ struct RoomSceneView: UIViewRepresentable {
     var onSceneReady: () -> Void = {}
     var onDeskScreen: (CGPoint?) -> Void = { _ in }
     var onFurnitureScreen: ([String: CGRect]) -> Void = { _ in }
+    var onWallScreen: ([CGPoint]) -> Void = { _ in }
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -159,7 +160,7 @@ struct RoomSceneView: UIViewRepresentable {
         private weak var shiftPan: UIPanGestureRecognizer?
         private weak var dollPan: UIPanGestureRecognizer?
         private lazy var cameraDirection = parent.isCozyRoom
-            ? simd_normalize(SIMD3<Float>(1.1, 1.1, 1.5))
+            ? simd_normalize(parent.mode == .decorate ? SIMD3<Float>(1.553, 1.925, 1.5) : SIMD3<Float>(1.18, 0.90, 1.75))
             : simd_normalize(SIMD3<Float>(1, parent.illustrationTargetY == nil ? 0.9 : 0.85, 1))
 
         private struct Drag {
@@ -204,7 +205,7 @@ struct RoomSceneView: UIViewRepresentable {
             }
             orbitYaw = parent.focusItem.map { $0.kind.isMovable && !$0.kind.hangsOnWall ? $0.yaw : 0 } ?? 0
             view.attach(root, camera: camera)
-            camera.camera.fieldOfViewInDegrees = (parent.isCozyRoom && parent.mode != .decorate) ? 42 : (parent.illustrationTargetY == nil ? 30 : 4)
+            camera.camera.fieldOfViewInDegrees = parent.isCozyRoom ? (parent.mode == .decorate ? 4 : 42) : (parent.illustrationTargetY == nil ? 30 : 4)
             light.light.intensity = parent.isCozyRoom ? 1250 : 2500
             if parent.isCozyRoom {
                 view.configureBloom()
@@ -408,7 +409,8 @@ struct RoomSceneView: UIViewRepresentable {
                         } else {
                             model.scale = seatScale
                             DollRestPose.sitting(model)
-                            model.orientation = simd_quatf(angle: seat.yaw, axis: [0, 1, 0])
+                            if seat.kind == .bed { DollRestPose.lookUp(model, angle: 0.40) }
+                            model.orientation = simd_quatf(angle: seat.kind == .bed ? atan2(cameraDirection.x, cameraDirection.z) : seat.yaw, axis: [0, 1, 0])
                             if seat.kind == .chair { DollRestPose.chairSeat(model, on: seat) }
                         }
                     }
@@ -435,12 +437,12 @@ struct RoomSceneView: UIViewRepresentable {
                     }
                     content.addChild(model)
                 }
-                if let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
+                if parent.mode != .decorate, let selected = state.items.first(where: { $0.id == state.selectedItemID }), selected.kind.isMovable {
                     content.addChild(SceneFactory.selectionBox(selected))
                 }
                 if parent.isCozyRoom {
-                    if parent.mode == .decorate { aimCamera(at: [0, 0.55, 0], fitting: 3.3, height: 2.9) }
-                    else { aimCamera(at: [-0.10, 0.36, -0.18], fitting: 1.90, height: 3.0) }
+                    if parent.mode == .decorate { aimCamera(at: [0, 0.526, 0], fitting: 3.0855, height: 2.55) }
+                    else { aimCamera(at: [-0.10, 0.52, -0.18], fitting: 1.65, height: 3.0) }
                     content.addChild(CozyRoomLighting.sunlight())
                 } else {
                     aimCamera(at: [0, parent.illustrationTargetY ?? 0.45, 0], fitting: parent.illustrationTargetY == nil ? 3.3 : 3.55, height: parent.illustrationTargetY == nil ? 3.1 : 2.9)
@@ -454,7 +456,7 @@ struct RoomSceneView: UIViewRepresentable {
             if parent.isCozyRoom {
                 let date = RoomDaylight.currentDate
                 let profile = RoomDaylight.at(date)
-                await CozyRoomLighting.apply(profile, to: content)
+                await CozyRoomLighting.apply(profile, to: content, cutaway: parent.mode == .decorate)
                 configureDaylight(profile)
                 lastLightingProfile = profile
                 lastLightingMinute = Int(date.timeIntervalSince1970 / 60)
@@ -473,6 +475,9 @@ struct RoomSceneView: UIViewRepresentable {
             lastStaticProjection = nil
             configureAccessibility(content)
             parent.onSceneReady()
+            #if DEBUG
+            DesignPreviewSignal.sceneReady(dollCount: state.dolls.count)
+            #endif
             for doll in state.dolls where doll.restingBedID != nil && !approachingBeds.contains(doll.id) { parent.onSleepSettled(doll.id) }
             for (model, seat, destination, scale) in sitting {
                 await DollBedMotion.walkAndSit(model, seat: seat, destination: destination, scale: scale, items: state.items)
@@ -509,15 +514,18 @@ struct RoomSceneView: UIViewRepresentable {
                 guard !Task.isCancelled else { return }
                 self.view?.environmentResource = environment
                 self.configureDaylight(profile)
-                await CozyRoomLighting.apply(profile, to: content)
+                await CozyRoomLighting.apply(profile, to: content, cutaway: self.parent.mode == .decorate)
                 if !Task.isCancelled { self.lastLightingProfile = profile }
             }
         }
 
         private func configureDaylight(_ profile: RoomDaylight) {
-            view?.lightingExponent = profile.phase == .night ? 0.15 : 0.05
-            light.light.color = UIColor(red: CGFloat(0.65 + 0.35 * profile.tint.x), green: CGFloat(0.65 + 0.35 * profile.tint.y), blue: CGFloat(0.65 + 0.35 * profile.tint.z), alpha: 1)
-            light.light.intensity = 650 + 600 * profile.strength
+            let studioFill: Float = parent.mode == .decorate ? 0.90 : 0.65
+            view?.lightingExponent = profile.phase == .night ? 0.15 : (parent.mode == .decorate ? -0.20 : -0.10)
+            light.light.color = UIColor(red: CGFloat(studioFill + (1 - studioFill) * profile.tint.x), green: CGFloat(studioFill + (1 - studioFill) * profile.tint.y), blue: CGFloat(studioFill + (1 - studioFill) * profile.tint.z), alpha: 1)
+            light.light.intensity = parent.mode == .decorate
+                ? 500 + 1950 * profile.strength
+                : 650 + 1900 * profile.strength
         }
 
         private func finishPlacement() -> [UUID: SIMD3<Float>] {
@@ -669,21 +677,27 @@ struct RoomSceneView: UIViewRepresentable {
             reportFurnitureScreen()
         }
 
+        private var lastWallPolygon: [CGPoint] = []
         private func reportFurnitureScreen() {
             guard let view, let content = root.children.first, let state = displayed else { return }
             var rects: [String: CGRect] = [:]
-            for item in state.items where item.kind.hasHomeInteraction {
+            for item in state.items where item.kind.hasHomeInteraction || parent.mode == .decorate {
                 guard let entity = content.findEntity(named: "item|\(item.id)") else { continue }
                 let points: [SIMD3<Float>]
                 let key: String
                 if item.kind == .wall {
-                    key = "창문"; points = [[-0.92, 0.43, -0.28], [-0.92, 1.48, 0.38]]
+                    key = "창문"
+                    points = parent.mode == .decorate
+                        ? [[-0.995, 0, -1], [-0.995, CozyRoomShell.cutawayHeight(x: -0.995, z: -1), -1], [-0.995, 0, 1], [-0.995, CozyRoomShell.cutawayHeight(x: -0.995, z: 1), 1]]
+                        : [[-0.92, 0.43, -0.28], [-0.92, 1.48, 0.38]]
                 } else if item.kind == .desk || item.kind == .sofa {
                     key = item.kind == .sofa ? "소파" : item.kind.label
                     let size = item.kind.size
+                    let visibleHeight = item.kind == .desk && parent.mode == .decorate
+                        ? item.kind.seatHeight ?? size.y : size.y
                     points = [-1 as Float, 1].flatMap { x in
                         [0 as Float, 1].flatMap { y in
-                            [-1 as Float, 1].map { z in SIMD3(x * size.x / 2, y * size.y, z * size.z / 2) }
+                            [-1 as Float, 1].map { z in SIMD3(x * size.x / 2, y * visibleHeight, z * size.z / 2) }
                         }
                     }
                 } else {
@@ -692,10 +706,16 @@ struct RoomSceneView: UIViewRepresentable {
                     points = [[-size.x / 2, 0, -size.z / 2], [size.x / 2, size.y, size.z / 2]]
                 }
                 let screen = points.compactMap { view.project(entity.convert(position: $0, to: nil)) }
+                if item.kind == .wall, parent.mode == .decorate, screen.count == 4 {
+                    let polygon = [screen[3], screen[1], screen[0], screen[2]]
+                    if polygon != lastWallPolygon { lastWallPolygon = polygon; parent.onWallScreen(polygon) }
+                }
                 if screen.count >= 2 {
                     let xs = screen.map(\.x), ys = screen.map(\.y)
                     let minX = xs.min()!, minY = ys.min()!
-                    rects[key] = CGRect(x: minX, y: minY, width: max(44, xs.max()! - minX), height: max(44, ys.max()! - minY))
+                    let rect = CGRect(x: minX, y: minY, width: max(44, xs.max()! - minX), height: max(44, ys.max()! - minY))
+                    rects[key] = rect
+                    rects[item.id.uuidString] = rect
                 }
             }
             if rects != lastFurnitureRects {

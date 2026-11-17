@@ -138,19 +138,45 @@ struct CompanionScene: UIViewRepresentable {
       } else if case .couch = kind {
         view.environment.background = .color(.clear)
         view.isOpaque = false
-        let chosen = Array(dolls.prefix(2))
+        light.light.intensity = 2300
+        light.light.color = Palette.uiColor("#FFF3E4")
+        light.look(at: [0, 0.2, 0], from: [-2, 2.4, 2], relativeTo: nil)
+        var shadow = DirectionalLightComponent.Shadow()
+        shadow.shadowProjection = .automatic(maximumDistance: 2)
+        shadow.depthBias = 0.5
+        light.shadow = shadow
+        view.environment.lighting.intensityExponent = -0.7
+        let fill = DirectionalLight()
+        fill.light.intensity = 1600
+        fill.light.color = Palette.uiColor("#FFF4E7")
+        fill.look(at: [0, 0.2, 0], from: [0, 0.7, 3], relativeTo: nil)
+        root.addChild(fill)
+        let chosen = Array(dolls.prefix(1))
         for (index, doll) in chosen.enumerated() {
           let model = await model(doll)
           DollRestPose.sitting(model)
           let bounds = model.visualBounds(relativeTo: nil)
-          let scale: Float = 0.23 / max(bounds.extents.y, 0.01)
+          let seatedHeight: Float = 0.54
+          let scale: Float = seatedHeight / max(bounds.extents.y, 0.01)
           model.scale = SIMD3(repeating: scale)
-          model.position = [(Float(index) - Float(chosen.count - 1) / 2) * 0.26, 0.10 - bounds.min.y * scale, 0]
+          model.position = [(Float(index) - Float(chosen.count - 1) / 2) * 0.40, 0.04 - bounds.min.y * scale, 0]
           root.addChild(model)
           companions.append(model)
         }
-        camera.look(at: [0, 0.17, 0], from: [0, 0.17, 1.0], relativeTo: nil)
+        camera.look(at: [0, 0.32, 0], from: [0, 0.32, 1.0], relativeTo: nil)
       } else if case .radioArtwork(let playing) = kind {
+        light.light.intensity = 2300
+        light.light.color = Palette.uiColor("#FFF3E4")
+        view.environment.lighting.intensityExponent = -0.7
+        var radioShadow = DirectionalLightComponent.Shadow()
+        radioShadow.shadowProjection = .automatic(maximumDistance: 2)
+        radioShadow.depthBias = 0.5
+        light.shadow = radioShadow
+        let fill = DirectionalLight()
+        fill.light.intensity = 1200
+        fill.light.color = Palette.uiColor("#FFF4E7")
+        fill.look(at: [0, 0.2, 0], from: [0, 0.7, 3], relativeTo: nil)
+        root.addChild(fill)
         view.environment.background = .color(.clear)
         view.isOpaque = false
         if let doll = dolls.first {
@@ -162,7 +188,7 @@ struct CompanionScene: UIViewRepresentable {
               angle: -0.9, axis: [0, 0, 1])
           }
           let bounds = model.visualBounds(relativeTo: nil)
-          let distance = max(bounds.extents.y, bounds.extents.x) / (2 * tan(Float.pi / 9)) * 1.15
+          let distance = max(bounds.extents.y, bounds.extents.x) / (2 * tan(Float.pi / 9)) * 1.27
           camera.look(at: bounds.center, from: bounds.center + [0, 0.015, distance], relativeTo: nil)
         }
       } else {
@@ -195,6 +221,9 @@ struct CompanionScene: UIViewRepresentable {
       guard !Task.isCancelled else { return }
       root.addChild(camera)
       root.addChild(light)
+      #if DEBUG
+      DesignPreviewSignal.sceneReady()
+      #endif
       if let env = await CozyRoomLighting.environmentResource() {
         view.environment.lighting.resource = env
       }

@@ -9,14 +9,17 @@ struct FurnitureCustomView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \DecorPhoto.createdAt, order: .reverse) private var photos: [DecorPhoto]
     @Query private var dolls: [Doll]
+    @Query(sort: \RoomItem.createdAt) private var roomItems: [RoomItem]
     @State private var style: Style
     @State private var pickerItem: PhotosPickerItem?
+    @State private var furnitureBounds: [String: CGRect] = [:]
     @State private var photoScale: Double
     @State private var original: RoomItemState
     @State private var choosingPhoto = false
     @State private var saveFailed = false
     private let initialStyle: Style?
     @State private var undoStack: [PhotoEdit] = []
+    @State private var redoStack: [PhotoEdit] = []
     @State private var lastRemembered = Date.distantPast
 
     /// 사진 탭에서 되돌릴 수 있는 한 단계
@@ -41,31 +44,44 @@ struct FurnitureCustomView: View {
     init(item: RoomItem, initialStyle: Style? = nil) {
         self.item = item
         self.initialStyle = initialStyle
-        _style = State(initialValue: initialStyle ?? (item.photoData != nil ? .photo : (item.colorName != nil ? .color : .basic)))
+        _style = State(initialValue: initialStyle ?? (item.photoData != nil ? .photo : .color))
         _photoScale = State(initialValue: item.photoScale)
         _original = State(initialValue: item.state)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            RoomSceneView(items: [item.state], focusItem: item.state, isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan, isCozyRoom: true)
-                .renderedOnlyWhileVisible()
-                .overlay(alignment: .top) {
-                    D1Bubble(text: isEditingPhoto ? "두 손가락으로 확대하고, 움직여서 자를 곳을 맞춰요" : "드래그해서 이리저리 돌려 보세요")
-                        .padding(.horizontal, 22).padding(.top, 8)
+            HStack {
+                Button { item.restore(original); saveAndDismiss() } label: { Image("rep4_edit_back").resizable().frame(width: 31.854, height: 31.854).frame(width: 44, height: 44) }.accessibilityLabel("가구 목록")
+                Spacer()
+                Text("\(item.kind.label) 꾸미기").pretendard(.bold, 17, tracking: -0.85).offset(y: -4)
+                Spacer()
+                Button(action: saveAndDismiss) { Image("rep4_edit_confirm").resizable().frame(width: 40.755, height: 40.755) }.accessibilityLabel("꾸미기 완료")
+            }.buttonStyle(.plain).padding(.horizontal, 22).offset(y: 6)
+            RoomSceneView(items: roomItems.map(\.state), dolls: dolls.filter(\.isPlaced).map(\.state), mode: .decorate,
+                          isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan,
+                          selectedItemID: item.id, isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onFurnitureScreen: { furnitureBounds = $0 })
+                .renderedOnlyWhileVisible(background: .clear)
+                .overlay {
+                    if let rect = furnitureBounds[item.id.uuidString] { FurnitureSelectionOverlay(rect: rect, title: item.kind.label) }
                 }
-                .overlay(alignment: .topTrailing) {
-                    if style == .photo {
-                        D1IconButton(icon: "undo", label: "되돌리기", action: undo)
-                            .disabled(undoStack.isEmpty).opacity(undoStack.isEmpty ? 0.4 : 1).padding(8)
-                    }
+                .overlay(alignment: .bottom) {
+            HStack(spacing: 3.77) {
+                RoomHistoryButton(redo: false, action: undo).disabled(undoStack.isEmpty).opacity(undoStack.isEmpty ? 0.4 : 1)
+                RoomHistoryButton(redo: true, action: redo).disabled(redoStack.isEmpty).opacity(redoStack.isEmpty ? 0.4 : 1)
+                Spacer()
+            }.padding(.horizontal, 23.23).padding(.bottom, 6)
                 }
-            VStack(spacing: Spacing.m) {
+                .accessibilityHint(isEditingPhoto ? "두 손가락으로 확대하고 움직여서 자를 곳을 맞춰요" : "드래그해서 이리저리 돌려 보세요")
+            VStack(spacing: 0) {
+                Text("\(item.kind.label) 편집").pretendard(.bold, 16).frame(maxWidth: .infinity).frame(height: 52)
+                    .overlay(alignment: .leading) { Button { item.restore(original); saveAndDismiss() } label: { HStack(spacing: 2) { Image("rep4_list_back").resizable().frame(width: 20, height: 20); Text("가구 목록").pretendard(.medium, 14) }.frame(minHeight: 44) }.buttonStyle(.plain) }
                 HStack(spacing: 8) {
-                    ForEach(Style.allCases, id: \.self) { option in
-                        D1Choice(title: option.rawValue, selected: style == option, fillsWidth: true) { style = option }.frame(maxWidth: .infinity)
+                    ForEach([Style.color, .photo], id: \.self) { option in
+                        D1Choice(title: option.rawValue, selected: style == option, fillsWidth: true, height: 37, fontSize: 14) { style = option }.frame(maxWidth: .infinity)
                     }
                 }
+                .padding(.top, 10).padding(.bottom, style == .color ? 14 : (item.photoData != nil && !choosingPhoto ? 8 : 20))
                 Group {
                     switch style {
                     case .basic:
@@ -74,22 +90,19 @@ struct FurnitureCustomView: View {
                             .foregroundStyle(Color.app.inkSecondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     case .color:
-                        ScrollView { FurnitureColorChoices(item: item).padding(.vertical, 8) }
+                        ScrollView { FurnitureColorChoices(item: item) }
                     case .photo:
                         if item.photoData != nil && !choosingPhoto { photoEditor } else { photoGrid }
                     }
                 }
-                .frame(height: 220)
-                HStack(spacing: 10) {
-                    Button("취소") { item.restore(original); saveAndDismiss() }.buttonStyle(D1SecondaryStyle())
-                    Button("완료", action: saveAndDismiss).buttonStyle(D1PrimaryStyle())
-                }
+                .frame(height: style == .photo && item.photoData != nil && !choosingPhoto ? 142.2 : 136, alignment: .top)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 22).padding(.vertical, 16)
-            .background(Color.mib.bg.surface, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+            .padding(.horizontal, 24).frame(height: 266)
+            .background { Color.rep4.c01.clipShape(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14)).ignoresSafeArea(edges: .bottom) }
         }
-        .background(Color.mib.bg.screen)
-        .toolbar(.visible, for: .navigationBar)
+        .background { RepresentativeGradientFill(definition: RepresentativeGradients.roomBackground).ignoresSafeArea() }
+        .toolbar(.hidden, for: .navigationBar)
         .tint(Color.mib.action.primary)
         .foregroundStyle(Color.mib.text.primary)
         .cozyPageTitle("\(item.kind.label) 꾸미기")
@@ -123,77 +136,52 @@ struct FurnitureCustomView: View {
     }
 
     private var photoGrid: some View {
-        ScrollView {
-            if item.photoData != nil {
-                Button("사진 변경 취소") { choosingPhoto = false }.buttonStyle(FocusCompactButton()).padding(.bottom, 8)
-            }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.s), count: 3), spacing: Spacing.s) {
-                PhotosPicker(selection: $pickerItem, matching: .images) {
-                    D1Icon(name: "plus")
-                        .foregroundStyle(Color.app.ink)
-                        .frame(maxWidth: .infinity, minHeight: 96)
-                        .background(Color.app.background, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .accessibilityLabel("갤러리에서 사진 추가")
-                ForEach(photos) { photo in
-                    Button {
-                        apply(photo.data)
-                    } label: {
-                        thumbnail(photo.data)
-                    }
-                    .overlay(alignment: .topTrailing) {
-                        Button("사진 지우기", systemImage: "xmark.circle.fill") { modelContext.delete(photo) }
-                            .labelStyle(.iconOnly)
-                            .appFont(.title3)
-                            .foregroundStyle(Color.app.ink, Color.app.surface)
-                            .frame(width: 44, height: 44)
-                    }
-                }
-            }
-        }
+        PhotosPicker(selection: $pickerItem, matching: .images) {
+            VStack(spacing: 6) {
+                Image("rep4_photo_add").resizable().frame(width: 22, height: 22)
+                    .frame(width: 44, height: 44)
+                    .background { RepresentativeGradientFill(definition: RepresentativeGradients.cta).clipShape(Circle()) }
+                Text("사진 추가하기").pretendard(.bold, 15)
+                Text(item.kind == .desk ? "책상 윗면에 사진을 붙일 수 있어요" : "\(item.kind.label)에 사진을 붙일 수 있어요").pretendard(.medium, 13).foregroundStyle(Color.rep4.c29)
+            }.frame(maxWidth: .infinity).frame(height: 136)
+                .background(Color.rep4.c11, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.rep4.c29, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
+        }.buttonStyle(.plain).contextMenu { photoAdjustmentActions }.frame(maxHeight: .infinity, alignment: .top)
     }
 
     private var photoEditor: some View {
-        HStack(alignment: .top, spacing: Spacing.m) {
-            VStack(spacing: 8) {
-                thumbnail(item.photoData ?? Data())
-                Button("사진 바꾸기") { choosingPhoto = true }.buttonStyle(FocusCompactButton())
-                Button("사진 빼기") {
-                    remember(); item.photoData = nil; choosingPhoto = false
-                }.pretendard(.medium, 13).foregroundStyle(Color.mib.semantic.error).frame(minHeight: 44)
-            }.frame(width: 120)
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    HStack(spacing: Spacing.xs) {
-                        D1Choice(title: "채우기", selected: item.photoFit == 0, fillsWidth: true) { setFit(0) }
-                        D1Choice(title: "맞추기", selected: item.photoFit == 1, fillsWidth: true) { setFit(1) }
-                    }
-                    Text("확대")
-                        .appFont(.headline)
-                    Slider(value: Binding(get: { photoScale }, set: { photoScale = $0; item.photoScale = $0 }), in: 1...3) { isEditing in
-                        if isEditing { remember() } else { item.photoScale = photoScale }
-                    }
-                }
-                HStack(spacing: Spacing.s) {
-                    Button {
-                        remember()
-                        item.photoFlipped.toggle()
-                    } label: {
-                        Label("좌우 반전", systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right")
-                    }
-                    Button {
-                        remember()
-                        item.photoTurns = (item.photoTurns + 1) % 4
-                    } label: {
-                        Label("회전", systemImage: "rotate.right")
-                    }
-                }
-                .buttonStyle(FocusCompactButton())
-                .labelStyle(.titleAndIcon)
-                .pretendard(.medium, 13)
+        VStack(spacing: 18.2) {
+            HStack(spacing: 12) {
+                thumbnail(item.photoData ?? Data()).frame(width: 48, height: 48).clipped()
+                Text("적용된 사진").pretendard(.bold, 14)
+                Spacer()
+            }.padding(.horizontal, 10).padding(.vertical, 8).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.rep4.c07))
+                .contextMenu { photoAdjustmentActions }
+            HStack(spacing: 12) {
+                Button { remember(); item.photoData = nil; choosingPhoto = false } label: {
+                    Text("사진 빼기").pretendard(.medium, 16).foregroundStyle(Color(uiColor: Palette.uiColor("#AD4141")))
+                        .frame(maxWidth: .infinity).frame(height: 60)
+                        .background(Color.rep4.c11, in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color(uiColor: Palette.uiColor("#AD4141"))))
+                        .contentShape(Capsule())
+                }.buttonStyle(.plain)
+                PhotosPicker(selection: $pickerItem, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle())
+            }.padding(.horizontal, -6)
+        }.frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder private var photoAdjustmentActions: some View {
+        Button("채우기") { setFit(0) }; Button("맞추기") { setFit(1) }
+        Button("좌우 반전") { remember(); item.photoFlipped.toggle() }
+        Button("90도 회전") { remember(); item.photoTurns = (item.photoTurns + 1) % 4 }
+        ForEach(photos) { photo in
+            Button { apply(photo.data) } label: {
+                Label {
+                    Text(photo.createdAt.formatted(date: .numeric, time: .shortened))
+                } icon: { Image(uiImage: UIImage(data: photo.data) ?? UIImage()) }
             }
         }
-        .foregroundStyle(Color.app.ink)
     }
 
     private func thumbnail(_ data: Data) -> some View {
@@ -201,14 +189,17 @@ struct FurnitureCustomView: View {
             .resizable()
             .scaledToFill()
             .frame(minWidth: 0, maxWidth: .infinity)
-            .frame(height: 96)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .frame(height: 48)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     /// 되돌리기용으로 지금 사진 상태를 저장한다.
+    private var currentPhotoEdit: PhotoEdit {
+        PhotoEdit(data: item.photoData, scale: item.photoScale, fit: item.photoFit, isFlipped: item.photoFlipped,
+                  turns: item.photoTurns, offsetX: item.photoOffsetX, offsetY: item.photoOffsetY)
+    }
     private func remember() {
-        undoStack.append(PhotoEdit(data: item.photoData, scale: item.photoScale, fit: item.photoFit, isFlipped: item.photoFlipped,
-                                   turns: item.photoTurns, offsetX: item.photoOffsetX, offsetY: item.photoOffsetY))
+        undoStack.append(currentPhotoEdit); redoStack.removeAll()
         lastRemembered = .now
     }
 
@@ -220,6 +211,17 @@ struct FurnitureCustomView: View {
 
     private func undo() {
         guard let last = undoStack.popLast() else { return }
+        redoStack.append(currentPhotoEdit)
+        restorePhotoEdit(last)
+    }
+
+    private func redo() {
+        guard let next = redoStack.popLast() else { return }
+        undoStack.append(currentPhotoEdit)
+        restorePhotoEdit(next)
+    }
+
+    private func restorePhotoEdit(_ last: PhotoEdit) {
         item.photoData = last.data
         item.photoScale = last.scale
         item.photoFit = last.fit

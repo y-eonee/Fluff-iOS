@@ -72,6 +72,11 @@
           let seatedDoll = Doll(name: "의자 검증", shape: .cat, filling: .fluffy, imageData: data)
           seatedDoll.presetConfiguration = config
           let model = await SceneFactory.doll(seatedDoll.state)
+          DollRestPose.sitting(model)
+          let firstFoot = model.findEntity(named: DollPart.leftLeg.rawValue)?.transform
+          DollRestPose.sitting(model)
+          let repeatedFoot = model.findEntity(named: DollPart.leftLeg.rawValue)?.transform
+          checks["seating_\(shape.rawValue)_does_not_accumulate_offsets"] = firstFoot != nil && firstFoot == repeatedFoot
           for (index, yaw) in [Float(0), .pi / 2, .pi, -.pi / 2].enumerated() {
             var seat = chair; seat.yaw = yaw
             DollRestPose.chairSeat(model, on: seat)
@@ -122,6 +127,15 @@
       checks["cutout_has_closed_surfaces"] = ["cutout.front", "cutout.back", "cutout.seam"]
         .allSatisfy { custom.findEntity(named: $0) != nil }
       let doll = Doll(name: "모델 검증", shape: .cat, filling: .fluffy, imageData: data)
+      let couchDefaults = UserDefaults(suiteName: "fluff.couch-limit-audit.\(UUID())")!
+      let couch = CouchSession(library: CouchLibrary(defaults: couchDefaults))
+      let secondDoll = Doll(name: "두 번째", shape: .bear, filling: .fluffy, imageData: data)
+      couch.dolls = [doll.state, secondDoll.state]
+      checks["couch_keeps_one_companion"] = couch.dolls.map(\.id) == [doll.id]
+      couch.dolls = [secondDoll.state]
+      checks["couch_replaces_companion"] = couch.dolls.map(\.id) == [secondDoll.id]
+      couch.dolls = []
+      checks["couch_clears_companion"] = couch.dolls.isEmpty
       doll.presetConfiguration = PresetConfiguration()
       let model = await SceneFactory.doll(doll.state)
       let bed = RoomItem(kind: .bed).state
@@ -158,7 +172,7 @@
       checks["frame_photo_edits_invalidate_cache"] = firstMaterial?.textureCoordinateTransform.scale != editedMaterial?.textureCoordinateTransform.scale
       photoFrame.photoData = nil
       let restoredFrame = await SceneFactory.furniture(photoFrame, onFloor: true, cozy: true)
-      checks["frame_photo_removal_restores_artwork"] = restoredFrame.findEntity(named: "custom-photo") == nil && restoredFrame.findEntity(named: "heart") != nil
+      checks["frame_photo_removal_restores_artwork"] = restoredFrame.findEntity(named: "custom-photo") == nil && restoredFrame.findEntity(named: "art.blue") != nil
       let player = AmbientPlayer()
       for sound in AmbientSound.allCases {
         player.start(sound, minutes: 30)

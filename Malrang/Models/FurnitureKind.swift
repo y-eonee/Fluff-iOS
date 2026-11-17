@@ -73,7 +73,8 @@ enum FurnitureKind: String, CaseIterable {
         switch self {
         case .wall: CozyRoomPalette.ivory
         case .floor: CozyRoomPalette.floorMint
-        case .bed, .plant: CozyRoomPalette.mint
+        case .bed: "#B8D8EF"
+        case .plant: CozyRoomPalette.mint
         case .desk, .chair: CozyRoomPalette.peach
         case .shelf, .frame: CozyRoomPalette.wood
         case .sofa: CozyRoomPalette.blush
@@ -87,11 +88,11 @@ enum FurnitureKind: String, CaseIterable {
         switch self {
         case .wall: [2, 1.55, 2]
         case .floor: [2, 0.145, 2]
-        case .bed: [0.98, 0.67, 0.922]
-        case .desk: [0.662, 0.705, 0.441]
+        case .bed: [0.85, 0.75, 1.30]
+        case .desk: [0.72, 0.705, 0.48]
         case .shelf: [0.602, 0.217, 0.142]
-        case .chair: [0.315, 0.516, 0.315]
-        case .sofa: [0.50, 0.40, 0.48]
+        case .chair: [0.35, 0.55, 0.35]
+        case .sofa: [0.80, 0.50, 0.62]
         case .rugRound: [1.32, 0.01, 0.79]
         case .rugSquare: [0.9, 0.011, 0.6]
         case .plant: [0.208, 0.528, 0.208]

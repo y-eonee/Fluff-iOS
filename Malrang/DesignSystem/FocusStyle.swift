@@ -14,15 +14,13 @@ enum FocusStyle {
     static let inset: CGFloat = 24
     static let radius: CGFloat = 24
     static let buttonHeight: CGFloat = 60
-    static let timerSize: CGFloat = 64
+    static let timerSize: CGFloat = 62
 }
 
 struct FocusPrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.pretendard(.bold, D1.ctaFontSize).foregroundStyle(Color.mib.text.onPrimary)
-            .frame(maxWidth: .infinity, minHeight: FocusStyle.buttonHeight)
-            .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 30))
+        configuration.label.modifier(RepresentativeActionSurface(primary: true))
     }
 }
 
@@ -63,9 +61,9 @@ struct CottonArtwork: View {
 }
 
 enum CreationStyle {
-    static let value = Color(uiColor: Palette.uiColor("#5A89A8"))
-    static let blue = Color(uiColor: Palette.uiColor("#CFE8F2"))
-    static let yellow = Color(uiColor: Palette.uiColor("#FCEBC0"))
+    static let value = Color.rep4.c03
+    static let blue = Color.rep4.c21
+    static let yellow = Color.rep4.c01
 }
 extension View {
     func creationOutline(fill: Color, radius: CGFloat) -> some View {
@@ -77,17 +75,12 @@ extension View {
 struct CreationPrimaryButton: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.pretendard(.bold, D1.ctaFontSize, tracking: -0.32).foregroundStyle(Color.mib.text.onPrimary)
-            .frame(maxWidth: .infinity, minHeight: 60)
-            .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: RoundedRectangle(cornerRadius: 26))
+        configuration.label.modifier(RepresentativeActionSurface(primary: true))
     }
 }
 
 struct CreationSecondaryButton: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.pretendard(.bold, D1.ctaFontSize).foregroundStyle(Color.mib.text.primary)
-            .frame(maxWidth: .infinity, minHeight: 60).contentShape(Rectangle())
-            .background(Color.mib.bg.surface, in: RoundedRectangle(cornerRadius: 26))
-            .overlay(RoundedRectangle(cornerRadius: 26).strokeBorder(Color.mib.line.selected))
+        configuration.label.modifier(RepresentativeActionSurface(primary: false))
     }
 }

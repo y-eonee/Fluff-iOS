@@ -100,7 +100,10 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     }
     func markInteraction() {
         interactiveUntil = CACurrentMediaTime() + 0.8
-        if renderer != nil { requestedFPS = 60; metalView?.preferredFramesPerSecond = 60 }
+        if renderer != nil {
+            let fps = RenderCadence.framesPerSecond(interacting: true, constrained: constrained)
+            requestedFPS = fps; metalView?.preferredFramesPerSecond = fps
+        }
     }
     func attach(_ root: AnchorEntity, camera: PerspectiveCamera) {
         self.root = root; self.camera = camera
@@ -122,6 +125,9 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     }
     func configureBloom() { wantsBloom = true; legacy?.configureBloom(); applyBudget() }
 
+    private var constrained: Bool {
+        ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+    }
     private func applyBudget() {
         guard let view = metalView else { return }
         let constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
@@ -139,7 +145,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         let now = CACurrentMediaTime()
         runPerformanceInteraction()
         let touching = gestureRecognizers?.contains { $0.state == .began || $0.state == .changed } == true
-        let fps = touching || now < interactiveUntil ? 60 : 30
+        let fps = RenderCadence.framesPerSecond(interacting: touching || now < interactiveUntil, constrained: constrained)
         if requestedFPS != fps { requestedFPS = fps; view.preferredFramesPerSecond = fps }
         let delta = min(previousFrame.map { now - $0 } ?? 1 / Double(fps), 0.1)
         previousFrame = now

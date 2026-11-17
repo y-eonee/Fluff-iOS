@@ -29,6 +29,7 @@ struct SquishyView: View {
 /// 처음에는 화살표가 위에서 가리켜서 만져 보게 한다. 춤을 적용한 인형은 춤추면서 눌린다.
 struct SquishyDoll: View {
     let doll: DollState
+    var usesProfileLayout = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hapticOn") private var hapticOn = true
@@ -44,16 +45,17 @@ struct SquishyDoll: View {
 
     var body: some View {
         VStack(spacing: Spacing.xs) {
-            hint
+            hint.offset(y: usesProfileLayout ? -20 : 0)
             dollImage
                 .scaleEffect(x: 1 + press * 0.15, y: 1 - press * 0.25, anchor: .bottom)
                 .rotationEffect(.degrees(stroke.width * (reduceMotion ? 0.02 : 0.08)), anchor: .bottom)
-                .padding(.horizontal, Spacing.l)
+                .padding(.horizontal, usesProfileLayout ? 0 : Spacing.l)
                 .contentShape(Rectangle())
                 .gesture(touch)
                 .accessibilityLabel(doll.name)
                 .accessibilityAddTraits(.allowsDirectInteraction)
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .sensoryFeedback(trigger: pressCount) { _, _ in hapticOn ? .impact(flexibility: .soft, intensity: 0.6) : nil }
         .sensoryFeedback(trigger: strokeCount) { _, _ in hapticOn ? .impact(weight: .light, intensity: 0.5) : nil }
         .sensoryFeedback(trigger: releaseCount) { _, _ in hapticOn ? .impact(flexibility: .soft, intensity: 0.6) : nil }
@@ -74,11 +76,10 @@ struct SquishyDoll: View {
 
     private var hint: some View {
         VStack(spacing: Spacing.xxs) {
-            Image(systemName: "arrow.down")
-                .appFont(.title, .bold)
-                .symbolEffect(.bounce, options: .repeating, isActive: !reduceMotion && !hasTouched)
+            Text("↓").pretendard(.medium, 44)
+                .frame(height: 64)
             Text("만져 보세요")
-                .appFont(.footnote, .bold)
+                .pretendard(.semiBold, 13)
         }
         .foregroundStyle(Color.app.ink)
         .opacity(hasTouched ? 0 : 1)

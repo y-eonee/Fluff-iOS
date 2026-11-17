@@ -1,0 +1,308 @@
+{
+  "date": "2026-11-17",
+  "phase": "IN PROGRESS: user rejected prior visual parity. Reworking exact icons, typography, layout, colors and 3D appearance; no completion claim.",
+  "source": {
+    "fileKey": "y50EtliLp7YMR80gHuJRLb",
+    "flow": "1727:21665",
+    "focusClarification": "1760:27482",
+    "mobileFramesInventoried": 55,
+    "activeStates": 48,
+    "referenceStates": 4,
+    "comparisonTargets": 52,
+    "excludedHidden": 2,
+    "excludedUnused": 1,
+    "perFrameInventory": "scripts/design-frame-qa.json"
+  },
+  "userOverrides": {
+    "couchMaximumCompanions": 1,
+    "focus": "Keep the original Figma room, foreground desk and timer composition; replace only the character with the selected doll.",
+    "myFluffDetail": "Hide the tab bar.",
+    "room": "Reconstruct the room as interactive 3D from the reference image; original3D files are unavailable.",
+    "statusBar": "No separate tint or color strip; continue the screen background behind the native status symbols."
+  },
+  "latestValidationPolicy": {
+    "simulatorOnly": true,
+    "physicalDeviceConnectedOrInstalled": false,
+    "actualUserDataResetRepeated": false,
+    "fixtures": "In-memory SwiftData and isolated UserDefaults; normal saved user data is not used by visual fixtures."
+  },
+  "verification": {
+    "debugSimulatorBuild": "passed",
+    "releaseSimulatorBuild": "passed",
+    "uiSmokeChecks": {
+      "passed": 4,
+      "failed": 0,
+      "includes": [
+        "native photo picker notice",
+        "focus pause and resume",
+        "one couch companion selection",
+        "tab bar hidden on doll detail"
+      ],
+      "result": "/tmp/malrang-ui-smoke/result-final-retry.xcresult",
+      "log": "ui-smoke-tests.log",
+      "infrastructureRetry": "First final attempt could not connect to Simulator testmanagerd. Restarted only the audit Simulator and reran serially.",
+      "durationSeconds": 55.503
+    },
+    "modelChecks": {
+      "passed": 26,
+      "failed": 0,
+      "report": "final-cozy-model-audit.txt"
+    },
+    "furnitureInteractionChecks": {
+      "passed": 97,
+      "failed": 0,
+      "report": "final-furniture-audit.json"
+    },
+    "renderResourceChecks": {
+      "passed": 10,
+      "failed": 0,
+      "report": "final-render-resource-audit.txt"
+    },
+    "placementCheck": "Rotated bed seating, sleeping-region exclusion, blocked furniture and chair placement passed.",
+    "cadenceCheck": "Idle30 / interaction60 / constrained15 passed; constrained cap overrides touch boost.",
+    "assetProvenance": "8 baked model files and 5 navigation/activity icon variants matched recorded SHA256 values.",
+    "buildLogs": {
+      "debug": "build-isolated-final.log",
+      "release": "build-final-release.log"
+    },
+    "buildWarnings": [
+      "Existing actor-isolation warnings in PresetDollModel mesh cache builders.",
+      "Existing redundant try/await warnings in ARCaptureView.",
+      "App Intents metadata extraction skipped; no AppIntents framework dependency."
+    ],
+    "historicalOnly": true
+  },
+  "modelResources": {
+    "originalBytes": 25071113,
+    "currentBytes": 11979538,
+    "count": 8,
+    "reductionPercent": 52.22,
+    "fullInteriorGeometry": "Room shell, wooden floor, bed drape/footboard, desk panels, white chair, sofa cushions/throw, globe lamp, picture artwork and low-detail ivy/radio variants reconstructed from source images."
+  },
+  "performanceChanges": [
+    "Bounded reusable geometry/material/texture caches; no per-frame model generation.",
+    "Normal room idle rendering30FPS; interaction60FPS; low-power or serious thermal state capped15FPS.",
+    "Reduced doll fiber geometry and radio grille detail.",
+    "Interior ivy uses one39vertex shared leaf mesh instead of dense plush spheres/fibers.",
+    "Single floor surface and shared plank/grain textures; wood shader uses its dedicated low-cost sampling path.",
+    "3D views are removed when their flow is not visible."
+  ],
+  "thermalVerification": {
+    "actualDeviceTemperatureValidated": false,
+    "reason": "Latest user instruction prohibits physical-device connection. Simulator checks do not certify physical thermal behavior.",
+    "historicalInvalidLongRunNotReused": true
+  },
+  "visualReview": {
+    "frameStatesCompared": 52,
+    "pixelIdentical": false,
+    "gallery": "/Users/leenayeon/.codex/visualizations/2026/11/16/01a1e4cf-d3c6-70f1-9593-313cbac55bfd/figma-review/index.html",
+    "differences": [
+      "Image-based room/furniture/doll geometry, materials, lighting and soft-fabric appearance differ from the rendered Figma references.",
+      "iOS native photo picker, keyboard, status/navigation bars and glass rendering differ from the static examples.",
+      "Actual YouTube content and player controls differ from the drawn examples; the visible full player uses the source184pt slot and the mini player uses the source200×112pt slot.",
+      "Doll/name/photo/count/date/study/playback values are fixtures; the one-companion and hidden-detail-tab-bar user overrides take precedence."
+    ]
+  },
+  "dataResetHistory": {
+    "scope": "Earlier explicitly authorized reset completed before the latest Simulator-only request; not repeated during this review.",
+    "record": {
+      "userAuthorized": true,
+      "simulator": {
+        "completed": true,
+        "after": {
+          "dolls": 0,
+          "roomItems": 0,
+          "photos": 0
+        },
+        "before": {
+          "dolls": 2,
+          "roomItems": 11,
+          "photos": 1
+        }
+      },
+      "physicalDevice": {
+        "completed": true,
+        "before": {
+          "dolls": 1,
+          "roomItems": 10,
+          "photos": 0
+        },
+        "after": {
+          "dolls": 0,
+          "roomItems": 0,
+          "photos": 0
+        }
+      },
+      "implementationBackup": "/tmp/malrang-figma-restart-20261117/implementation-before-restart.tar.gz"
+    }
+  },
+  "knownLimits": [
+    "Reference-level 3D visual parity remains a difference, not a passed pixel-match check.",
+    "Actual-device heat and long-running thermal behavior remain unverified."
+  ],
+  "currentRevision": {
+    "status": "in-progress",
+    "lastSuccessfulBuild": "/tmp/malrang-build116.log",
+    "pendingValidation": [
+      "Remaining full-room and cutaway geometry, camera, textile, timber and lighting differences",
+      "Shelf plant selection and initial furniture/radio guidance differences",
+      "Frame-by-frame visual comparison after further corrections"
+    ],
+    "knownVisualDifferences": [
+      "Room and doll reconstruction retains geometry, shading and textile differences.",
+      "Live photos, names and YouTube content remain user data."
+    ],
+    "physicalDeviceUsed": false
+  },
+  "latestVerification": {
+    "fullCapture": {
+      "revision": "precision-build104",
+      "ready": 52,
+      "total": 52,
+      "pixelIdentical": false
+    },
+    "uiRegression": {
+      "revision": "precision-build104",
+      "passed": 16,
+      "failed": 0,
+      "result": "/tmp/malrang-ui104.xcresult",
+      "project": "scripts/visual-smoke/VisualSmoke.xcodeproj"
+    },
+    "releaseSimulatorBuild": {
+      "revision": "precision-build116",
+      "status": "passed",
+      "log": "/tmp/malrang-release116.log"
+    },
+    "modelChecks": {
+      "revision": "precision-build116",
+      "passed": 30,
+      "failed": 0
+    },
+    "furnitureInteractionChecks": {
+      "revision": "precision-build116",
+      "passed": 100,
+      "failed": 0
+    },
+    "renderResourceChecks": {
+      "revision": "precision-build116",
+      "passed": 10,
+      "failed": 0
+    },
+    "currentVisualReview": "52 comparison frames retained. 21 room states recaptured at build114 and 5 interior states at build116. Reviewed status background continuity, chair timber/support, bed base/pillow, sofa arms/back cushions and tap hint. Remaining geometry, lighting and material differences are explicit; no exact-match claim.",
+    "memoryAudit": {
+      "revision": "precision-build91",
+      "cycles": 2,
+      "route": "home-ui",
+      "roomRenderViewsAfterEachRelease": [
+        0,
+        0
+      ],
+      "arViewsAfterEachRelease": [
+        0,
+        0
+      ],
+      "fixturesAfterEachRelease": [
+        0,
+        0
+      ],
+      "footprintAfterReleaseMB": [
+        126.64,
+        155.6
+      ],
+      "afterMemoryWarningMB": 113.78,
+      "physicalDeviceUsed": false,
+      "interpretation": "Views were released; footprint increased between cycles, so this is not proof of zero memory growth."
+    },
+    "additionalCreationRegression": {
+      "revision": "precision-build82",
+      "passed": 1,
+      "failed": 0,
+      "result": "/tmp/malrang-ui82-creation.xcresult"
+    },
+    "editorMemoryAudit": {
+      "revision": "precision-build104",
+      "cycles": 2,
+      "route": "decorate",
+      "roomRenderViewsAfterEachRelease": [
+        0,
+        0
+      ],
+      "arViewsAfterEachRelease": [
+        0,
+        0
+      ],
+      "fixturesAfterEachRelease": [
+        0,
+        0
+      ],
+      "footprintAfterReleaseMB": [
+        155.13,
+        154.75
+      ],
+      "afterMemoryWarningMB": 121.38,
+      "physicalDeviceUsed": false
+    },
+    "preservedProjectRegression": {
+      "revision": "precision-build84",
+      "passed": 2,
+      "failed": 0,
+      "result": "/tmp/malrang-ui84-repo.xcresult",
+      "project": "scripts/visual-smoke/VisualSmoke.xcodeproj"
+    },
+    "assetIntegrity": {
+      "literalImageReferences": 40,
+      "missingAssets": 0,
+      "missingOrEmptyCatalogFiles": 0,
+      "representativeManifestAssets": 35,
+      "hashMismatches": 0
+    },
+    "captureRevisions": {
+      "precision-build114": 16,
+      "precision-build104": 8,
+      "precision-build107": 23,
+      "precision-build116": 5
+    },
+    "nameKeyboardRegression": {
+      "revision": "precision-build107",
+      "passed": 1,
+      "failed": 0,
+      "result": "/tmp/malrang-ui107-name.xcresult"
+    }
+  },
+  "currentCodeRevision": "precision-build116",
+  "latestCorrections": [
+    "Restored the Figma horizontal reflection on the previous-video icon and matched control spacing.",
+    "Unified real creation navigation and comparison fixtures on the same unbacked arrow and source inset.",
+    "Corrected selected-furniture header, 13pt instruction, tool spacing, 18pt glyphs and missing delete divider.",
+    "Moved category underlines while preserving furniture-card positions.",
+    "Corrected applied-photo card and footer positions; photograph thumbnails fill a rounded 48pt square.",
+    "Moved photo-remove styling inside button labels so the complete 60pt control is tappable; lower-edge taps verified.",
+    "Lowered the cutaway headboard and chair back, moved the pillow and rug, and exposed floor-contact shadows above tiles.",
+    "Refined cutaway desk timber, neutral fill, blue frame heart and warm chair bounce.",
+    "Preserved Simulator-only regression project at scripts/visual-smoke/VisualSmoke.xcodeproj.",
+    "Replaced flat rectangular frame art with cached rounded triangular reliefs and a rounded mat.",
+    "Adjusted the full-room viewing angle to bring the sofa and wall alignment closer to the source.",
+    "Reduced the cutaway lampshade radius so its timber base stays visible.",
+    "Corrected the study pencil color, length and wrist-relative orientation.",
+    "Matched cutout tool icon geometry, 14pt labels and reset control.",
+    "Rebuilt creation step geometry from source track offsets, label spacing and state-specific fill widths.",
+    "Corrected cutaway chair legs to wood independently of upholstery, and full bed base/footboard to padded ivory; added material regression checks.",
+    "Rebuilt rounded artwork reliefs and refined full-room camera, desk cup, cutaway lamp and window foliage.",
+    "Aligned the five-step strip, cutout toolbar icons/labels/reset, and empty wall-photo card against source measurements.",
+    "Expanded the wallpaper photo viewport by 6pt while preserving panel height, preventing the bottom dashed border from clipping.",
+    "Matched the 5pt lower accessory-edit controls and 52pt accessory header to the source state.",
+    "Restored the creation card glow only where it is visible in the source layer order; used the smaller name-preview glow bounds.",
+    "Matched creation card insets and 8pt doll offset, unified the customization background, and corrected name-step progress.",
+    "Matched focus stepper horizontal padding to 8pt and radio footer neutral to #FBF7EF.",
+    "Reduced cutaway ambient/emissive fill while keeping the same lights, and baked wool detail into the cached rug texture without cloth simulation.",
+    "Removed dedicated status-bar color overlays from creation, doll list, couch and room editor, following the latest user override.",
+    "Matched the radio preview border to the source selected gradient.",
+    "Adapted the name-preview height to the native keyboard; typing, button enablement, non-overlap and back navigation passed a new regression test.",
+    "Matched the cutaway pink chair bounce more closely to the source without adding lights.",
+    "Added the sofa tap guidance at the projected seat position, with a debug-only frozen state for the corresponding reference frame.",
+    "Adjusted full-room timber window tint and chair wooden legs; added the chair back support and splayed legs.",
+    "Thickened the upholstered bed base and footboard; widened and lowered the pillow to follow the source silhouette.",
+    "Raised the sofa arms, reduced their excessive roundness, and split the full-room backrest into two cached cushions. Cutaway sofa geometry is preserved.",
+    "Lowered the two full-room sofa back cushions after visual comparison showed their upper silhouette above the source. Recorded the status-background user override in DESIGN.md."
+  ]
+}

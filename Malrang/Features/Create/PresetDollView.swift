@@ -8,7 +8,9 @@ struct PresetDollView: UIViewRepresentable {
     var cameraTarget: Float = 0.22
     var cameraYaw: Float = 0
     var fitsModel = false
+    var fitMargin: Float = 1.18
     var focusScene = false
+    var showsStudyDesk = true
     var working = false
     var happy = false
     var animating = true
@@ -33,7 +35,7 @@ struct PresetDollView: UIViewRepresentable {
         shadow.depthBias = 0.5; light.shadow = shadow
         light.look(at: [0, 0.2, 0], from: [-2, 2.4, 2], relativeTo: nil); anchor.addChild(light)
         let fill = DirectionalLight(); fill.light.intensity = 1000; fill.light.color = Palette.uiColor(configuration.isPhotoSuit == true ? "#F7F5FA" : "#FFF3DF"); fill.look(at: [0, 0.2, 0], from: [0, 0.5, 3], relativeTo: nil); anchor.addChild(fill)
-        let rim = DirectionalLight(); rim.light.intensity = 2100; rim.light.color = Palette.uiColor("#FFD0DF")
+        let rim = DirectionalLight(); rim.light.intensity = 650; rim.light.color = Palette.uiColor("#FFF8ED")
         rim.look(at: [0, 0.2, 0], from: [1, 0.7, 0.1], relativeTo: nil); anchor.addChild(rim)
         view.scene.addAnchor(anchor)
         context.coordinator.anchor = anchor; context.coordinator.view = view
@@ -45,8 +47,9 @@ struct PresetDollView: UIViewRepresentable {
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.onPart = onPart
         context.coordinator.fitsModel = fitsModel
+        context.coordinator.fitMargin = fitMargin
         context.coordinator.cameraYaw = cameraYaw
-        context.coordinator.update(configuration, focusScene: focusScene, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
+        context.coordinator.update(configuration, focusScene: focusScene, showsStudyDesk: showsStudyDesk, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
     }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
         (view as? PresetRenderView)?.onLayout = nil
@@ -66,6 +69,7 @@ struct PresetDollView: UIViewRepresentable {
         weak var view: ARView?
         var camera: PerspectiveCamera?
         var fitsModel = false
+        var fitMargin: Float = 1.18
         var cameraYaw: Float = 0
         func fitCamera() {
             guard fitsModel, let model, let camera, let view, view.bounds.height > 0, view.bounds.width > 0 else { return }
@@ -73,7 +77,7 @@ struct PresetDollView: UIViewRepresentable {
             let size = bounds.extents
             let aspect = Float(view.bounds.width / view.bounds.height)
             let halfFOV = camera.camera.fieldOfViewInDegrees * .pi / 360
-            let distance = max(size.y / 2, max(size.x, size.z) / (2 * aspect)) / tan(halfFOV) * 1.18 + size.z / 2
+            let distance = max(size.y / 2, max(size.x, size.z) / (2 * aspect)) / tan(halfFOV) * fitMargin + size.z / 2
             camera.look(at: bounds.center, from: bounds.center + SIMD3(sin(cameraYaw) * distance, 0.02, cos(cameraYaw) * distance), relativeTo: nil)
         }
         var anchor: AnchorEntity?
@@ -83,14 +87,15 @@ struct PresetDollView: UIViewRepresentable {
         var photoAspect: Float = 1
         var motion: FocusDollMotion?
         var focusScene = false
+        var showsStudyDesk = true
         var working = false
         var happy = false
         var animating = true
         var onPart: ((DollPart) -> Void)?
         var task: Task<Void, Never>?
-        func update(_ value: PresetConfiguration, focusScene: Bool, working: Bool, happy: Bool, animating: Bool, snapshot: ((UIImage) -> Void)?) {
-            guard configuration != value || self.focusScene != focusScene || self.working != working || self.happy != happy || self.animating != animating else { return }
-            if focusScene, self.focusScene, renderedConfiguration == value, let motion {
+        func update(_ value: PresetConfiguration, focusScene: Bool, showsStudyDesk: Bool, working: Bool, happy: Bool, animating: Bool, snapshot: ((UIImage) -> Void)?) {
+            guard configuration != value || self.focusScene != focusScene || self.showsStudyDesk != showsStudyDesk || self.working != working || self.happy != happy || self.animating != animating else { return }
+            if focusScene, self.focusScene, self.showsStudyDesk == showsStudyDesk, renderedConfiguration == value, let motion {
                 self.working = working; self.happy = happy; self.animating = animating
                 motion.update(working: working, happy: happy, animating: animating)
                 return
@@ -121,7 +126,7 @@ struct PresetDollView: UIViewRepresentable {
                     return
                 }
             }
-            configuration = value; self.focusScene = focusScene; self.working = working; self.happy = happy; self.animating = animating
+            configuration = value; self.focusScene = focusScene; self.showsStudyDesk = showsStudyDesk; self.working = working; self.happy = happy; self.animating = animating
             task?.cancel()
             task = Task { @MainActor in
                 if model != nil {
@@ -135,10 +140,14 @@ struct PresetDollView: UIViewRepresentable {
                 fitCamera()
                 if let data = value.face { photoAspect = ImageDownsampling.aspectRatio(data) }
                 if focusScene {
-                    let motion = FocusDollMotion(doll: entity, configuration: value)
+                    let motion = FocusDollMotion(doll: entity, configuration: value, showsDesk: showsStudyDesk)
                     self.motion = motion
                     motion.update(working: self.working, happy: self.happy, animating: self.animating)
+                    fitCamera()
                 }
+                #if DEBUG
+                DesignPreviewSignal.sceneReady()
+                #endif
                 if let snapshot {
                     try? await Task.sleep(for: .milliseconds(600))
                     guard !Task.isCancelled else { return }

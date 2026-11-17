@@ -6,7 +6,11 @@ final class CouchSession {
     let player = YouTubePlayer()
     let account = YouTubeAccount()
     let library: CouchLibrary
-    var dolls: [DollState] = []
+    private var selectedDolls: [DollState] = []
+    var dolls: [DollState] {
+        get { selectedDolls }
+        set { selectedDolls = Array(newValue.prefix(1)) }
+    }
     var sofaID: UUID?
     var current: CouchVideo?
     var choosing = true

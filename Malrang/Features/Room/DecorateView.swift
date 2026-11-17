@@ -8,7 +8,11 @@ struct DecorateView: View {
     @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
     @State var category = FurnitureCategory.furniture
+    @State var catalogSelection = FurnitureKind.bed
+    @State var surfacePhotoMode: Bool? = nil
     @State var dollPoint: CGPoint?
+    @State var furnitureBounds: [String: CGRect] = [:]
+    @State var wallPolygon: [CGPoint] = []
     @State var undoStack: [[RoomItemState]] = []
     @State var redoStack: [[RoomItemState]] = []
     @State var isApplyingHistory = false
@@ -40,6 +44,7 @@ struct DecorateView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
+        .preference(key: AppTabBarHiddenPreference.self, value: true)
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: items.map(\.state)) { old, _ in
             if isApplyingHistory {
@@ -50,10 +55,11 @@ struct DecorateView: View {
             }
             lastEdit = .now
         }
-        .confirmationDialog("꾸민 내용을 버릴까요?", isPresented: $isConfirmingDiscard, titleVisibility: .visible) {
-            Button("버리고 나가기", role: .destructive) {
-                restoreOriginal()
-                dismiss()
+        .overlay {
+            if isConfirmingDiscard {
+                RepresentativeConfirmDialog(title: "꾸민 내용을 버릴까요?", message: "지금까지 만든 내용은 저장되지 않아요.", verticalOffset: 10.56, onLeave: {
+                    restoreOriginal(); dismiss()
+                }, onStay: { isConfirmingDiscard = false })
             }
         }
         .navigationDestination(item: $editingItem) { item in
@@ -134,6 +140,7 @@ struct DecorateView: View {
             isFull = true
             return
         }
+        catalogSelection = kind
         let item = RoomItem(kind: kind, x: Double(spot.x), z: Double(spot.y))
         modelContext.insert(item)
         selectedID = item.id
