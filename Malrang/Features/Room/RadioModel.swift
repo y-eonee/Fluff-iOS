@@ -3,6 +3,21 @@ import UIKit
 
 /// The reference radio is modeled as a padded case, woven grille and separate controls.
 @MainActor enum RadioModel {
+    private static let roomCache = EntityTemplateCache<Bool>(capacity: 1, byteLimit: 4 * 1024 * 1024)
+    static func clearRoomCache() { roomCache.removeAll() }
+    static func roomModel() async -> Entity {
+        await roomCache.entity(for: false, estimatedCost: 2 * 1024 * 1024) {
+            let model = await make(playing: false)
+            if let speaker = model.findEntity(named: "radio.speaker") {
+                var index = 0
+                for strand in Array(speaker.children) where strand.name == "radio.grille-strand" {
+                    if !index.isMultiple(of: 4) { strand.removeFromParent() }
+                    index += 1
+                }
+            }
+            return model
+        }
+    }
     static func make(playing: Bool) async -> Entity {
         let root = Entity(); root.name = "radio"
         let texture = try? await TextureResource(named: "CozyFabricColor")

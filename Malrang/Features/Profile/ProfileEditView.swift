@@ -94,6 +94,7 @@ struct ProfileEditView: View {
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
+        .preference(key: AppTabBarHiddenPreference.self, value: true)
         .onAppear {
             draftName = nickname
             draftAvatar = avatarData

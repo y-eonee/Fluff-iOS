@@ -11,6 +11,7 @@ final class AppState {
     var dollToPlace: Doll?
     var isShowingAR = false
     var roomToolsOpen = false
+    let roomEntrance = RoomEntrance(.home)
 
     func toggleRoomTools() {
         tab = .home

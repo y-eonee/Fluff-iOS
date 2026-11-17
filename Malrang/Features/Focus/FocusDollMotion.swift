@@ -10,7 +10,7 @@ final class FocusDollMotion {
     private var eyes: [Entity] = []
     private var smiles: [Entity] = []
 
-    init(doll: Entity, configuration: PresetConfiguration) {
+    init(doll: Entity, configuration: PresetConfiguration, showsDesk: Bool = true) {
         self.doll = doll
         for part in DollPart.allCases {
             originals[part] = doll.findEntity(named: part.rawValue)?.transform
@@ -61,14 +61,18 @@ final class FocusDollMotion {
         _ = add(.generateBox(size: [0.036, 0.004, 0.026], cornerRadius: 0.001), [0.105, 0.098, 0.155], material("#E6C574"))
         if let arm = doll.findEntity(named: DollPart.leftArm.rawValue) {
             let pencil = Entity(); pencil.name = "focus.pencil"
-            pencil.position = [0.012, 0.022, 0.04]
-            pencil.orientation = simd_quatf(angle: 0.4, axis: [0, 0, 1])
-            let shaft = ModelEntity(mesh: .generateCylinder(height: 0.05, radius: 0.0018), materials: [material("#E6C574")])
+            // Keep the pink shaft in front of the hood when the writing arm
+            // tilts forward. Its former short offset hid it inside the face.
+            pencil.position = [0, 0.020, 0.045]
+            pencil.orientation = simd_quatf(angle: 1.0, axis: [1, 0, 0])
+                * simd_quatf(angle: 0.60, axis: [0, 0, 1])
+            let shaft = ModelEntity(mesh: .generateCylinder(height: 0.075, radius: 0.0022), materials: [material("#DFAFB0")])
             pencil.addChild(shaft)
             let tip = ModelEntity(mesh: .generateCylinder(height: 0.006, radius: 0.0008), materials: [ink])
-            tip.position.y = -0.028; pencil.addChild(tip)
+            tip.position.y = -0.0405; pencil.addChild(tip)
             arm.addChild(pencil)
         }
+        if !showsDesk { props.removeFromParent() }
         if configuration.face == nil, let head = doll.findEntity(named: DollPart.head.rawValue) {
             eyes = head.children.filter { $0.name == "eye" }
             for eye in eyes {
@@ -88,6 +92,15 @@ final class FocusDollMotion {
         props.isEnabled = working
         doll.findEntity(named: "focus.pencil")?.isEnabled = working
         eyes.forEach { $0.isEnabled = !happy }; smiles.forEach { $0.isEnabled = happy }
+        if working, let headOrigin = originals[.head] {
+            let tilt = simd_quatf(angle: 0.12, axis: [1, 0, 0]) * simd_quatf(angle: 0.16, axis: [0, 0, 1])
+            for part in [DollPart.head, .ears] {
+                guard let node = doll.findEntity(named: part.rawValue), var pose = originals[part] else { continue }
+                pose.translation = headOrigin.translation + tilt.act(pose.translation - headOrigin.translation)
+                pose.rotation = tilt * pose.rotation
+                node.transform = pose
+            }
+        }
         for part in [DollPart.leftArm, .rightArm] {
             guard let arm = doll.findEntity(named: part.rawValue), let base = originals[part] else { continue }
             let side: Float = part == .leftArm ? -1 : 1
@@ -98,6 +111,12 @@ final class FocusDollMotion {
                 let rotation = simd_quatf(angle: angle, axis: working ? [1, 0, 0] : [0, 0, 1])
                 result.rotation = rotation * base.rotation
                 result.translation += pivot - rotation.act(pivot)
+                if working {
+                    // Rest the paws in front of the hood, on the reference desk.
+                    result.translation.x *= 1.30
+                    result.translation.y -= 0.012
+                    result.translation.z += 0.060
+                }
                 return result
             }
             arm.transform = pose(working ? -0.65 : happy ? side * 1.5 : 0)

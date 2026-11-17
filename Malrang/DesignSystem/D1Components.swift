@@ -11,11 +11,14 @@ enum D1 {
 
 struct D1Icon: View {
   let name: String
-  private var size: CGFloat { name == "check" ? 16 : ["undo", "redo"].contains(name) ? 20 : ["study", "read", "task"].contains(name) ? 26 : 24 }
+  var tint: Color? = nil
+  private var size: CGFloat { name == "back" ? 31.854 : name == "check" ? 16 : ["undo", "redo"].contains(name) ? 20 : ["study", "read", "task"].contains(name) ? 26 : 24 }
+  private var assetName: String { name == "back" ? "rep4_edit_back" : "d1_\(name)" }
   var body: some View {
-    Image("d1_\(name)").renderingMode(.original).resizable().frame(
-      width: size, height: size
-    ).accessibilityHidden(true)
+    Group {
+      if let tint { Image(assetName).renderingMode(.template).resizable().foregroundStyle(tint) }
+      else { Image(assetName).renderingMode(.original).resizable() }
+    }.frame(width: size, height: size).accessibilityHidden(true)
   }
 }
 
@@ -24,36 +27,57 @@ struct D1IconButton: View {
   let label: String
   let action: () -> Void
   var body: some View {
-    Button(action: action) { D1Icon(name: icon).frame(width: 44, height: 44).d1Surface(radius: 22) }
+    Button(action: action) { D1Icon(name: icon).frame(width: 44, height: 44)
+      .background(icon == "back" ? Color.clear : Color.rep4.c01.opacity(0.74), in: Circle()) }
       .buttonStyle(.plain).accessibilityLabel(label)
+  }
+}
+
+/// The creation screens share the same source arrow and navigation-bar inset.
+struct CreationBackButton: View {
+  let label: String
+  let action: () -> Void
+  var body: some View {
+    Button(action: action) {
+      D1Icon(name: "back").offset(y: 5).frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+    }.buttonStyle(.plain).accessibilityLabel(label)
+  }
+}
+
+/// The source keeps a 37 pt circle inside a 44 pt touch target.
+struct RoomHistoryButton: View {
+  let redo: Bool
+  let action: () -> Void
+  var body: some View {
+    Button(action: action) {
+      Image(redo ? "rep4_room_redo" : "rep4_room_undo").resizable().frame(width: 20, height: 20)
+        .frame(width: 37, height: 37).background(Color.rep4.c02, in: Circle())
+        .frame(width: 44, height: 44, alignment: .topLeading).contentShape(Rectangle())
+    }.buttonStyle(RoomPressStyle()).accessibilityLabel(redo ? "다시하기" : "되돌리기")
   }
 }
 
 struct D1PrimaryStyle: ButtonStyle {
   @Environment(\.isEnabled) private var enabled
   func makeBody(configuration: Configuration) -> some View {
-    configuration.label.pretendard(.bold, D1.ctaFontSize)
-      .foregroundStyle(Color.mib.text.onPrimary)
-      .frame(maxWidth: .infinity, minHeight: D1.buttonHeight)
-      .contentShape(Rectangle())
-      .background(enabled ? Color.mib.action.primary : Color.mib.action.disabled, in: Capsule())
-  }
+        configuration.label.modifier(RepresentativeActionSurface(primary: true))
+    }
 }
 
 struct D1SecondaryStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
-    configuration.label.pretendard(.bold, D1.ctaFontSize).foregroundStyle(Color.mib.text.primary)
-      .frame(maxWidth: .infinity, minHeight: D1.buttonHeight)
-      .contentShape(Rectangle())
-      .background(Color.mib.bg.surface, in: Capsule())
-      .overlay(Capsule().strokeBorder(Color.mib.line.selected, lineWidth: 1.4))
-  }
+        configuration.label.modifier(RepresentativeActionSurface(primary: false))
+    }
 }
 
 struct D1Choice: View {
   let title: String
   var selected = false
   var fillsWidth = false
+  var height: CGFloat = 44
+  var fontSize: CGFloat = 13
+  var neutral: Color = Color.rep4.c11
   let action: () -> Void
   var body: some View {
     Button(action: action) {
@@ -61,15 +85,9 @@ struct D1Choice: View {
         if selected { D1Icon(name: "check").frame(width: 16, height: 16) }
         Text(title)
       }
-      .pretendard(.medium, 13).padding(.horizontal, 12).frame(minHeight: 44)
+      .pretendard(selected ? .medium : .regular, fontSize).padding(.horizontal, 12).frame(minHeight: height)
       .frame(maxWidth: fillsWidth ? .infinity : nil)
-      .background(
-        selected ? Color.mib.bg.mintSoft : Color.mib.bg.surface,
-        in: RoundedRectangle(cornerRadius: 10)
-      )
-      .overlay(
-        RoundedRectangle(cornerRadius: 10).strokeBorder(
-          selected ? Color.mib.line.selected : Color.mib.line.default, lineWidth: 2))
+      .modifier(RepresentativeSelectionSurface(selected: selected, radius: 10, neutral: neutral))
     }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
   }
 }

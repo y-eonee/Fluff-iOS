@@ -24,27 +24,25 @@ struct DollActionSheet: View {
     private var page: some View {
             Group {
                 if !isRemoved {
-                    content
+                    VStack(spacing: 0) {
+                        Text("my fluff").notCliche(28, relativeTo: .title).tracking(-1.96)
+                            .foregroundStyle(Color.rep4.c03).accessibilityAddTraits(.isHeader)
+                            .frame(maxWidth: .infinity).frame(height: 44)
+                            .overlay(alignment: .leading) {
+                                Button { dismiss() } label: {
+                                    Image("rep4_edit_back").resizable().frame(width: 26.425, height: 26.425)
+                                        .frame(width: 44, height: 44, alignment: .leading)
+                                }.buttonStyle(.plain).padding(.leading, 26.25).accessibilityLabel("뒤로")
+                            }.offset(y: 3.47)
+                        content
+                    }
                 }
             }
             .background { AppBackground() }
-            .cozyPageTitle("my fluff")
-            .toolbar(.visible, for: .navigationBar)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if !isPushed {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("닫기", systemImage: "chevron.left") { dismiss() }
-                    }
-                }
-                if !isRemoved {
-                    ToolbarItemGroup(placement: .topBarTrailing) {
-                        Menu("더보기", systemImage: "ellipsis") {
-                            Button("인형 삭제", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
-                        }
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .tabBar)
+            .preference(key: AppTabBarHiddenPreference.self, value: true)
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarBackButtonHidden()
             .confirmationDialog("이 인형을 삭제할까요?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
                 Button("삭제", role: .destructive) {
                     isRemoved = true
@@ -56,26 +54,43 @@ struct DollActionSheet: View {
             }
     }
 
+    private var firstMetDate: String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let parts = calendar.dateComponents([.year, .month, .day], from: doll.createdAt)
+        return String(format: "%04d.%02d.%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
     private var content: some View {
         ScrollViewReader { reader in
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: 38)
+                        .overlay(alignment: .topTrailing) {
+                            VStack(spacing: 3) {
+                                Text("처음 만난 날").pretendard(.medium, 12)
+                                Text(firstMetDate).pretendard(.regular, 14, tracking: -0.7)
+                            }.frame(width: 96.21, height: 50.28).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 6))
+                        }.padding(.horizontal, 24)
                     Group {
                         if isChoosingDance {
                             DancingDoll(image: doll.image, move: move)
                                 .accessibilityLabel("\(doll.name), \(move.label) 춤")
                                 .padding(24)
                         } else {
-                            SquishyDoll(doll: doll.state)
+                            SquishyDoll(doll: doll.state, usesProfileLayout: true)
                         }
-                    }.frame(height: 340).padding(.horizontal, 52)
+                    }.frame(height: 400).padding(.horizontal, 34)
+                        .contextMenu { profileActions }
+                        .accessibilityAction(named: "춤추기") { startDance() }
+                        .accessibilityAction(named: "예절샷 찍기") { startAR() }
                     DollHistoryCard(doll: doll).padding(.horizontal, 18).id("history")
                     if isChoosingDance {
                         DancePanel(doll: doll, selected: $move) {
                             withAnimation(.spring) { isChoosingDance = false }
                         }
-                    } else { actions }
-                }.padding(.top, 8).padding(.bottom, 24)
+                    }
+                }.padding(.top, 25).padding(.bottom, 24)
             }.scrollIndicators(.hidden)
                 .onAppear { if initiallyShowsHistory { reader.scrollTo("history", anchor: .top) } }
         }
@@ -84,37 +99,25 @@ struct DollActionSheet: View {
         }
     }
 
-    private var actions: some View {
-        VStack(spacing: Spacing.s) {
-            HStack(spacing: Spacing.s) {
-                Button {
-                    move = doll.dance ?? .bounce
-                    withAnimation(.spring) { isChoosingDance = true }
-                } label: {
-                    Label("춤추기", systemImage: "music.note")
-                }
-                Button {
-                    // 방의 3D 화면이 먼저 내려가야 AR 카메라가 그려진다.
-                    appState.isShowingAR = true
-                    Task {
-                        await Task.yield()
-                        isShowingAR = true
-                    }
-                } label: {
-                    Label("예절샷 찍기", systemImage: "camera.viewfinder")
-                }
-            }
-            .buttonStyle(.secondary)
-            if !doll.isPlaced {
-                Button("방에 두기") {
-                    appState.place(doll)
-                    dismiss()
-                }.buttonStyle(.primary)
-            }
+    @ViewBuilder private var profileActions: some View {
+        Button("춤추기", systemImage: "music.note", action: startDance)
+        Button("예절샷 찍기", systemImage: "camera.viewfinder", action: startAR)
+        if !doll.isPlaced {
+            Button("방에 두기", systemImage: "house") { appState.place(doll); dismiss() }
         }
-        .padding(Spacing.m)
-
+        Button("인형 삭제", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
     }
+
+    private func startDance() {
+        move = doll.dance ?? .bounce
+        withAnimation(.spring) { isChoosingDance = true }
+    }
+
+    private func startAR() {
+        appState.isShowingAR = true
+        Task { await Task.yield(); isShowingAR = true }
+    }
+
 
 
 }

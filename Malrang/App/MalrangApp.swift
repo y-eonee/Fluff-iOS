@@ -6,6 +6,7 @@ import SwiftUI
 @main
 struct MalrangApp: App {
     @State private var isShowingSplash = true
+    @State private var startupPresentationFinished = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -34,10 +35,19 @@ struct MalrangApp: App {
         #endif
     }
 
+    @ViewBuilder private var startupContent: some View {
+        #if DEBUG
+        DesignDataResetGate { appContent }
+        #else
+        appContent
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
-                appContent
+                startupContent
+                    .environment(\.startupPresentationFinished, startupPresentationFinished)
                     .allowsHitTesting(!isShowingSplash)
                     .accessibilityHidden(isShowingSplash)
                 if isShowingSplash {
@@ -48,6 +58,7 @@ struct MalrangApp: App {
             }
             .task {
                 #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--data-reset-audit") { try? DesignDataReset.audit() }
                 if ProcessInfo.processInfo.arguments.contains("--activity-audit") { DollActivityAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--render-resource-audit") { await RenderResourceAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--furniture-audit") { await FurnitureInteractionAudit.run() }
@@ -59,7 +70,16 @@ struct MalrangApp: App {
                 catch { return }
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) {
                     isShowingSplash = false
+                } completion: {
+                    startupPresentationFinished = true
                 }
+                #if DEBUG
+                try? await Task.sleep(for: .milliseconds(400))
+                let nativeRoutes = ["tabs-dolls", "tabs-profile", "photo-pick", "cutout-auto", "cutout-move", "create-ready", "selection", "couch-playlist"]
+                if let route = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--design-preview=") })?.split(separator: "=").last,
+                   nativeRoutes.contains(String(route)) { DesignPreviewSignal.sceneReady() }
+                DesignPreviewSignal.startupDidFinish()
+                #endif
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
                 RenderMemory.clearCaches()

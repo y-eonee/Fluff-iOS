@@ -1,8 +1,9 @@
 import RealityKit
 import UIKit
 
-/// Batch repeated fixed geometry without copying vertex buffers or changing
-/// model-space fleece coordinates. Beds keep their articulated bedding.
+/// Merge repeated fixed parts into cached ordinary meshes. Low-level instance
+/// components can lose their shadow bounds across renderer changes on iOS 26.4.
+/// Beds keep their articulated bedding; no geometry is rebuilt per frame.
 enum FurnitureInstances {
     struct Counts: Component {
         var originalModels: Int
@@ -53,7 +54,7 @@ enum FurnitureInstances {
         var counts = Counts(originalModels: groups.values.reduce(0) { $0 + $1.count }, batchedModels: 0, instances: 0)
         for (key, entities) in groups where entities.count > 1 {
             guard let first = entities.first, let model = first.components[ModelComponent.self],
-                  let data = try? LowLevelInstanceData(instanceCount: entities.count) else { continue }
+                  key.mesh.positions.count * entities.count <= 200_000 else { continue }
             let transforms = entities.map { entity in
                 // Compose local transforms while the template is detached.
                 var matrix = matrix_identity_float4x4
@@ -64,25 +65,40 @@ enum FurnitureInstances {
                 }
                 return matrix
             }
-            var bounds = BoundingBox()
+            var positions: [SIMD3<Float>] = [], normals: [SIMD3<Float>] = []
+            var tangents: [SIMD3<Float>] = [], bitangents: [SIMD3<Float>] = []
+            var uv: [SIMD2<Float>] = [], indices: [UInt32] = []
             for transform in transforms {
-                let box = model.mesh.bounds
-                for x in [box.min.x, box.max.x] {
-                    for y in [box.min.y, box.max.y] {
-                        for z in [box.min.z, box.max.z] {
-                            let p = transform * SIMD4<Float>(x, y, z, 1)
-                            bounds.formUnion(BoundingBox(min: [p.x, p.y, p.z], max: [p.x, p.y, p.z]))
-                        }
-                    }
+                let offset = UInt32(positions.count)
+                let linear = simd_float3x3(SIMD3(transform.columns.0.x, transform.columns.0.y, transform.columns.0.z),
+                                          SIMD3(transform.columns.1.x, transform.columns.1.y, transform.columns.1.z),
+                                          SIMD3(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z))
+                let normalTransform = linear.inverse.transpose
+                for point in key.mesh.positions {
+                    let p = transform * SIMD4(point, 1)
+                    positions.append([p.x, p.y, p.z])
+                }
+                normals += key.mesh.normals.map { simd_normalize(normalTransform * $0) }
+                tangents += key.mesh.tangents.map { simd_normalize(linear * $0) }
+                bitangents += key.mesh.bitangents.map { simd_normalize(linear * $0) }
+                uv += key.mesh.uv
+                for triangle in stride(from: 0, to: key.mesh.indices.count, by: 3) {
+                    let a = key.mesh.indices[triangle] + offset
+                    let b = key.mesh.indices[triangle + 1] + offset
+                    let c = key.mesh.indices[triangle + 2] + offset
+                    indices += linear.determinant < 0 ? [a, c, b] : [a, b, c]
                 }
             }
-            guard let instances = try? MeshInstancesComponent(mesh: model.mesh, instances: data, bounds: bounds) else { continue }
-            data.withMutableTransforms { buffer in
-                for index in transforms.indices { buffer[index] = transforms[index] }
-            }
-            let combined = ModelEntity(mesh: model.mesh, materials: model.materials)
-            combined.name = "fixed-instances"
-            combined.components.set(instances)
+            var descriptor = MeshDescriptor(name: "fixed-furniture-parts")
+            descriptor.positions = .init(positions)
+            if normals.count == positions.count { descriptor.normals = .init(normals) }
+            if tangents.count == positions.count { descriptor.tangents = .init(tangents) }
+            if bitangents.count == positions.count { descriptor.bitangents = .init(bitangents) }
+            if uv.count == positions.count { descriptor.textureCoordinates = .init(uv) }
+            descriptor.primitives = .triangles(indices)
+            guard let mesh = try? MeshResource.generate(from: [descriptor]) else { continue }
+            let combined = ModelEntity(mesh: mesh, materials: model.materials)
+            combined.name = "fixed-furniture-parts"
             combined.components.set(DynamicLightShadowComponent(castsShadow: key.castsShadow))
             root.addChild(combined)
             for entity in entities { entity.components.remove(ModelComponent.self) }

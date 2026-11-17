@@ -10,6 +10,13 @@ enum CozyModelExporter {
     static func auditIfRequested() async {
         guard ProcessInfo.processInfo.arguments.contains("--audit-cozy-models") else { return }
         var report: [String] = []
+        for cutaway in [false, true] {
+            let panel = CozyRoomShell.panel(size: [0.055, 2.04], center: [-1.025, 0], cutaway: cutaway)
+            let expected: Float = cutaway ? 1.493096 : CozyRoomShell.cornerHeight
+            report.append("room.shell.\(cutaway ? "cutaway" : "interior"): \(abs(panel.bounds.extents.y - expected) < 0.001 ? "PASS" : "FAIL")")
+        }
+        let floor = await CozyFurniture.make(RoomItemState(id: UUID(), kind: .floor, x: 0, z: 0), photoMaterial: PhysicallyBasedMaterial())
+        report.append("room.floor.singleSurface: \(floor.children.filter { $0.components[ModelComponent.self] != nil }.count == 1 ? "PASS" : "FAIL")")
         if let device = MTLCreateSystemDefaultDevice(), let library = device.makeDefaultLibrary() {
             let names = ["cozyFabric", "cozyCopyColor", "cozyExtractLight", "cozyCompositeLight", "plushExtractLight", "plushCompositeLight"]
             for name in names {
@@ -65,9 +72,21 @@ enum CozyModelExporter {
                         let covered = torsoBounds.max.y < coverBounds.max.y && torsoBounds.max.z < 0.28
                         let visible = headBounds.max.y > coverBounds.max.y && headBounds.center.z < coverBounds.min.z
                         let pillowTop = model.findEntity(named: "pillow")?.visualBounds(relativeTo: scene).max.y ?? 0
+                        let mattressTop = model.findEntity(named: "mattress")?.visualBounds(relativeTo: scene).max.y ?? 0
                         let headboardFront = model.findEntity(named: "headboard")?.visualBounds(relativeTo: scene).max.z ?? -1
-                        let clear = headBounds.min.y >= pillowTop && headBounds.min.z >= headboardFront
+                        // A soft pillow supports the head's centre; requiring
+                        // the entire head AABB above its highest corner forced
+                        // the previous detached-head pose.
+                        let clear = headBounds.min.y >= mattressTop && headBounds.center.y >= pillowTop - 0.02
+                            && headBounds.min.z >= headboardFront
                         report.append("sleep.\(shape.rawValue): \(covered && visible && clear ? "PASS" : "FAIL") head=\(headBounds.min)...\(headBounds.max), torso=\(torsoBounds.min)...\(torsoBounds.max), duvet=\(coverBounds.min)...\(coverBounds.max)")
+                        if let hood = doll.findEntity(named: "head.fur"), let collar = doll.findEntity(named: "neck.fur") {
+                            let h = hood.visualBounds(relativeTo: scene), n = collar.visualBounds(relativeTo: scene)
+                            let connected = h.min.x <= n.max.x && h.max.x >= n.min.x
+                                && h.min.y <= n.max.y && h.max.y >= n.min.y
+                                && h.min.z <= n.max.z && h.max.z >= n.min.z
+                            report.append("sleep.\(shape.rawValue).neckConnected: \(connected ? "PASS" : "FAIL")")
+                        } else { report.append("sleep.\(shape.rawValue).neckConnected: FAIL missing sewn geometry") }
                     }
                     doll.removeFromParent()
                 }
@@ -76,7 +95,22 @@ enum CozyModelExporter {
             let original = await CozyFurniture.make(state, photoMaterial: PhysicallyBasedMaterial())
             let untouched = !matches((original.findEntity(named: part)?.components[ModelComponent.self]?.materials.first as? CustomMaterial)?.baseColor.tint, expected)
             let defaultMaterial = original.findEntity(named: part)?.components[ModelComponent.self]?.materials.first as? CustomMaterial
-            let paletteDefault = matches(defaultMaterial?.baseColor.tint, Palette.uiColor(kind.defaultColorName))
+            let paletteDefault = matches(defaultMaterial?.baseColor.tint, Palette.uiColor(CozyFurniture.defaultColor(for: kind, cutaway: false)))
+            if kind == .bed {
+                let footboard = original.findEntity(named: "footboard")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                let fabric = matches(footboard?.baseColor.tint, Palette.uiColor(CozyRoomPalette.ivory)) && (footboard?.custom.value.y ?? -1) >= 0
+                report.append("bed.footboard.fabric: \(fabric ? "PASS" : "FAIL")")
+            }
+            if kind == .chair {
+                let interiorLeg = original.findEntity(named: "leg")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                report.append("chair.interior.timberLeg: \(matches(interiorLeg?.baseColor.tint, Palette.uiColor("#A17450")) && (interiorLeg?.custom.value.y ?? 0) < 0 ? "PASS" : "FAIL")")
+                var pinkChair = state; pinkChair.colorName = "#FF99BB"
+                let cutaway = await CozyFurniture.make(pinkChair, photoMaterial: PhysicallyBasedMaterial(), cutaway: true)
+                let leg = cutaway.findEntity(named: "leg")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                let back = cutaway.findEntity(named: "backrest")?.components[ModelComponent.self]?.materials.first as? CustomMaterial
+                report.append("chair.cutaway.timberLeg: \(matches(leg?.baseColor.tint, Palette.uiColor("#DEB883")) && (leg?.custom.value.y ?? 0) < 0 ? "PASS" : "FAIL")")
+                report.append("chair.cutaway.customUpholstery: \(matches(back?.baseColor.tint, Palette.uiColor("#FF99BB")) ? "PASS" : "FAIL")")
+            }
             if kind == .chair, let defaultMaterial { report += auditBatching(material: defaultMaterial) }
             report.append("\(kind.rawValue): \(bundled && recolored && preserved && untouched && paletteDefault ? "PASS" : "FAIL") bundled=\(bundled), recolor=\(recolored), actual=\(String(describing: material?.baseColor.tint)), trim=\(preserved), cache=\(untouched), paletteDefault=\(paletteDefault)")
         }
@@ -96,28 +130,20 @@ enum CozyModelExporter {
             entity.scale = SIMD3(repeating: 0.5)
             root.addChild(entity)
         }
+        let expectedBounds = root.visualBounds(relativeTo: root)
         FurnitureInstances.batch(root, kind: .chair)
         let clone = root.clone(recursive: true)
         let models = clone.children.filter { $0.components[ModelComponent.self] != nil }
-        var x: [Float] = []
-        var scalesValid = true
-        for entity in models {
-            if let part = entity.components[MeshInstancesComponent.self]?[partIndex: 0] {
-                part.data.withTransforms { transforms in
-                    for transform in transforms {
-                        x.append(transform.columns.3.x)
-                        scalesValid = scalesValid && abs(transform.columns.0.x - 0.5) < 0.0001
-                    }
-                }
-            }
-        }
-        let positionsValid = x.sorted().enumerated().allSatisfy { abs($0.element - Float($0.offset) * 0.1) < 0.0001 }
+        let actualBounds = clone.visualBounds(relativeTo: clone)
+        let positionsValid = simd_length(actualBounds.min - expectedBounds.min) < 0.001
+            && simd_length(actualBounds.max - expectedBounds.max) < 0.001
         let shapeHeights = models.compactMap { $0.components[ModelComponent.self]?.mesh.bounds.extents.y }.sorted()
-        let geometryValid = shapeHeights.count == 2 && abs(shapeHeights[0] - 0.1) < 0.001 && abs(shapeHeights[1] - 0.3) < 0.001
+        let geometryValid = shapeHeights.count == 2 && abs(shapeHeights[0] - 0.05) < 0.001 && abs(shapeHeights[1] - 0.15) < 0.001
         let namesKept = (0..<8).allSatisfy { clone.findEntity(named: "part-\($0)") != nil }
         return [
             "batch.distinctGeometry: \(geometryValid && clone.components[FurnitureInstances.Counts.self]?.batchedModels == 6 ? "PASS" : "FAIL")",
-            "batch.cloneTransforms: \(x.count == 8 && positionsValid && scalesValid && namesKept ? "PASS" : "FAIL")"
+            "batch.cloneTransforms: \(positionsValid && namesKept ? "PASS" : "FAIL")",
+            "batch.stableShadowGeometry: \(models.count == 2 && models.allSatisfy { $0.components[MeshInstancesComponent.self] == nil } ? "PASS" : "FAIL")"
         ]
     }
 
@@ -139,7 +165,7 @@ enum CozyModelExporter {
             for kind in kinds {
                 let state = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
                 let model = await CozyFurniture.make(state, photoMaterial: PhysicallyBasedMaterial(),
-                                                     usesWindowLighting: false, useBakedModels: false)
+                                                     usesWindowLighting: false, useBakedModels: false, cutaway: true)
                 model.name = "cozy_" + kind.rawValue
                 let url = directory.appending(path: model.name + ".reality")
                 try await model.write(to: url)

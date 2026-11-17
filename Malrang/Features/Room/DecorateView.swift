@@ -5,10 +5,19 @@ import SwiftUI
 struct DecorateView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Namespace var categoryIndicator
+    @State var editFeedbackCount = 0
+    @State var entrance = RoomEntrance(.editor)
+    @Environment(\.startupPresentationFinished) var startupPresentationFinished
     @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
     @State var category = FurnitureCategory.furniture
+    @State var catalogSelection = FurnitureKind.bed
+    @State var surfacePhotoMode: Bool? = nil
     @State var dollPoint: CGPoint?
+    @State var furnitureBounds: [String: CGRect] = [:]
+    @State var wallPolygon: [CGPoint] = []
     @State var undoStack: [[RoomItemState]] = []
     @State var redoStack: [[RoomItemState]] = []
     @State var isApplyingHistory = false
@@ -35,11 +44,15 @@ struct DecorateView: View {
         contentA
         .background(Color.mib.bg.screen)
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
+        .sensoryFeedback(trigger: category) { _, _ in hapticOn ? .selection : nil }
+        .sensoryFeedback(trigger: selectedID) { _, new in hapticOn && new != nil ? .selection : nil }
+        .sensoryFeedback(trigger: editFeedbackCount) { _, _ in hapticOn ? .impact(weight: .light) : nil }
         .alert("꾸민 내용을 저장하지 못했어요", isPresented: $saveFailed) { Button("확인", role: .cancel) {} }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .tabBar)
+        .preference(key: AppTabBarHiddenPreference.self, value: true)
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: items.map(\.state)) { old, _ in
             if isApplyingHistory {
@@ -50,10 +63,11 @@ struct DecorateView: View {
             }
             lastEdit = .now
         }
-        .confirmationDialog("꾸민 내용을 버릴까요?", isPresented: $isConfirmingDiscard, titleVisibility: .visible) {
-            Button("버리고 나가기", role: .destructive) {
-                restoreOriginal()
-                dismiss()
+        .overlay {
+            if isConfirmingDiscard {
+                RepresentativeConfirmDialog(title: "꾸민 내용을 버릴까요?", message: "지금까지 만든 내용은 저장되지 않아요.", verticalOffset: 10.56, onLeave: {
+                    restoreOriginal(); dismiss()
+                }, onStay: { isConfirmingDiscard = false })
             }
         }
         .navigationDestination(item: $editingItem) { item in
@@ -62,6 +76,9 @@ struct DecorateView: View {
         .navigationDestination(item: $photoItem) { item in
             FurnitureCustomView(item: item, initialStyle: .photo)
         }
+        .task(id: startupPresentationFinished) {
+            if startupPresentationFinished { entrance.present() }
+        }
         .onAppear {
             if original == nil {
                 original = items.map(\.state)
@@ -69,11 +86,13 @@ struct DecorateView: View {
             }
         }
         .task(id: isBlocked) {
-            try? await Task.sleep(for: .seconds(3))
+            guard isBlocked else { return }
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
             isBlocked = false
         }
         .task(id: isFull) {
-            try? await Task.sleep(for: .seconds(3))
+            guard isFull else { return }
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
             isFull = false
         }
     }
@@ -108,7 +127,7 @@ struct DecorateView: View {
             isBlocked = true
             return
         }
-        withAnimation(.spring) {
+        withAnimation(reduceMotion ? nil : .spring) {
             item.yaw = Double(rotated.yaw)
             item.x = Double(spot.x)
             item.z = Double(spot.y)
@@ -134,6 +153,7 @@ struct DecorateView: View {
             isFull = true
             return
         }
+        catalogSelection = kind
         let item = RoomItem(kind: kind, x: Double(spot.x), z: Double(spot.y))
         modelContext.insert(item)
         selectedID = item.id

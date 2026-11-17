@@ -54,30 +54,30 @@ final class RoomItem {
     }
 
     /// 처음 실행할 때 놓이는 기본 방
-    /// 945:2242의 침대 방향, 책상 의자, 앞쪽 라운지 의자를 분리해 배치한다.
+    /// 1727:25012: headboard and desk against the back wall, sofa on the near rug.
     static var starterRoom: [RoomItem] {
-        let bed = RoomItem(kind: .bed, x: -0.41, z: 0.18)
-        bed.yaw = .pi / 2
-        let chair = RoomItem(kind: .chair, x: 0.49, z: 0.01)
+        let bed = RoomItem(kind: .bed, x: -0.52, z: -0.32)
+        let chair = RoomItem(kind: .chair, x: 0.36, z: -0.25)
         chair.yaw = .pi
-        let lounge = RoomItem(kind: .sofa, x: 0.67, z: 0.658)
-        lounge.yaw = 1.3
-        let rug = RoomItem(kind: .rugRound, x: 0.534, z: 0.734)
+        let lounge = RoomItem(kind: .sofa, x: 0.60, z: 0.60)
+        let rug = RoomItem(kind: .rugRound, x: 0.25, z: 0.734)
         rug.yaw = 0.633
         return [
             RoomItem(kind: .wall),
             RoomItem(kind: .floor),
             bed,
-            RoomItem(kind: .desk, x: 0.345, z: -0.38),
+            RoomItem(kind: .desk, x: 0.25, z: -0.68),
             chair,
             lounge,
-            RoomItem(kind: .lamp, x: 0.495, z: -0.30),
+            RoomItem(kind: .lamp, x: 0.40, z: -0.56),
             rug,
             // 오른쪽 노란색 벽: 액자는 안쪽, 선반은 책상 위쪽.
             RoomItem(kind: .frame, x: -0.72, z: -0.9775),
-            RoomItem(kind: .shelf, x: -0.05, z: -0.919),
+            RoomItem(kind: .shelf, x: 0.05, z: -0.919),
         ]
     }
+
+
 }
 
 /// 3D 장면에서 사용하는 가구 값

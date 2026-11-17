@@ -12,7 +12,7 @@ struct RoomDaylight: Equatable {
     switch phase {
     case .night: ["#1D2949", "#394766", "#65718C"]
     case .morning: ["#A9CCD9", "#EDD9D4", "#FFE8C8"]
-    case .day: ["#8DC6DE", "#C5E1EA", "#F4EDD9"]
+    case .day: ["#8CC3F2", "#B4D9F5", "#E7EDF4"]
     case .sunset: ["#9A86B5", "#E6A6AF", "#FFD5A8"]
     }
   }

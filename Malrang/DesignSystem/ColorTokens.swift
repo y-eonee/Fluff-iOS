@@ -2,6 +2,43 @@
 import SwiftUI
 
 extension Color {
+    enum rep4 {
+        static let c01 = Color("Rep4/c01")
+        static let c02 = Color("Rep4/c02")
+        static let c03 = Color("Rep4/c03")
+        static let c04 = Color("Rep4/c04")
+        static let c05 = Color("Rep4/c05")
+        static let c06 = Color("Rep4/c06")
+        static let c07 = Color("Rep4/c07")
+        static let c08 = Color("Rep4/c08")
+        static let c09 = Color("Rep4/c09")
+        static let c10 = Color("Rep4/c10")
+        static let c11 = Color("Rep4/c11")
+        static let c12 = Color("Rep4/c12")
+        static let c13 = Color("Rep4/c13")
+        static let c14 = Color("Rep4/c14")
+        static let c15 = Color("Rep4/c15")
+        static let c16 = Color("Rep4/c16")
+        static let c17 = Color("Rep4/c17")
+        static let c18 = Color("Rep4/c18")
+        static let c19 = Color("Rep4/c19")
+        static let c20 = Color("Rep4/c20")
+        static let c21 = Color("Rep4/c21")
+        static let c22 = Color("Rep4/c22")
+        static let c23 = Color("Rep4/c23")
+        static let c24 = Color("Rep4/c24")
+        static let c25 = Color("Rep4/c25")
+        static let c26 = Color("Rep4/c26")
+        static let c27 = Color("Rep4/c27")
+        static let c28 = Color("Rep4/c28")
+        static let c29 = Color("Rep4/c29")
+        static let c30 = Color("Rep4/c30")
+        static let c31 = Color("Rep4/c31")
+        static let c32 = Color("Rep4/c32")
+        static let c33 = Color("Rep4/c33")
+        static let c34 = Color("Rep4/c34")
+        static let c35 = Color("Rep4/c35")
+    }
     enum mib {
         enum primitive {
             enum mint {

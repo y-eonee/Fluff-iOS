@@ -50,7 +50,6 @@ enum Radius {
 extension View {
     func cardStyle() -> some View {
         background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .strokeBorder(Color.mib.line.default))
+
     }
 }

@@ -1,0 +1,1670 @@
+{
+  "source": {
+    "fileKey": "y50EtliLp7YMR80gHuJRLb",
+    "designSystemNode": "1675:3945",
+    "paletteCollectionId": "VariableCollectionId:1678:4013",
+    "activeSpecification": "DESIGN.md",
+    "referenceScreens": {
+      "ROOM": "1646:5442",
+      "FOCUS": "1654:10121",
+      "MAKING": "1654:10366",
+      "COUCH": "1655:4987"
+    },
+    "scope": "Original resources for representative screens and the visible implementation flow; shared resources retain compatible names.",
+    "implementationFlowNode": "1727:21665"
+  },
+  "assets": {
+    "rep4_room_background": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_background.imageset/image.png",
+      "sha256": "150bd24dee69f7d9d865f2a1db436b676d76a936ecb2ac07dd3b4178c7ed478b",
+      "naturalDimensions": {
+        "width": 1024,
+        "height": 1024
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5443",
+          "name": "Room / background",
+          "x": 0,
+          "y": 132,
+          "width": 390,
+          "height": 390,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_chair": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_chair.imageset/image.png",
+      "sha256": "37ba823bfd255b4a0afe9326695cca212a235eac80323372562c1f6f76fa2677",
+      "naturalDimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "sourceSlots": [
+        {
+          "id": "I1646:5452;32:2513",
+          "name": "3D content / chair",
+          "x": 0,
+          "y": 0,
+          "width": 226.1999969482422,
+          "height": 226.1999969482422,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "d2a9a2a09465d47350f2424b87bd360d5cade940",
+              "scaleMode": "FIT",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_room_reset": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_reset.imageset/image.png",
+      "sha256": "8213a11877c21b47240cd9f90c8bd84f4d711b39edfc5e8bb2c9cb0f5566627f",
+      "naturalDimensions": {
+        "width": 100,
+        "height": 100
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10450",
+          "name": "Update Left Rotation",
+          "x": 0,
+          "y": 12.6005859375,
+          "width": 19.0009765625,
+          "height": 12.7978515625,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "ad207519f79c9d8bf60f7ba54170bbb4514a551d",
+              "scaleMode": "FIT",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_furniture_bed": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_furniture_bed.imageset/image.png",
+      "sha256": "3df948fa628258640f63984754b0d7237d2306b088476afa5293482222bca642",
+      "naturalDimensions": {
+        "width": 285,
+        "height": 156
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5479",
+          "name": "thumb/침대",
+          "x": 7.55859375,
+          "y": -18.3798828125,
+          "width": 89.7750015258789,
+          "height": 49.13999938964844,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "025d7773a78ec7d93a711a5fb507860ec6b45042",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "940433a76a94f1ac69cf1c5a1aa986e34f12ae70",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_furniture_desk": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_furniture_desk.imageset/image.png",
+      "sha256": "fe7b9706b1a4b7bfda7ca2eb9a18bed16d6c764ace7e473e91d43d989304d64a",
+      "naturalDimensions": {
+        "width": 285,
+        "height": 156
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5481",
+          "name": "thumb/책상",
+          "x": 124.2666015625,
+          "y": -18.3798828125,
+          "width": 89.7750015258789,
+          "height": 49.13999938964844,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "c8fd4d477eeba65a46e5762d30152a322e9f65e1",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "37333f36e008cf6c2c498e42d8d8bb452fc07abf",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_furniture_shelf": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_furniture_shelf.imageset/image.png",
+      "sha256": "eb56c767e4efbb7686678ee7e708e00354f28c0f916f17b76f6a037c476bdb74",
+      "naturalDimensions": {
+        "width": 285,
+        "height": 156
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5483",
+          "name": "thumb/선반",
+          "x": 240.974609375,
+          "y": -14.599960327148438,
+          "width": 89.7750015258789,
+          "height": 49.13999938964844,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "0e176364c8b12594677b3d0aea12f7f522b1c0f7",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "41318918b8b1f666ec549abf12ad2269276c5434",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_furniture_chair": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_furniture_chair.imageset/image.png",
+      "sha256": "736fb94acd2c74e58920219aec8c73877332324770d2c6e544d1bdea1cd6d76e",
+      "naturalDimensions": {
+        "width": 285,
+        "height": 156
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5485",
+          "name": "thumb/의자",
+          "x": 7.55859375,
+          "y": 77.0751953125,
+          "width": 89.7750015258789,
+          "height": 49.13999938964844,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "107f53574df6b7da685cf06a4593e1c6ae260c11",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "9a7ffc556be4a890cf612ae79eb17a129c1229a8",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_furniture_sofa": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_furniture_sofa.imageset/image.png",
+      "sha256": "24d18116174f0cff7377c3f7e5358bf7bae3a45df4c6086eb3e3a2d5b9882601",
+      "naturalDimensions": {
+        "width": 285,
+        "height": 156
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5487",
+          "name": "thumb/소파",
+          "x": 124.2666015625,
+          "y": 77.0751953125,
+          "width": 89.7750015258789,
+          "height": 49.13999938964844,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "d90a28b3f7f12c8b0b76486f7818c0b9736e650f",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "1c332f503a489e357320c0fd94365913e53260f2",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_character_bear": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_character_bear.imageset/image.png",
+      "sha256": "aa7764f92291bf04c35dd53a7823f5ffa9c6960e5f9e605e4591309161493905",
+      "naturalDimensions": {
+        "width": 960,
+        "height": 1280
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10492",
+          "name": "W10 / Asset / bear",
+          "x": 126.0498046875,
+          "y": 249.98788452148438,
+          "width": 62.9998779296875,
+          "height": 86.99983215332031,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "ecbeaf198f44fbd78ab290d111cf54ee9f457b0d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "9666e3b475bab81bd27caa1f45a4682ac3183e0d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1654:10406",
+          "name": "W10 / Asset / bear",
+          "x": 63.255859375,
+          "y": 205.396484375,
+          "width": 265.0779724121094,
+          "height": 364.8934326171875,
+          "effectiveVisible": true,
+          "referenceScreen": "1654:10366",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "ecbeaf198f44fbd78ab290d111cf54ee9f457b0d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "9666e3b475bab81bd27caa1f45a4682ac3183e0d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "1655:4996",
+          "name": "W10 / Asset / bear",
+          "x": 103.458984375,
+          "y": 96.69775390625,
+          "width": 190,
+          "height": 248,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "ecbeaf198f44fbd78ab290d111cf54ee9f457b0d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "9666e3b475bab81bd27caa1f45a4682ac3183e0d",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_room_line4": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_line4.imageset/image.svg",
+      "sha256": "c31997648e6fd1f71442b558f6ec4ed6b4d27aab213e85ff5983701b132e8b8a",
+      "naturalDimensions": {
+        "width": "119.888",
+        "height": "29.8",
+        "viewBox": "0 0 119.888 29.8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5444",
+          "name": "Line 4",
+          "x": 241.49908447265625,
+          "y": 347.638671875,
+          "width": 91.08847045898438,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_line1": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_line1.imageset/image.svg",
+      "sha256": "7d704fa05992c2cb6bac7bb8cc6fdf292551c8e492ebad7abf87491e7a5f848a",
+      "naturalDimensions": {
+        "width": "117.464",
+        "height": "29.8",
+        "viewBox": "0 0 117.464 29.8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5445",
+          "name": "Line 1",
+          "x": 282.155517578125,
+          "y": 278.47802734375,
+          "width": 88.66412353515625,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_line2": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_line2.imageset/image.svg",
+      "sha256": "e640b4016625955a4fd751641a280464be0c5a60e115f601bac6403451568273",
+      "naturalDimensions": {
+        "width": "78.8762",
+        "height": "29.8",
+        "viewBox": "0 0 78.8762 29.8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5446",
+          "name": "Line 2",
+          "x": 241.22174072265625,
+          "y": 297.59423828125,
+          "width": 50.076171875,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_line3": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_line3.imageset/image.svg",
+      "sha256": "394aa62e931567778c28331eca03e7e54ffbfff851384bd0ba4b3ccf535ba5f8",
+      "naturalDimensions": {
+        "width": "74.5223",
+        "height": "29.8",
+        "viewBox": "0 0 74.5223 29.8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5447",
+          "name": "Line 3",
+          "x": 242.26068115234375,
+          "y": 298.42529296875,
+          "width": 45.72225570678711,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_line5": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_line5.imageset/image.svg",
+      "sha256": "6f6e055ada890341278ed77106d8f6eeea4a1cf43bb29305bddf31cf65b42ad4",
+      "naturalDimensions": {
+        "width": "74.2447",
+        "height": "29.8",
+        "viewBox": "0 0 74.2447 29.8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5448",
+          "name": "Line 5",
+          "x": 320.21923828125,
+          "y": 393.21435546875,
+          "width": 45.444664001464844,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_line6": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_line6.imageset/image.svg",
+      "sha256": "0805ec8e1165749de8a75924dbbdc5564f2e7162017a4c47d61c84b6ebab5af3",
+      "naturalDimensions": {
+        "width": "86.5886",
+        "height": "29.8",
+        "viewBox": "0 0 86.5886 29.8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5449",
+          "name": "Line 6",
+          "x": 361.568603515625,
+          "y": 315.71044921875,
+          "width": 57.78855895996094,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_undo": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_undo.imageset/image.svg",
+      "sha256": "6bea1883b848f3d4e48ae89ab7e3d07ba6b7b7b28b0c942f5bb28eb970b01a76",
+      "naturalDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5457",
+          "name": "i",
+          "x": 8.5,
+          "y": 8.5,
+          "width": 20,
+          "height": 20,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_redo": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_redo.imageset/image.svg",
+      "sha256": "6d918ba36ba78abd0eff774e508fa7eedfea0143d1be8d7e3df66af43e827fef",
+      "naturalDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5460",
+          "name": "i",
+          "x": 8.5,
+          "y": 8.5,
+          "width": 20,
+          "height": 20,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_tooltip_pointer": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_tooltip_pointer.imageset/image.svg",
+      "sha256": "419d5cd51e7dfa660cbad5b55196eeffa34fa316a02fd68ebd52b2ffd7f187ba",
+      "naturalDimensions": {
+        "width": "14",
+        "height": "9",
+        "viewBox": "0 0 14 9"
+      },
+      "sourceSlots": [
+        {
+          "id": "1646:5466",
+          "name": "Frame",
+          "x": 43,
+          "y": 0,
+          "width": 14,
+          "height": 9,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_tab_selected": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_tab_selected.imageset/image.svg",
+      "sha256": "47172b66c8effe64a2eaa5f9b7bc31895c48746cc84754fc0b0241f4aa7f9a10",
+      "naturalDimensions": {
+        "width": "84.5774",
+        "height": "1",
+        "viewBox": "0 0 84.5774 1"
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10117",
+          "name": "Vector 190",
+          "x": 0,
+          "y": -45.9150390625,
+          "width": 84.57742309570312,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_tab_default": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_tab_default.imageset/image.svg",
+      "sha256": "cbcc7e97b3c9aef4bde1928fe46e4e845845724376b38262865f05cf5ace4007",
+      "naturalDimensions": {
+        "width": "84.5774",
+        "height": "1",
+        "viewBox": "0 0 84.5774 1"
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10118",
+          "name": "Vector 191",
+          "x": 84.5771484375,
+          "y": -45.9150390625,
+          "width": 84.57742309570312,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        },
+        {
+          "id": "1654:10119",
+          "name": "Vector 192",
+          "x": 169.154296875,
+          "y": -45.9150390625,
+          "width": 84.57742309570312,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        },
+        {
+          "id": "1654:10120",
+          "name": "Vector 193",
+          "x": 253.7314453125,
+          "y": -45.9150390625,
+          "width": 84.57742309570312,
+          "height": 0,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_back": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_back.imageset/image.svg",
+      "sha256": "d180567bf89fa7b64d3e7d7004994085e2a7277759a29fe63d8550f62a340c84",
+      "naturalDimensions": {
+        "width": "31.8545",
+        "height": "31.8545",
+        "viewBox": "0 0 31.8545 31.8545"
+      },
+      "sourceSlots": [
+        {
+          "id": "I1646:5500;1062:941",
+          "name": "Frame",
+          "x": 0,
+          "y": 0,
+          "width": 31.8544864654541,
+          "height": 31.8544864654541,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        },
+        {
+          "id": "I1654:10402;1062:941",
+          "name": "Frame",
+          "x": 0,
+          "y": 0,
+          "width": 31.8544864654541,
+          "height": 31.8544864654541,
+          "effectiveVisible": true,
+          "referenceScreen": "1654:10366",
+          "imagePaints": []
+        },
+        {
+          "id": "I1655:4997;1062:941",
+          "name": "Frame",
+          "x": 0,
+          "y": 0,
+          "width": 31.8544864654541,
+          "height": 31.8544864654541,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_room_confirm": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_confirm.imageset/image.svg",
+      "sha256": "5e30d200c7de2043a6c2e9e770ef87ce46c9a14cf684266c3b73a5c60418d6d6",
+      "naturalDimensions": {
+        "width": "40.7549",
+        "height": "40.7549",
+        "viewBox": "0 0 40.7549 40.7549"
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10491",
+          "name": "Group 1144",
+          "x": 327.603515625,
+          "y": 55.0830078125,
+          "width": 40.7548828125,
+          "height": 40.7548828125,
+          "effectiveVisible": true,
+          "referenceScreen": "1646:5442",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_focus_background": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_focus_background.imageset/image.png",
+      "sha256": "8eea2c080e50e9c9ab74736937a51b179a007ff0594294321a572b46eb3bee66",
+      "naturalDimensions": {
+        "width": 768,
+        "height": 1792
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10122",
+          "name": "Asset / 소파 방 (배경 배리에이션)",
+          "x": -32.85932540893555,
+          "y": -188.506103515625,
+          "width": 450.86859130859375,
+          "height": 1032.5062255859375,
+          "effectiveVisible": true,
+          "referenceScreen": "1654:10121",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "5ebbde8fadc7706b49180f961df7d66ffec8c8a8",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_back_light": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_back_light.imageset/image.svg",
+      "sha256": "4f3720db592d4f81908cd3ecadbf5cb14024b4e9d14b8d25c2a56141be96424b",
+      "naturalDimensions": {
+        "width": "38.0243",
+        "height": "38.0243",
+        "viewBox": "0 0 38.0243 38.0243"
+      },
+      "sourceSlots": [
+        {
+          "id": "I1654:10136;1062:941",
+          "name": "Frame",
+          "x": 0,
+          "y": 0,
+          "width": 38.024322509765625,
+          "height": 38.024322509765625,
+          "effectiveVisible": true,
+          "referenceScreen": "1654:10121",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_focus_pause": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_focus_pause.imageset/image.svg",
+      "sha256": "9255100650dbbe1c03d0f8f0b77b5c1281a7faf2dfa700734015516debead72b",
+      "naturalDimensions": {
+        "width": "73.5627",
+        "height": "73.5628",
+        "viewBox": "0 0 73.5627 73.5628"
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10138",
+          "name": "Group 1130",
+          "x": 287.7470703125,
+          "y": 638.3745727539062,
+          "width": 73.56269836425781,
+          "height": 73.56269836425781,
+          "effectiveVisible": true,
+          "referenceScreen": "1654:10121",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_making_glow": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_making_glow.imageset/image.svg",
+      "sha256": "1d3fa664278ed3b5fbd81dc0262159c80f1e52edc796398176136a81fadd6d47",
+      "naturalDimensions": {
+        "width": "381.458",
+        "height": "264.966",
+        "viewBox": "0 0 381.458 264.966"
+      },
+      "sourceSlots": [
+        {
+          "id": "1654:10405",
+          "name": "Ellipse 9",
+          "x": 43.970703125,
+          "y": 335.95416259765625,
+          "width": 294.76336669921875,
+          "height": 178.2713623046875,
+          "effectiveVisible": true,
+          "referenceScreen": "1654:10366",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_sofa": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_sofa.imageset/image.png",
+      "sha256": "7287fee0b514d61c06058401b0191d9916643d62ac81de10aaf0ddc82e77c383",
+      "naturalDimensions": {
+        "width": 1536,
+        "height": 1024
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:4988",
+          "name": "AI 생성 / 펠트 소파 정면 (무비나이트)",
+          "x": 31.458984375,
+          "y": 207.796875,
+          "width": 336,
+          "height": 139,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": [
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": false,
+              "imageHash": "f18e259344285ddf083c0a208992f0bda5e9a327",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "type": "IMAGE",
+              "opacity": 1,
+              "visible": true,
+              "imageHash": "4e47a455ee31265cce5591d84ed8260fca36ab0b",
+              "scaleMode": "FILL",
+              "imageTransform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "rep4_couch_pause": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_pause.imageset/image.svg",
+      "sha256": "9c2df2a433853dd223ff9a841248a673355b2cf2885af1f06e1aec6119656d01",
+      "naturalDimensions": {
+        "width": "58.4568",
+        "height": "58.4568",
+        "viewBox": "0 0 58.4568 58.4568"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5000",
+          "name": "Group 1130",
+          "x": 165.771484375,
+          "y": 560.2667236328125,
+          "width": 58.45683288574219,
+          "height": 58.45683288574219,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_video_art_moon": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_video_art_moon.imageset/image.svg",
+      "sha256": "fc6af4ed5987d12bc88a00af84c16f0da17f1fdee60686fd3df49487a13bc17f",
+      "naturalDimensions": {
+        "width": "54",
+        "height": "54",
+        "viewBox": "0 0 54 54"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5004",
+          "name": "Video art / moon",
+          "x": 262,
+          "y": 34,
+          "width": 54,
+          "height": 54,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_video_art_hill": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_video_art_hill.imageset/image.svg",
+      "sha256": "36b8a267d8410b6cfc612632f87179967aca38c34aaeac7aefd18130bf1a3d21",
+      "naturalDimensions": {
+        "width": "520",
+        "height": "180",
+        "viewBox": "0 0 520 180"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5005",
+          "name": "Video art / hill",
+          "x": -80,
+          "y": 140,
+          "width": 520,
+          "height": 180,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_youtube_play": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_youtube_play.imageset/image.svg",
+      "sha256": "0dc31ae7d1d6e1f3399d8b5a9e9bd0e6f65520caaa25c7c1a6db0a8db9fcd637",
+      "naturalDimensions": {
+        "width": "8",
+        "height": "8",
+        "viewBox": "0 0 8 8"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5009",
+          "name": "Frame",
+          "x": 6,
+          "y": 3,
+          "width": 8,
+          "height": 8,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_scrubber": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_scrubber.imageset/image.svg",
+      "sha256": "e343cf423205dc65ec718407459bc737a34b84fd5157800fe63dde930cc77401",
+      "naturalDimensions": {
+        "width": "12",
+        "height": "12",
+        "viewBox": "0 0 12 12"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5014",
+          "name": "Scrubber",
+          "x": 112,
+          "y": 164,
+          "width": 12,
+          "height": 12,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_next": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_next.imageset/image.svg",
+      "sha256": "8a6adac66b7abe44aa66f1ecaeb0af403fd5a91c319c4259a972c4813d079833",
+      "naturalDimensions": {
+        "width": "16.0891",
+        "height": "15.9375",
+        "viewBox": "0 0 16.0891 15.9375"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5019",
+          "name": "Group 1137",
+          "x": 260.33056640625,
+          "y": 581.5263671875,
+          "width": 16.089111328125,
+          "height": 15.9375,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_previous": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_previous.imageset/image.svg",
+      "sha256": "9c1e0e1c8f60d87e0defe9ca0c4979a041961e481c7eccf0557cda2e02d6be6e",
+      "naturalDimensions": {
+        "width": "16.0892",
+        "height": "15.9375",
+        "viewBox": "0 0 16.0892 15.9375"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5022",
+          "name": "Group 1138",
+          "x": 129.04541015625,
+          "y": 581.5263671875,
+          "width": 16.089111328125,
+          "height": 15.9375,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    },
+    "rep4_couch_playlist": {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_couch_playlist.imageset/image.svg",
+      "sha256": "88891b2146369ab879af6fdd194a2ba475b5a935f1cf44d4bcea7fb4aae7fdfd",
+      "naturalDimensions": {
+        "width": "14.6481",
+        "height": "13.0606",
+        "viewBox": "0 0 14.6481 13.0606"
+      },
+      "sourceSlots": [
+        {
+          "id": "1655:5027",
+          "name": "Group 1139",
+          "x": 132.74609375,
+          "y": 658.734375,
+          "width": 14.148055076599121,
+          "height": 12.560937881469727,
+          "effectiveVisible": true,
+          "referenceScreen": "1655:4987",
+          "imagePaints": []
+        }
+      ]
+    }
+  },
+  "compatibilityAssets": {
+    "Focus/focus_room.imageset/image.png": "rep4_focus_background",
+    "Couch/couch_backdrop.imageset/image.png": "rep4_couch_sofa",
+    "DesignA/a_room_edit.imageset/a_room_edit.png": "rep4_room_background",
+    "D1/d1_back.imageset/icon.svg": "rep4_back",
+    "D1/d1_backLight.imageset/icon.svg": "rep4_back_light",
+    "D1/d1_undo.imageset/icon.svg": "rep4_room_undo",
+    "D1/d1_redo.imageset/icon.svg": "rep4_room_redo",
+    "Couch/couch_next.imageset/image.svg": "rep4_couch_next",
+    "Couch/couch_youtube_play.imageset/image.svg": "rep4_youtube_play",
+    "Furniture3D/furniture_bed.imageset/furniture_bed.png": "rep4_furniture_bed",
+    "Furniture3D/furniture_desk.imageset/furniture_desk.png": "rep4_furniture_desk",
+    "Furniture3D/furniture_shelf.imageset/furniture_shelf.png": "rep4_furniture_shelf",
+    "Furniture3D/furniture_chair.imageset/furniture_chair.png": "rep4_furniture_chair",
+    "Furniture3D/furniture_sofa.imageset/furniture_sofa.png": "rep4_furniture_sofa"
+  },
+  "notes": [
+    "Original exported image/SVG bytes are unchanged. Natural dimensions and Figma slot geometry are recorded separately.",
+    "System status-bar glyphs are excluded. No complete-screen screenshot is used as an application asset.",
+    "Existing resources without a corresponding role in the four reference screens are retained; no substitute images are generated.",
+    "Current baked cutaway models refreshed after source blue bed and blue frame artwork palette calibration."
+  ],
+  "flowAssets": [
+    {
+      "screen": "1727:22027",
+      "variable": "imgContentBodyPartSymbol",
+      "path": "Malrang/Assets.xcassets/RefinedUI/ui_part_head.imageset/image.svg",
+      "sha256": "e4954b756a6f29748be5cf325485a3ff07a47b36d495ed41bf923b57fe1931ad"
+    },
+    {
+      "screen": "1727:22027",
+      "variable": "imgContentBodyPartSymbol1",
+      "path": "Malrang/Assets.xcassets/RefinedUI/ui_part_torso.imageset/image.svg",
+      "sha256": "ab518602eccfbf21289ffb9c0e3df0e8fe66a7d87d778b38e3afdfc23fadee77"
+    },
+    {
+      "screen": "1727:22027",
+      "variable": "imgContentBodyPartSymbol2",
+      "path": "Malrang/Assets.xcassets/RefinedUI/ui_part_leftArm.imageset/image.svg",
+      "sha256": "9518b01e87822b3baee2b817dce31f283768aaf875412b48e0141c134e1ca639"
+    },
+    {
+      "screen": "1727:22027",
+      "variable": "imgContentBodyPartSymbol3",
+      "path": "Malrang/Assets.xcassets/RefinedUI/ui_part_rightArm.imageset/image.svg",
+      "sha256": "f868e2aca3a98a75da504a39c73214e136ad5deb6462931d988d90c08b2950b5"
+    },
+    {
+      "screen": "1727:22027",
+      "variable": "imgContentBodyPartSymbol4",
+      "path": "Malrang/Assets.xcassets/RefinedUI/ui_part_leftLeg.imageset/image.svg",
+      "sha256": "018e1f87f50a7d58bda0ba9e07acf858a112c67be0b9377910814e22245f06b7"
+    },
+    {
+      "screen": "1727:22027",
+      "variable": "imgContentBodyPartSymbol5",
+      "path": "Malrang/Assets.xcassets/RefinedUI/ui_part_rightLeg.imageset/image.svg",
+      "sha256": "f6423b559282f49a71732d5817480e57ba3b9d7d815f5c1ebf300a676af504f9"
+    },
+    {
+      "screen": "1727:23985",
+      "variable": "imgThumb",
+      "path": "Malrang/Assets.xcassets/Furniture3D/furniture_rugRound.imageset/furniture_rugRound.png",
+      "sha256": "aa4b9a9c159ecaa1dac3af509821692acaa3a657efe09d0289a3c099e83c22f5"
+    },
+    {
+      "screen": "1727:23985",
+      "variable": "imgThumb1",
+      "path": "Malrang/Assets.xcassets/Furniture3D/furniture_rugSquare.imageset/furniture_rugSquare.png",
+      "sha256": "2e95b965aae1f9a89ee1f4df99bd9e24c5de69aa47f7f93fd884b3a7ffda5536"
+    },
+    {
+      "screen": "1727:23985",
+      "variable": "imgThumb2",
+      "path": "Malrang/Assets.xcassets/Furniture3D/furniture_plant.imageset/furniture_plant.png",
+      "sha256": "8a4df9e329a77de9c6a89a2b9ce4ccfa39b69a25f862538b405f9828b812dd6f"
+    },
+    {
+      "screen": "1727:23985",
+      "variable": "imgThumb3",
+      "path": "Malrang/Assets.xcassets/Furniture3D/furniture_frame.imageset/furniture_frame.png",
+      "sha256": "4d30ab79fdd569f0d4792affb23dc0090cdba9fb6104e30609f8fc927b45e6a5"
+    },
+    {
+      "screen": "1727:23985",
+      "variable": "imgThumb4",
+      "path": "Malrang/Assets.xcassets/Furniture3D/furniture_lamp.imageset/furniture_lamp.png",
+      "sha256": "ecefd5d7e29daa6a14437009f175a56a431de9dc689bc857cc73658c5baea7f3"
+    },
+    {
+      "screen": "1727:23985",
+      "variable": "imgThumb5",
+      "path": "Malrang/Assets.xcassets/Furniture3D/furniture_flowerCushion.imageset/furniture_flowerCushion.png",
+      "sha256": "2289306d7c2db8c8dd512c6237c65d54d5a8c45f4c5c801251c33b16aa08a2ef"
+    },
+    {
+      "screen": "1727:23504",
+      "variable": "imgIconRain",
+      "path": "Malrang/Assets.xcassets/D1/d1_rain.imageset/icon.svg",
+      "sha256": "b86ef4fceb9506453f58d6115b6e157fead2022547183994df5cbcd1eeac3fe8"
+    },
+    {
+      "screen": "1727:23504",
+      "variable": "imgIconFire",
+      "path": "Malrang/Assets.xcassets/D1/d1_fire.imageset/icon.svg",
+      "sha256": "c4912a0bc2c3a63852fcb57a5ed3458090487a135ed6f2fe9feceb541d502ad4"
+    },
+    {
+      "screen": "1727:23504",
+      "variable": "imgIconWave",
+      "path": "Malrang/Assets.xcassets/D1/d1_wave.imageset/icon.svg",
+      "sha256": "5dfa830e6075f0fc32963b97e956b000ae4006bd21201b2d125c94e641a0f821"
+    },
+    {
+      "screen": "1727:23504",
+      "variable": "imgIconForest",
+      "path": "Malrang/Assets.xcassets/D1/d1_forest.imageset/icon.svg",
+      "sha256": "95a085abc5a6e99cb5eebc6a1edcc1821649ae42a792c1e66bd8e8365f761368"
+    },
+    {
+      "screen": "1727:23504",
+      "variable": "imgIconCafe",
+      "path": "Malrang/Assets.xcassets/D1/d1_cafe.imageset/icon.svg",
+      "sha256": "df6edb422010d5b39ec5ebdce8a24edd4eedc919355b2499f595f95639e6fc1b"
+    },
+    {
+      "screen": "1727:23504",
+      "variable": "imgIconNoise",
+      "path": "Malrang/Assets.xcassets/D1/d1_noise.imageset/icon.svg",
+      "sha256": "d68eea8920b744954f6d547d4f43643e31c0e02bfd67f9dbd03848632d607662"
+    },
+    {
+      "screen": "1727:22365",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_cutout_auto.imageset/image.png",
+      "sha256": "e0199fc4cb2d705eff078199ad8851c9b51d09621f899c521c00bcba79efe2bc"
+    },
+    {
+      "screen": "1727:22365",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_cutout_erase.imageset/image.png",
+      "sha256": "c9ece523d647bac1b041831a9ad1e05095841eccf7c84c7c7c6326f3be1edca6"
+    },
+    {
+      "screen": "1727:22365",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_cutout_restore.imageset/image.png",
+      "sha256": "ea210ec35ef8909c8cd138161a36a5a8790f991aab4847c7f9fc59f7cc21ec64"
+    },
+    {
+      "screen": "1727:22365",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_cutout_move.imageset/image.png",
+      "sha256": "2dc282a5f98f9b6a77d9fab5f16b8d2e8f3c92ec22a6530287493d38ef582d2c"
+    },
+    {
+      "screen": "1727:25012",
+      "node": "I1727:25024;1166:1873;1062:982",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_tab_cloud.imageset/image.svg",
+      "sha256": "23816a01f0e7ab8efe93f5f1e9b39dbeca2451bebb7c100b30ed63751d817b39"
+    },
+    {
+      "screen": "1727:25012",
+      "node": "I1727:25025;1166:1876;1062:968",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_tab_home.imageset/image.svg",
+      "sha256": "636dea4f2361cbe40b81c8f6e8bb993d9a8267381b9fc4395a3207e46d77390e"
+    },
+    {
+      "screen": "1727:25012",
+      "node": "I1727:25026;1166:1873;1062:989",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_tab_user.imageset/image.svg",
+      "sha256": "7968de35393ec91995accd459d4a433246c26dbd21f7fb8591e8d8bce9758fe0"
+    },
+    {
+      "screen": "1727:25012",
+      "node": "1727:25027",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_tab_tools.imageset/image.svg",
+      "sha256": "9442328753ff0440908e3d69e9a508199059ba06267b7de543c172dbe71b730d"
+    },
+    {
+      "screen": "1727:25012",
+      "node": "1727:25015",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_home_room.imageset/image.png",
+      "sha256": "9c771719b1e1e115b128640358f466b16170d307b4c4313177a05f3e344c6d2e",
+      "role": "Original room artwork for focus fallback; home remains interactive 3D."
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_original.imageset/image.svg",
+      "sha256": "603f3ac9ea417b20a3cec11a7c0668f1ab71560418c1ea38a912e33ae6093771"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch1",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_ivory.imageset/image.svg",
+      "sha256": "dfb5c2fedd1694664c95db169268290114c9e50bf126189022a0c85cce78b5bf"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch2",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_sage.imageset/image.svg",
+      "sha256": "fd2211cdee27854374674b163ec25ec84e4b6faf3890d1f952679b122a49906c"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch3",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_mint.imageset/image.svg",
+      "sha256": "0938e4e6e3721295ea9b96870a84f38fd7e6f62cd443198671434381ef2bd03d"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch4",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_butter.imageset/image.svg",
+      "sha256": "41e8bfc44109029c1aa2299c6d9235e91cbc39954b11eb9fcb58168f5854a0a6"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch5",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_peach.imageset/image.svg",
+      "sha256": "813fed06da3cb946b8a1ba6729833bb6b8a2e16d6d5e7cddb410945abe33321b"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgSwatch6",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_lavender.imageset/image.svg",
+      "sha256": "68fab220113c035ea8ba61ab1abaefad2cd5cabfe6202bd01bd85bb362662c02"
+    },
+    {
+      "screen": "1727:24061",
+      "variable": "imgColor",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_custom.imageset/image.png",
+      "sha256": "43c35c976e69bdd974646f9003e3fa51a2efc4f2e40cd1126accd7dda1ab6c77"
+    },
+    {
+      "screen": "1727:22069",
+      "variable": "rep4_doll_placed_background",
+      "url": "https://www.figma.com/api/mcp/asset/bc140d89-21da-454d-b2a5-6c953d35fe32/104f3.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_doll_placed_background.imageset/image.svg",
+      "sha256": "6dd1991abe6b8415d34145643fca1457c704b8cf6c238a2fb0eb5198e5e62bec"
+    },
+    {
+      "screen": "1727:22069",
+      "variable": "rep4_doll_stored_background",
+      "url": "https://www.figma.com/api/mcp/asset/bc140d89-21da-454d-b2a5-6c953d35fe32/3e75e.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_doll_stored_background.imageset/image.svg",
+      "sha256": "5608053a3a9da19eb2c4bdf1197c96308e3cfbaddf609fec8f817cbf26e783be"
+    },
+    {
+      "screen": "1727:22069",
+      "variable": "rep4_doll_placed_icon",
+      "url": "https://www.figma.com/api/mcp/asset/bc140d89-21da-454d-b2a5-6c953d35fe32/960f1.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_doll_placed_icon.imageset/image.svg",
+      "sha256": "f8d444083a06d67d7824a0fa9dc1ae81f98245bccdebe896e7dbd7e58b862b76"
+    },
+    {
+      "screen": "1727:22069",
+      "variable": "rep4_doll_stored_icon",
+      "url": "https://www.figma.com/api/mcp/asset/bc140d89-21da-454d-b2a5-6c953d35fe32/e9a91.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_doll_stored_icon.imageset/image.svg",
+      "sha256": "ef74756fc66bb983d2b9ebae4808244da19fd5561d0194951ca2612301324c55"
+    },
+    {
+      "screen": "1727:22069",
+      "variable": "rep4_doll_stored_slash",
+      "url": "https://www.figma.com/api/mcp/asset/bc140d89-21da-454d-b2a5-6c953d35fe32/2e187.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_doll_stored_slash.imageset/image.svg",
+      "sha256": "6f8c0c2dce71014b56261082bfbeccb1b6ab4aa20ee656ed053180b5b61b1811"
+    },
+    {
+      "screen": "1727:23895",
+      "variable": "rep4_swatch_wall_original",
+      "url": "https://www.figma.com/api/mcp/asset/6a21249b-51ba-4aa0-aa7d-f450a7f1663f/04383.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_swatch_wall_original.imageset/image.svg",
+      "sha256": "dba5f8540a65d528bdf2ca18a06b84daf257fe4700bfbdae2893d56317d6fe43"
+    },
+    {
+      "screen": "1727:23895",
+      "variable": "rep4_room_bubble_tail",
+      "url": "https://www.figma.com/api/mcp/asset/6a21249b-51ba-4aa0-aa7d-f450a7f1663f/707a8.svg",
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_room_bubble_tail.imageset/image.svg",
+      "sha256": "ea79af8e0a0c333e2244a78959f2804425576c40b9fc1bb2f65f51c875f1c55b"
+    }
+  ],
+  "derivedAssets": [
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_focus_room_clean.imageset/image.png",
+      "sha256": "2def66e36aefffb556f68284be2d1632940b9fd4d55b47d3d2c503cfa0b613df",
+      "derivedFrom": "rep4_focus_background",
+      "method": "Image generation object removal; only used inside original doll replacement region; original room image retained elsewhere.",
+      "purpose": "Remove fixed bear so the selected doll can occupy the same source composition."
+    }
+  ],
+  "reconstructedModels": [
+    {
+      "path": "Malrang/Resources/cozy_bed.reality",
+      "sha256": "6d01452762dc1a1676c28209c018605a9f35964fef938a3e76c333c3d163cf3f",
+      "bytes": 2521654,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_sofa.reality",
+      "sha256": "e6966867aaa1f6f370bc5d7a82f4c604100e8bc733c4196dc84e7bc6761602bc",
+      "bytes": 1485148,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_frame.reality",
+      "sha256": "1c9d6d9b94ffcc55af53d33d2ebc25d7aac8e9e2160434fe9cbec3318e59f78c",
+      "bytes": 1131795,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_shelf.reality",
+      "sha256": "31a338056eb25b7196f539a6e72b26e310955a9ae613cc5cade9be87fd1de505",
+      "bytes": 2443927,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_lamp.reality",
+      "sha256": "244bb59055f26de277afa4ed9d363428d1becc7f3047d46ed2a3a96dc53006ae",
+      "bytes": 861581,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_chair.reality",
+      "sha256": "dcfe217eccccf918eb022a8a994c67e59ad80a7f0d2170044287675efe65ea66",
+      "bytes": 919249,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_desk.reality",
+      "sha256": "91f3b0850fb2fcd177ed7e1ee3a894429eea7d761d03941bf08a315ec24a9863",
+      "bytes": 1738665,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    },
+    {
+      "path": "Malrang/Resources/cozy_rugRound.reality",
+      "sha256": "92691bffb2446478a13a93e000cdc2c9c8dc9ab8e779fe484d1e09fd81a76722",
+      "bytes": 877519,
+      "method": "Editable geometry reconstructed from Figma reference images.",
+      "sourceFlow": "1727:21665"
+    }
+  ],
+  "flowIconRoles": [
+    {
+      "path": "Malrang/Assets.xcassets/D1/d1_study.imageset/icon.svg",
+      "sha256": "751ed3329e1695ceba04ed8953164f451641b46aee10e6e77c1d79d02c5a4bbd",
+      "role": "Selected study icon / black",
+      "sourceFlow": "1727:22956"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/D1/d1_read.imageset/icon.svg",
+      "sha256": "6176b581b0a79de458c930ac27f3595092d0f5d1728b422d5dcfc45049ea2632",
+      "role": "Unselected reading icon / source sky blue",
+      "sourceFlow": "1727:22956"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/D1/d1_task.imageset/icon.svg",
+      "sha256": "e7b07edaeb1db53020ce516aa46ab7fa0257e8643c025791e430bbad962e885c",
+      "role": "Unselected task icon / source sky blue",
+      "sourceFlow": "1727:22956"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_tab_cloud_selected.imageset/image.svg",
+      "sha256": "3be46086164066be09f0e928c5af751407cf6141b2f6acb715f71a5a67c30d10",
+      "role": "Navigation selected/unselected vector state, preserving source paths",
+      "sourceFlow": "1727:22069"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_tab_home_unselected.imageset/image.svg",
+      "sha256": "cec0764e9bb0132f559b71757ab0a6dfd61c9fbcd318f325dd043ba12bc07f40",
+      "role": "Navigation selected/unselected vector state, preserving source paths",
+      "sourceFlow": "1727:22069"
+    }
+  ],
+  "precisionAssets": [
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_edit_back.imageset/image.svg",
+      "sha256": "d180567bf89fa7b64d3e7d7004994085e2a7277759a29fe63d8550f62a340c84",
+      "sourceFrame": "1727:24101"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_edit_confirm.imageset/image.svg",
+      "sha256": "df8aeab820f38601eec03cb5077c9258d4632397eabcaba1d026339d663070b2",
+      "sourceFrame": "1727:24101"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_photo_add.imageset/image.svg",
+      "sha256": "3ba1c28b4e48661d5b396e49d5104abf01616c2c45b6525fbef5e64311c35d8d",
+      "sourceFrame": "1727:24101"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_list_back.imageset/image.svg",
+      "sha256": "ac25bcddc40b39fab5ebb1df94d3941ead84fd07b2d538ab10af8886eb0daaf3",
+      "sourceFrame": "1727:24101"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_focus_minus.imageset/image.svg",
+      "sha256": "bdfc559076a948d5ee348fb85e9c2938f9e1cff96f963c0d25ad130bcce8999e",
+      "sourceFrame": "1727:22956"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_focus_plus.imageset/image.svg",
+      "sha256": "36636724894d4e2f598021a224c9aa7346e6575edf0d26d402736c9312ce36e3",
+      "sourceFrame": "1727:22956"
+    },
+    {
+      "path": "Malrang/Assets.xcassets/Representative4/rep4_focus_halo.imageset/image.svg",
+      "sha256": "86880b002a023c87a27122c6dbd18dba9fccc10c5b2fe89821d2d01e462b9517",
+      "sourceFrame": "1727:22956"
+    }
+  ]
+}

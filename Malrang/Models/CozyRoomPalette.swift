@@ -3,10 +3,10 @@ import Foundation
 /// Mint accents follow DESIGN.md; warm furniture colors retain the room's original materials.
 enum CozyRoomPalette {
     static let mint = "#8FB8AE"
-    static let floorMint = "#D5E0D9"
-    static let softMint = "#E3EEEA"
+    static let floorMint = "#C7DDEB"
+    static let softMint = "#D4EEF6"
     static let ivory = "#FBF7EF"
-    static let surface = "#FFFDF8"
+    static let surface = "#FFFFFF"
     static let border = "#E8DDCB"
     static let wood = "#E7C7AF"
     static let detail = "#9B8274"
@@ -22,8 +22,8 @@ enum CozyRoomPalette {
         switch kind {
         case .wall:
             if part.hasPrefix("window.") || part.hasPrefix("skirting.") { return wood }
-            if part == "wall.back" { return cream }
-            if part.hasPrefix("wall.stripe.") { return border }
+            if part == "wall.back" { return ivory }
+            if part.hasPrefix("wall.stripe.") { return floorMint }
             return ivory
         case .floor:
             return part == "floor.tile" ? base : floorMint
@@ -32,7 +32,7 @@ enum CozyRoomPalette {
             case "frame", "headboard", "leg", "leg.foot": return wood
             case "duvet.fold", "duvet.fold.drape": return softMint
             case "mattress": return cream
-            case "pillow": return blush
+            case "pillow": return surface
             default: return base
             }
         case .desk:
@@ -68,7 +68,7 @@ enum CozyRoomPalette {
             return part == "stem" ? detail : base
         case .frame:
             if part == "mat" { return surface }
-            return part.hasPrefix("heart") || part.isEmpty ? blush : base
+            return part.hasPrefix("heart") || part.isEmpty ? softMint : base
         case .lamp:
             if part == "base" { return mint }
             return part == "stem" ? wood : base

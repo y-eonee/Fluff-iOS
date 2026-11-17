@@ -57,10 +57,14 @@ struct CutoutEditStep: View {
                 editor
             }
         }
-        .padding(Spacing.m)
+        .padding(.horizontal, 16).padding(.top, 17).padding(.bottom, 16)
+        .background { AppBackground() }
         .cozyPageTitle("making fluff")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--design-preview=cutout-move") { tool = .move }
+            #endif
             draft.cropRect = nil
             if draft.cutout != nil {
                 phase = .ready
@@ -77,8 +81,9 @@ struct CutoutEditStep: View {
     }
 
     private var editor: some View {
-        VStack(spacing: Spacing.m) {
+        VStack(spacing: 0) {
             canvas
+                .frame(maxHeight: 338)
                 .overlay(alignment: .top) {
                     if let hint {
                         HintCapsule(text: hint)
@@ -87,55 +92,47 @@ struct CutoutEditStep: View {
                     }
                 }
                 .animation(.spring, value: hint)
-            HStack(spacing: Spacing.xs) {
-                Button(action: undo) {
-                    Image(systemName: "arrow.uturn.backward")
-                        .frame(width: 44, height: 44)
-                        .background(Color.app.surface, in: Circle())
-                }
-                .accessibilityLabel("되돌리기")
-                .disabled(strokes.isEmpty)
+            HStack {
                 Button(action: clearAll) {
-                    Text("초기화")
-                        .appFont(.body)
-                        .padding(.horizontal, Spacing.s)
-                        .frame(minHeight: 44)
-                        .background(Color.app.surface, in: Capsule())
+                    HStack(spacing: 2.05) {
+                        Image("rep4_room_reset").resizable().scaledToFit().frame(width: 19.001, height: 12.798)
+                        Text("초기화").pretendard(.regular, 14, tracking: -0.42)
+                    }.frame(minHeight: 44)
                 }
-                .disabled(strokes.isEmpty && zoom == 1 && offset == .zero)
                 Spacer()
-            }
-            .appFont(.title3)
-            .foregroundStyle(Color.app.ink)
-            HStack(spacing: Spacing.xs) {
-                Chip(title: "자동 투명화", isSelected: tool == .auto, isCompact: true) {
+            }.foregroundStyle(Color.rep4.c03)
+                .padding(.leading, 6.63)
+                .contextMenu { Button("되돌리기", action: undo).disabled(strokes.isEmpty) }
+                .accessibilityAction(named: "되돌리기", undo)
+                .padding(.bottom, 15)
+            HStack(spacing: 5) {
+                toolButton("자동 투명화", selected: tool == .auto) {
                     tool = .auto
                     hint = "자동으로 영역을 찾았어요"
                     strokes = []
                     draft.editedCutout = nil
                     Task { await playShine() }
                 }
-                Chip(title: "지우기", isSelected: tool == .erase, isCompact: true) {
+                toolButton("지우기", selected: tool == .erase) {
                     tool = .erase
                     hint = "문질러서 지울 곳을 골라요"
                 }
-                Chip(title: "복원", isSelected: tool == .restore, isCompact: true) {
+                toolButton("복원", selected: tool == .restore) {
                     tool = .restore
                     hint = "문질러서 되살릴 곳을 골라요"
                 }
-                Chip(title: "이동", isSelected: tool == .move, isCompact: true) {
+                toolButton("이동", selected: tool == .move) {
                     tool = .move
                     hint = "두 손가락으로 확대하고, 한 손가락으로 끌어 옮겨요"
                 }
-            }
-            VStack(alignment: .leading, spacing: Spacing.xxs) {
-                Text("브러시 크기")
-                    .pretendard(.regular, 13)
-                Slider(value: $brushSize, in: 10...80) { isAdjustingBrush = $0 }
-            }
-            .disabled(tool == .auto || tool == .move)
-            .opacity(tool == .auto || tool == .move ? 0.4 : 1)
-            HStack(spacing: Spacing.s) {
+            }.padding(.trailing, 3).padding(.top, 1.3).offset(y: -0.9)
+            HStack(spacing: 0) {
+                Text("브러쉬 크기").pretendard(.medium, 12).frame(width: 67.09, alignment: .leading)
+                CreationSlider(value: Binding(get: { Float(brushSize) }, set: { brushSize = Double($0) }), range: 10...80, label: "브러시 크기", neutralValue: 30, neutralPosition: 0.57)
+                Text("\(Int((brushSize / 30 * 100).rounded()))%").pretendard(.medium, 12).frame(width: 44, alignment: .trailing)
+            }.padding(.leading, 11.08).padding(.trailing, 20.9).frame(height: 34).padding(.top, 20)
+            Spacer(minLength: 16)
+            HStack(spacing: 12) {
                 Button("다시 선택", action: onReselect)
                     .buttonStyle(CreationSecondaryButton())
                 Button("다음") {
@@ -143,7 +140,7 @@ struct CutoutEditStep: View {
                     onNext()
                 }
                     .buttonStyle(CreationPrimaryButton())
-            }
+            }.padding(.horizontal, 2)
         }
         .onAppear { hint = "자동으로 영역을 찾았어요" }
         .task(id: hint) {
@@ -151,6 +148,25 @@ struct CutoutEditStep: View {
             try? await Task.sleep(for: .seconds(2))
             hint = nil
         }
+    }
+
+    private func toolButton(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        let iconSize: CGFloat = title == "지우기" ? 24.83 : title == "복원" ? 18.971 : title == "이동" ? 22.41 : 19.098
+        let iconTop: CGFloat = title == "지우기" ? 11.06 : title == "복원" ? 11.97 : title == "이동" ? 10.25 : 11.66
+        let iconOffset: CGFloat = title == "지우기" ? -2.055 : title == "자동 투명화" ? -0.701 : 0.5
+        let labelTop: CGFloat = selected ? 39.3 : 40
+        return Button(action: action) {
+            VStack(spacing: 0) {
+                Image("rep4_cutout_" + (title == "자동 투명화" ? "auto" : title == "지우기" ? "erase" : title == "복원" ? "restore" : "move"))
+                    .resizable().scaledToFit().frame(width: iconSize, height: iconSize)
+                    .offset(x: iconOffset).padding(.top, iconTop)
+                Text(title).pretendard(title == "자동 투명화" ? .semiBold : .regular, 14)
+                    .lineLimit(1).minimumScaleFactor(0.7).frame(height: 20.3)
+                    .padding(.top, labelTop - iconTop - iconSize)
+                Spacer(minLength: 0)
+            }.frame(maxWidth: .infinity).frame(height: 72)
+                .modifier(RepresentativeSelectionSurface(selected: selected, radius: 12))
+        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var canvas: some View {
@@ -322,7 +338,7 @@ struct CutoutEditStep: View {
 
 /// 투명한 부분이 보이도록 까는 체크무늬
 private struct Checkerboard: View {
-    private let cell: CGFloat = 12
+    private let cell: CGFloat = 15
 
     var body: some View {
         Canvas { context, size in
@@ -330,7 +346,7 @@ private struct Checkerboard: View {
             for row in 0..<Int(size.height / cell) + 1 {
                 for column in 0..<Int(size.width / cell) + 1 where (row + column).isMultiple(of: 2) {
                     let rect = CGRect(x: CGFloat(column) * cell, y: CGFloat(row) * cell, width: cell, height: cell)
-                    context.fill(Path(rect), with: .color(Color.app.ink.opacity(0.08)))
+                    context.fill(Path(rect), with: .color(Color(white: 0.88)))
                 }
             }
         }

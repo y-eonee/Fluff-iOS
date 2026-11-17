@@ -45,8 +45,8 @@ enum PresetTextile {
                 let h = height(x, y)
                 let c = UInt8(230 + h * 25)
                 color += [c, c, c, 255]
-                let dx = (height(x + 1, y) - height(x - 1, y)) * 25
-                let dy = (height(x, y + 1) - height(x, y - 1)) * 25
+                let dx = (height(x + 1, y) - height(x - 1, y)) * 50
+                let dy = (height(x, y + 1) - height(x, y - 1)) * 50
                 normal += [UInt8(128 - dx), UInt8(128 - dy), 254, 255]
             }
         }

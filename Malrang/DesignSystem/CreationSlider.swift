@@ -5,16 +5,29 @@ struct CreationSlider: UIViewRepresentable {
     @Binding var value: Float
     let range: ClosedRange<Float>
     let label: String
-    func makeCoordinator() -> Coordinator { Coordinator(value: $value) }
+    var neutralValue: Float? = nil
+    var neutralPosition: Float = 0.5
+    private func position(for value: Float) -> Float {
+        guard let neutralValue else { return (value - range.lowerBound) / (range.upperBound - range.lowerBound) }
+        return value <= neutralValue
+            ? (value - range.lowerBound) / (neutralValue - range.lowerBound) * neutralPosition
+            : neutralPosition + (value - neutralValue) / (range.upperBound - neutralValue) * (1 - neutralPosition)
+    }
+    private func mappedValue(_ position: Float) -> Float {
+        guard let neutralValue else { return range.lowerBound + position * (range.upperBound - range.lowerBound) }
+        return position <= neutralPosition
+            ? range.lowerBound + position / neutralPosition * (neutralValue - range.lowerBound)
+            : neutralValue + (position - neutralPosition) / (1 - neutralPosition) * (range.upperBound - neutralValue)
+    }
+    func makeCoordinator() -> Coordinator { Coordinator(value: $value, map: mappedValue) }
     func makeUIView(context: Context) -> UISlider {
-        let slider = UISlider()
-        slider.minimumTrackTintColor = Palette.uiColor("#6B4A3E")
-        slider.maximumTrackTintColor = Palette.uiColor("#CFE8F2")
+        let slider = SourceCreationSlider()
+        slider.minimumTrackTintColor = UIColor(Color.rep4.c03)
+        slider.maximumTrackTintColor = UIColor(Color.rep4.c21)
         let thumb = UIGraphicsImageRenderer(size: CGSize(width: 24, height: 24)).image { context in
             let circle = UIBezierPath(ovalIn: CGRect(x: 3, y: 3, width: 18, height: 18))
-            context.cgContext.setShadow(offset: CGSize(width: 0, height: 2), blur: 2, color: UIColor.black.withAlphaComponent(0.15).cgColor)
             UIColor.white.setFill(); circle.fill()
-            Palette.uiColor("#6B4A3E").setStroke(); circle.lineWidth = 2; circle.stroke()
+            UIColor(Color.rep4.c03).setStroke(); circle.lineWidth = 1; circle.stroke()
         }
         slider.setThumbImage(thumb, for: .normal)
         slider.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
@@ -22,13 +35,28 @@ struct CreationSlider: UIViewRepresentable {
     }
     func updateUIView(_ slider: UISlider, context: Context) {
         context.coordinator.value = $value
-        slider.minimumValue = range.lowerBound; slider.maximumValue = range.upperBound
-        slider.value = value; slider.accessibilityLabel = label
+        context.coordinator.map = mappedValue
+        slider.minimumValue = 0; slider.maximumValue = 1
+        slider.value = position(for: value); slider.accessibilityLabel = label
         slider.accessibilityValue = "\(Int(((value - range.lowerBound) / (range.upperBound - range.lowerBound) * 100).rounded()))"
     }
     final class Coordinator: NSObject {
         var value: Binding<Float>
-        init(value: Binding<Float>) { self.value = value }
-        @objc func changed(_ slider: UISlider) { value.wrappedValue = slider.value }
+        var map: (Float) -> Float
+        init(value: Binding<Float>, map: @escaping (Float) -> Float) { self.value = value; self.map = map }
+        @objc func changed(_ slider: UISlider) { value.wrappedValue = map(slider.value) }
+    }
+}
+
+private final class SourceCreationSlider: UISlider {
+    override func trackRect(forBounds bounds: CGRect) -> CGRect {
+        let track = super.trackRect(forBounds: bounds)
+        return CGRect(x: track.minX, y: bounds.midY - 2.5, width: track.width, height: 5)
+    }
+    override func thumbRect(forBounds bounds: CGRect, trackRect rect: CGRect, value: Float) -> CGRect {
+        var thumb = super.thumbRect(forBounds: bounds, trackRect: rect, value: value)
+        let fraction = CGFloat((value - minimumValue) / max(0.0001, maximumValue - minimumValue))
+        thumb.origin.x = rect.minX + rect.width * fraction - thumb.width / 2
+        return thumb
     }
 }

@@ -143,7 +143,7 @@ enum PresetDollModel {
     }
 
     private static func headMesh(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource {
-        if openingScale != 1 { return buildHead(width: width, photoOpening: photoOpening, openingScale: openingScale) }
+        if openingScale != 1 && openingScale != 0.96 { return buildHead(width: width, photoOpening: photoOpening, openingScale: openingScale) }
         return mesh("head-\(width)-\(photoOpening)-\(openingScale)") { buildHead(width: width, photoOpening: photoOpening, openingScale: openingScale) }
     }
     private static func buildHead(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource {
@@ -179,7 +179,7 @@ enum PresetDollModel {
         return (try? MeshResource.generate(from: [mesh])) ?? .generateSphere(radius: 0.13)
     }
     private static func headFibers(width: Float, photoOpening: Bool, openingScale: Float) -> MeshResource? {
-        if openingScale != 1 { return buildHeadFibers(width: width, photoOpening: photoOpening, openingScale: openingScale) }
+        if openingScale != 1 && openingScale != 0.96 { return buildHeadFibers(width: width, photoOpening: photoOpening, openingScale: openingScale) }
         let key = "fibers-\(width)-\(photoOpening)-\(openingScale)"
         if let value = geometry[key] { return value }
         let value = buildHeadFibers(width: width, photoOpening: photoOpening, openingScale: openingScale)
@@ -190,7 +190,7 @@ enum PresetDollModel {
         var points: [SIMD3<Float>] = []
         var triangles: [UInt32] = []
         var fiberNormals: [SIMD3<Float>] = []
-        let count = 42000
+        let count = 3600
         for i in 0..<count {
             let y = 1 - 2 * (Float(i) + 0.5) / Float(count)
             let a = Float(i) * 2.3999632
@@ -224,8 +224,8 @@ enum PresetDollModel {
     private static func buildRoundPile() -> MeshResource? {
         var vertices: [SIMD3<Float>] = []
         var indices: [UInt32] = []
-        for i in 0..<5000 {
-            let y = 1 - 2 * (Float(i) + 0.5) / 5000
+        for i in 0..<1600 {
+            let y = 1 - 2 * (Float(i) + 0.5) / 1600
             let angle = Float(i) * 2.3999632
             let radius = sqrt(max(0, 1 - y * y))
             let n = SIMD3<Float>(cos(angle) * radius, y, sin(angle) * radius)
@@ -259,14 +259,21 @@ enum PresetDollModel {
         }
     }
 
-    private static func build(_ configuration: PresetConfiguration, happy: Bool, detail: Detail) async -> Entity {
+    private static func build(_ sourceConfiguration: PresetConfiguration, happy: Bool, detail: Detail) async -> Entity {
+        var configuration = sourceConfiguration
+        if configuration.face == nil, configuration.shape == .bear,
+           let source = UIImage(named: "rep4_character_bear")?.cgImage,
+           let face = source.cropping(to: CGRect(x: 224, y: 290, width: 514, height: 458)) {
+            configuration.face = UIImage(cgImage: face).pngData()
+            configuration.faceOpeningScale = 0.96
+        }
         if configuration.isPhotoSuit == true { return await PhotoSuitModel.make(configuration) }
         let root = Entity()
         let textile = await PresetTextile.textures()
         let texture = textile?.color
         let normal = textile?.normal
-        let fur = configuration.shape == .bear ? "#D5B59D" : configuration.shape == .rabbit ? "#E3D7CF" : "#E1D8D2"
-        let garment = configuration.shape == .bear ? "#C58B87" : configuration.shape == .rabbit ? "#9E8CA8" : "#94A58D"
+        let fur = configuration.shape == .bear ? "#C4AD97" : configuration.shape == .rabbit ? "#E3D7CF" : "#E1D8D2"
+        let garment = configuration.shape == .bear ? "#A67F79" : configuration.shape == .rabbit ? "#9E8CA8" : "#94A58D"
         var materials: [String: PhysicallyBasedMaterial] = [:]
         func material(_ hex: String, cloth: Bool = true) -> PhysicallyBasedMaterial {
             let key = "\(hex)-\(cloth)"
@@ -291,13 +298,25 @@ enum PresetDollModel {
         var groups: [DollPart: Entity] = [:]
         let armX: Float = configuration.shape == .cat ? 0.062 : 0.075
         let armY: Float = configuration.shape == .cat ? 0.087 : 0.112
+        let bodyScale = configuration.shape == .bear ? SIMD3<Float>(0.64, 0.64, 0.64) : SIMD3<Float>(repeating: 0.70)
+        let headCenter: Float = configuration.shape == .cat ? 0.199 : configuration.shape == .bear ? 0.193 : 0.210
+        let previousHead: Float = configuration.shape == .cat ? 0.228 : configuration.shape == .bear ? 0.251 : 0.248
         let origins: [DollPart: SIMD3<Float>] = [.head: [0, configuration.shape == .cat ? 0.228 : configuration.shape == .bear ? 0.251 : 0.248, 0], .torso: [0, configuration.shape == .cat ? 0.112 : 0.122, 0], .leftArm: [-armX, armY, 0.045], .rightArm: [armX, armY, 0.045], .leftLeg: [-0.042, 0.037, 0.020], .rightLeg: [0.042, 0.037, 0.020], .ears: [0, 0.245, 0]]
         for part in DollPart.allCases {
             let p = configuration.part(part)
             let group = Entity(); group.name = part.rawValue
-            group.position = origins[part]! + SIMD3<Float>(0, p.offset * 0.05, 0)
+            var origin = origins[part]!
+            if part == .head { origin.y = headCenter }
+            else if part == .ears { origin.y -= previousHead - headCenter }
+            else { origin *= bodyScale }
+            group.position = origin + SIMD3<Float>(0, p.offset * 0.05, 0)
             group.scale = [p.size * p.width, p.size * p.length, p.size]
+            if part != .head && part != .ears { group.scale *= bodyScale }
             if part == .head && configuration.shape == .rabbit { group.scale.y *= 0.97 }
+            if configuration.shape == .bear {
+                if part == .head { group.scale.y *= 1.06 }
+                if part == .ears { group.position.y += 0.010 }
+            }
             if part == .torso { group.scale.x *= configuration.shape == .cat ? 0.88 : 1.08 }
             if configuration.shape == .cat && (part == .head || part == .ears) {
                 group.orientation = simd_quatf(angle: -0.045, axis: [0, 0, 1])
@@ -319,7 +338,7 @@ enum PresetDollModel {
             return model
         }
         func color(_ part: DollPart, _ fallback: String) -> String { configuration.part(part).color ?? fallback }
-        let headWidth: Float = configuration.shape == .rabbit ? 0.116 : 0.128
+        let headWidth: Float = configuration.shape == .rabbit ? 0.116 : configuration.shape == .bear ? 0.132 : 0.128
         let head = ModelEntity(mesh: headMesh(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale), materials: [material(color(.head, fur))])
         head.name = "head.fur"; groups[.head]!.addChild(head)
         if detail == .full, let pile = headFibers(width: headWidth, photoOpening: configuration.face != nil, openingScale: configuration.openingScale) {
@@ -333,7 +352,7 @@ enum PresetDollModel {
         _ = ball("neck.fur", .torso, [0.120 * neckWidth, 0.080, 0.108], [0, 0.042, 0.006], color(.head, fur))
         let apron = ModelEntity(mesh: apronMesh(), materials: [apronMaterial(color(.torso, garment))])
         apron.name = "apron"; apron.position = [0, -0.006, 0.005]; groups[.torso]!.addChild(apron)
-        let pocketTint = configuration.shape == .bear ? "#CC9592" : configuration.shape == .rabbit ? "#A793B0" : "#9BAB92"
+        let pocketTint = configuration.shape == .bear ? "#B4867D" : configuration.shape == .rabbit ? "#A793B0" : "#9BAB92"
         var pocketEdgeMaterial = apronMaterial(color(.torso, garment))
         var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
         Palette.uiColor(color(.torso, garment)).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
@@ -343,7 +362,8 @@ enum PresetDollModel {
         pocketEdge.position = [0, -0.0235, 0.076]; groups[.torso]!.addChild(pocketEdge)
         let pocket = ModelEntity(mesh: pocketMesh(), materials: [apronMaterial(color(.torso, pocketTint))])
         pocket.position = [0, -0.023, 0.077]; groups[.torso]!.addChild(pocket)
-        let thread = configuration.shape == .bear ? "#D4A59C" : configuration.shape == .rabbit ? "#BBAACB" : "#B4C0A4"
+        let thread = configuration.shape == .bear ? "#C49A90" : configuration.shape == .rabbit ? "#BBAACB" : "#B4C0A4"
+        if detail == .full {
         for side: Float in [-1, 1] {
             for i in 0..<6 {
                 _ = ball("pocket.stitch", .torso, [0.0011, 0.0022, 0.0010], [side * 0.030, -0.005 - Float(i) * 0.004, 0.081], thread)
@@ -365,6 +385,7 @@ enum PresetDollModel {
             let a = Float(i) / 34 * Float.pi
             _ = ball("hem.stitch", .torso, [0.0018, 0.0010, 0.0010], [cos(a) * 0.077, -0.059, sin(a) * 0.066 + 0.005], thread)
         }
+        }
         for x: Float in [-0.034, 0.034] {
             let strap = ModelEntity(mesh: .generateBox(size: [0.009, 0.031, 0.008], cornerRadius: 0.004), materials: [material("#FFF2D9")])
             strap.position = [x, 0.023, 0.064]; groups[.torso]!.addChild(strap)
@@ -379,7 +400,7 @@ enum PresetDollModel {
         for side: Float in [-1, 1] {
             if configuration.shape == .bear {
                 _ = ball("round-ear", .ears, [0.087, 0.09, 0.065], [side * 0.104, 0.083, -0.018], color(.ears, fur))
-                _ = ball("ear-lining", .ears, [0.039, 0.044, 0.012], [side * 0.104, 0.083, 0.015], "#D4A9A4")
+                _ = ball("ear-lining", .ears, [0.039, 0.044, 0.012], [side * 0.104, 0.083, 0.015], "#CCA5A5")
             } else {
                 for ear in PresetEarMesh.make(shape: configuration.shape, side: side,
                                                fur: material(color(.ears, fur)), lining: material("#E8B4B5")) {
@@ -389,7 +410,7 @@ enum PresetDollModel {
         }
         if let data = configuration.face, let uiImage = ImageDownsampling.image(data, maxPixel: detail == .full ? 1024 : 512), let image = uiImage.cgImage,
            let texture = try? await TextureResource(image: image, options: .init(semantic: .color)) {
-            var faceMaterial = UnlitMaterial(); faceMaterial.color = .init(tint: .white, texture: .init(texture))
+            var faceMaterial = UnlitMaterial(applyPostProcessToneMap: false); faceMaterial.color = .init(tint: .white, texture: .init(texture))
             if let mask = SceneFactory.opacityMask(of: uiImage),
                let opacity = try? await TextureResource(image: mask, options: .init(semantic: .raw)) {
                 faceMaterial.blending = .transparent(opacity: .init(scale: 1, texture: .init(opacity)))
@@ -407,11 +428,13 @@ enum PresetDollModel {
             face.name = "face.user-photo"; groups[.head]!.addChild(face)
             let rim = ModelEntity(mesh: PresetFaceMesh.rim(scale: configuration.openingScale), materials: [material(color(.head, fur))])
             rim.name = "face.padded-opening"; groups[.head]!.addChild(rim)
+            if detail == .full {
             for i in 0..<80 {
                 let a = Float(i) / 80 * 2 * Float.pi
                 let stitch = ball("face.seam", .head, [0.0014, 0.0025, 0.0015],
                                   [cos(a) * 0.086 * configuration.openingScale, -0.008 + sin(a) * 0.077 * configuration.openingScale, 0.104], "#F1DEC8")
                 stitch.orientation = simd_quatf(angle: a, axis: [0, 0, 1])
+            }
             }
         } else {
             let yOffset: Float = configuration.shape == .cat ? 0 : -0.005

@@ -37,7 +37,10 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
 // Real lights still supply object shadows; this is the soft transmitted window glow.
 [[visible]] void cozyFabric(realitykit::surface_parameters params) {
     constexpr sampler fabricSampler(coord::normalized, address::repeat, filter::linear, mip_filter::linear);
-    float softness = params.uniforms().custom_parameter().y;
+    float encodedSoftness = params.uniforms().custom_parameter().y;
+    bool isWood = encodedSoftness < 0.0;
+    bool isCutaway = params.uniforms().custom_parameter().x < 0.0;
+    float softness = max(0.0, encodedSoftness);
     float encodedLight = params.uniforms().custom_parameter().w;
     bool isFiberMesh = encodedLight < 0.0;
     half3 tint = half3(params.material_constants().base_color_tint());
@@ -46,8 +49,13 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
     // Fiber triangles previously sampled seven textures and computed triplanar
     // derivatives, then discarded every result. Keep exactly the same constant
     // fiber color/normal and only sample fabric on the underlying surface.
-    if (!isFiberMesh) {
-        float3 local = params.geometry().model_position() * params.uniforms().custom_parameter().x;
+    if (isWood && !isFiberMesh) {
+        float3 local = params.geometry().model_position() * abs(params.uniforms().custom_parameter().x);
+        float3 n = abs(normalize(cross(dfdx(local), dfdy(local))));
+        float2 uv = n.y > max(n.x, n.z) ? local.zx : (n.x > n.z ? local.zy : local.xy);
+        fiber = params.textures().base_color().sample(fabricSampler, uv * float2(0.18, 1.0)).rgb;
+    } else if (!isFiberMesh) {
+        float3 local = params.geometry().model_position() * abs(params.uniforms().custom_parameter().x);
         // Derive model-space projection weights, including rotated furniture.
         float3 n = abs(normalize(cross(dfdx(local), dfdy(local))));
         float3 weights = pow(n, float3(4.0));
@@ -68,11 +76,14 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
     }
     float daylight = isFiberMesh ? -encodedLight - 1.0 : encodedLight;
     half3 daylightTint = params.textures().custom().sample(fabricSampler, float2(0.5)).rgb;
+    // The open dollhouse receives neutral studio fill in the reference. Retain
+    // time-of-day color, with less amber spill than the enclosed room.
+    if (isCutaway) daylightTint = mix(daylightTint, half3(1.0h), 0.65h);
     params.surface().set_base_color(tint * fiber);
     params.surface().set_normal(surfaceNormal);
-    params.surface().set_roughness(half(mix(0.88, 0.98, softness)));
+    params.surface().set_roughness(isWood ? 0.78h : half(mix(0.88, 0.98, softness)));
     params.surface().set_metallic(0.0h);
-    params.surface().set_specular(0.04h);
+    params.surface().set_specular(isWood ? 0.12h : 0.04h);
     params.surface().set_opacity(1.0h);
 
     float3 p = params.geometry().world_position();
@@ -87,7 +98,7 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
     float blur = 0.018 + travel * 0.025 + (1.0 - smoothstep(0.01, 0.12, p.y)) * 0.025;
     float aperture = 1.0 - smoothstep(-blur, blur, edge);
     float bars = smoothstep(0.015, 0.015 + blur, abs(window.x)) * smoothstep(0.022, 0.022 + blur, abs(window.y - 0.42));
-    half glow = half(aperture * mix(0.18, 1.0, bars) * 1.55
+    half glow = half(aperture * mix(0.18, 1.0, bars) * 0.80
         * smoothstep(0.08, 0.20, travel));
     // Soft light from the rear side of the window reaches the desk. Keep it
     // spatial, so custom furniture moving through this area receives it too.
@@ -97,7 +108,7 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
         * smoothstep(0.64, 0.77, deskWindowY)
         * (1.0 - smoothstep(1.08, 1.21, deskWindowY));
     float deskPane = mix(0.24, 1.0, smoothstep(0.014, 0.055, abs(deskWindowZ - 0.045)));
-    glow += half(deskAperture * deskPane * smoothstep(0.80, 1.10, travel) * 0.90);
+    glow += half(deskAperture * deskPane * smoothstep(0.80, 1.10, travel) * 0.45);
     glow *= half(1.0 - smoothstep(1.25, 1.65, travel) * smoothstep(0.06, 0.18, p.y) * 0.55);
     float wallBounce = exp(-pow((p.y - 0.92 + p.x * 0.24) / 0.48, 2.0)) * (1.0 - smoothstep(-0.99, -0.90, p.z)) * 0.60;
     float3 worldNormal = normalize(params.geometry().normal());
@@ -107,25 +118,32 @@ kernel void cozyCompositeLight(texture2d<float, access::read> source [[texture(0
     half3 velvet = tint * half3(1.0h, 0.82h, 0.72h) * half(grazing * softness * 0.15);
     // Broad reflected sunlight across the wallpaper, distinct from direct window light.
     float leftWall = 1.0 - smoothstep(-0.99, -0.96, p.x);
-    float reflectedBand = exp(-pow((p.y - 1.65 - p.z * 0.75) / 0.115, 2.0)) * leftWall * 1.10;
-    float backBand = exp(-pow((p.y - 0.90 + p.x * 0.40) / 0.075, 2.0)) * (1.0 - smoothstep(-0.99, -0.90, p.z)) * 1.10;
-    float lowerBackBand = exp(-pow((p.y - 0.46 + p.x * 0.35) / 0.075, 2.0)) * (1.0 - smoothstep(-0.99, -0.90, p.z)) * 0.85;
-    float ceilingHeight = 1.495 + 0.2644 * (p.x + 1.0) + 0.3976 * (p.z + 1.0);
-    float ceilingMask = 1.0 - smoothstep(0.01, 0.04, abs(p.y - ceilingHeight));
-    float ceilingBounce = ceilingMask * exp(-pow((p.x + 0.85) / 0.24, 2.0) - pow((p.z + 0.30) / 0.75, 2.0)) * 2.0;
+    float reflectedBand = exp(-pow((p.y - (isCutaway ? 0.98 : 1.65) - p.z * 0.75) / 0.115, 2.0)) * leftWall * 0.35;
+    float backBand = exp(-pow((p.y - 0.90 + p.x * 0.40) / 0.075, 2.0)) * (1.0 - smoothstep(-0.99, -0.90, p.z)) * 0.25;
+    float lowerBackBand = exp(-pow((p.y - 0.46 + p.x * 0.35) / 0.075, 2.0)) * (1.0 - smoothstep(-0.99, -0.90, p.z)) * 0.12;
+    float upperBackBand = isCutaway ? 0.0 : exp(-pow((p.y - 1.80 + p.x * 0.45) / 0.12, 2.0))
+        * (1.0 - smoothstep(-0.99, -0.90, p.z)) * 0.35;
+    float ceilingBounce = 0.0;
     half floorLight = half(1.0 - smoothstep(0.04, 0.10, p.y));
-    half3 lightColor = mix(half3(1.0h, 0.76h, 0.22h), half3(1.0h, 0.47h, 0.08h), floorLight);
+    half3 lightColor = isCutaway ? half3(1.0h, 0.98h, 1.0h)
+        : mix(half3(1.0h, 0.94h, 0.82h), half3(1.0h, 0.88h, 0.68h), floorLight);
     glow *= 1.0h - floorLight * half(smoothstep(1.15, 1.90, p.z)) * 0.65h;
     half3 sunlight = mix(tint, half3(1.0h), 0.50h) * fiber * lightColor * glow;
     // Soft fabric retains warm diffuse light between the direct window patches.
-    half3 clothFill = tint * fiber * half3(0.25h, 0.235h, 0.25h)
+    half3 clothFill = tint * fiber * (isCutaway ? half3(0.10h) : half3(0.12h, 0.12h, 0.13h))
         * half(softness) * (1.0h - saturate(glow * 1.2h));
-    half3 wallFill = tint * fiber * half3(0.12h, 0.046h, 0.024h) * half(leftWall);
-    half3 bounce = tint * fiber * half3(1.0h, 0.57h, 0.33h) * half(wallBounce + reflectedBand + ceilingBounce + backBand + lowerBackBand);
+    half3 wallFill = tint * fiber * (isCutaway ? half3(0.20h) : half3(0.06h, 0.055h, 0.05h)) * half(leftWall);
+    half3 bounce = tint * fiber * half3(1.0h, 0.93h, 0.85h) * half(wallBounce + reflectedBand + ceilingBounce + backBand + lowerBackBand + upperBackBand);
     float surfaceGlow = params.uniforms().custom_parameter().z;
+    // Upholstered chair fronts receive broad neutral studio bounce. Restrict
+    // this to soft cutaway surfaces so timber and window light keep their tint.
+    bool plushStudioBounce = isCutaway && softness > 0.9;
+    float frontFacing = 1.0 - max(0.0, worldNormal.y);
+    float bounceGain = plushStudioBounce ? 1.1 + 0.95 * frontFacing : 1.0;
+    half3 bounceTint = plushStudioBounce ? mix(half3(1.0h, 1.0h, 0.98h), half3(1.0h, 0.72h, 0.68h), half(frontFacing)) : half3(1.0h, 0.72h, 0.38h);
     half3 lampGlow = half3(1.0h, 0.78h, 0.40h) * half(max(-surfaceGlow, 0.0) * (1.0 - daylight));
     params.surface().set_emissive_color(lampGlow + (sunlight + bounce + velvet + clothFill + wallFill) * half(daylight) * daylightTint
-        + tint * fiber * half3(1.0h, 0.72h, 0.38h) * half(max(surfaceGlow, 0.0) * daylight) * daylightTint);
+        + tint * fiber * bounceTint * half(max(surfaceGlow, 0.0) * daylight * bounceGain) * daylightTint);
 }
 
 // Premultiplied highlights keep the transparent preset preview free of dark halos.

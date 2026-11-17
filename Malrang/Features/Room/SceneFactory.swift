@@ -5,7 +5,7 @@ import UIKit
 /// 방 장면에 들어갈 엔티티를 만든다.
 /// 가구는 Resources에 `FurnitureKind.assetName`.usdz가 있으면 그 모델을, 없으면 공용 가구 모델을 만든다.
 enum SceneFactory {
-    static let dollHeight: Float = 0.45
+    static let dollHeight: Float = 0.54
 
     /// 불러온 USDZ 모델(없으면 nil). 장면을 다시 그릴 때마다 파일을 찾지 않도록 기억해 둔다.
     static func clearCache() {
@@ -54,10 +54,15 @@ enum SceneFactory {
         } else {
             entity = await modeledFurniture(item)
         }
-        if cozy && !onFloor { FurnitureInstances.batch(entity, kind: item.kind) }
+        // 홈의 고정 부품만 일반 메시로 합친다. 편집 장면과 썸네일은
+        // 기존의 독립 부품을 유지하고 저수준 인스턴싱은 사용하지 않는다.
+        if cozy && !onFloor && !cutaway { FurnitureInstances.batch(entity, kind: item.kind) }
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
-        entity.position = [item.x, hangs ? item.kind.hangingHeight : elevation, item.z]
+        let interiorLift: Float = cozy && hangs
+            ? (cutaway ? (item.kind == .frame ? -0.24 : 0) : (item.kind == .shelf ? 0.64 : 0.23)) : 0
+        if cozy && !cutaway && item.kind == .frame { entity.scale = [1.4, 1.55, 1.4] }
+        entity.position = [item.x, hangs ? item.kind.hangingHeight + interiorLift : elevation, item.z]
         if item.kind.hangsOnWall {
             let pivot = Entity()
             for child in Array(entity.children) { pivot.addChild(child) }
@@ -101,8 +106,14 @@ enum SceneFactory {
         if let preset = doll.preset {
             let entity = Entity()
             let visual = await PresetDollModel.make(preset, detail: .room)
+            // Edited head/body proportions must not change the doll's world height.
+            // Match the room's placement and collision height using the final mesh.
+            let bounds = visual.visualBounds(relativeTo: visual)
+            let scale = dollHeight / max(bounds.extents.y, 0.001)
+            visual.scale *= SIMD3(repeating: scale)
             let body = Entity(); body.name = "body"; body.position.y = dollHeight / 2
-            visual.position.y = -dollHeight / 2; body.addChild(visual); entity.addChild(body)
+            visual.position.y = -dollHeight / 2 - bounds.min.y * scale
+            body.addChild(visual); entity.addChild(body)
             entity.name = "doll|\(doll.id)"; entity.position = doll.position
             entity.orientation = simd_quatf(angle: .pi / 4, axis: [0, 1, 0])
             entity.components.set(CollisionComponent(shapes: [.generateBox(size: [0.3, dollHeight, 0.2]).offsetBy(translation: [0, dollHeight / 2, 0])]))

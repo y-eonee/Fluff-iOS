@@ -29,13 +29,19 @@ extension Color {
 }
 
 extension Font {
-    /// 제목용 Cloudsofa와 본문·한글용 Pretendard 글꼴을 등록한다.
-    static func registerCustomFonts() {
+    /// UIAppFonts에 선언된 글꼴은 iOS가 등록한다. 나머지만 프로세스당 한 번 등록한다.
+    private static let registerBundledFonts: Void = {
+        let automaticFonts = Set(Bundle.main.object(forInfoDictionaryKey: "UIAppFonts") as? [String] ?? [])
         for ext in ["otf", "ttf"] {
             for url in Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) ?? [] {
+                guard !automaticFonts.contains(url.lastPathComponent) else { continue }
                 CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
             }
         }
+    }()
+
+    static func registerCustomFonts() {
+        _ = registerBundledFonts
         let appearance = UINavigationBarAppearance()
         appearance.configureWithDefaultBackground()
         appearance.titleTextAttributes = [.font: UIFont(name: "Pretendard-SemiBold", size: 28) ?? UIFont.systemFont(ofSize: 28)]
@@ -79,7 +85,7 @@ extension View {
 
     /// 영어로만 구성된 화면 로고용 제목. 혼합 제목은 CozyTitleText를 사용한다.
     func notCliche(_ size: CGFloat, relativeTo style: Font.TextStyle) -> some View {
-        font(.custom("Cloudsofa_namgim-Regular", size: size, relativeTo: style))
+        font(.custom("GmarketSansTTFMedium", size: size, relativeTo: style))
             .fontDesign(nil)
     }
 
@@ -199,7 +205,9 @@ struct NotebookTabBar: View {
 /// 모눈종이 화면 바탕.
 struct AppBackground: View {
     var body: some View {
-        Color.a.paper.ignoresSafeArea()
+        Color.rep4.c11
+            .overlay { RepresentativeGradientFill(definition: RepresentativeGradients.screenOverlay) }
+            .ignoresSafeArea()
     }
 }
 
@@ -258,6 +266,6 @@ extension View {
 
 private struct CozyTabBarModifier: ViewModifier {
     func body(content: Content) -> some View {
-        content.toolbar(.visible, for: .tabBar)
+        content.toolbar(.hidden, for: .tabBar)
     }
 }
