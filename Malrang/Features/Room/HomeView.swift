@@ -252,7 +252,7 @@ struct HomeView: View {
                             travelingDollID = nil
                             if let doll = placedDolls.first(where: { $0.id == id }) { interactionMessage = doll.restingBedID == nil ? "\(doll.name.josa("이", "가")) 자리로 돌아왔어요" : "\(doll.name.josa("이", "가")) 잠들었어요" }
                         },
-                        onSceneReady: { isSceneReady = true },
+                        onSceneReady: { isSceneReady = true; appState.roomSceneReady = true },
                         onDeskScreen: { deskPoint = $0 },
                         onFurnitureScreen: { furnitureRects = $0 }
                     )
@@ -276,7 +276,7 @@ struct HomeView: View {
         .overlay(alignment: .top) { if !showGuide { topOverlay } }
         .overlay {
             ZStack {
-                if !isSceneReady, !appState.isShowingAR {
+                if !isSceneReady, !appState.isShowingAR, appState.roomIntroFinished {
                     VStack(spacing: Spacing.s) {
                         ProgressView().tint(Color.a.brown)
                         Text("포근한 방을 준비하고 있어요").appFont(.footnote)

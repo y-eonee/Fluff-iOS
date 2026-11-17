@@ -6,6 +6,7 @@ import SwiftUI
 @main
 struct MalrangApp: App {
     @State private var isShowingSplash = true
+    @State private var startupPresentationFinished = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -46,6 +47,7 @@ struct MalrangApp: App {
         WindowGroup {
             ZStack {
                 startupContent
+                    .environment(\.startupPresentationFinished, startupPresentationFinished)
                     .allowsHitTesting(!isShowingSplash)
                     .accessibilityHidden(isShowingSplash)
                 if isShowingSplash {
@@ -68,6 +70,8 @@ struct MalrangApp: App {
                 catch { return }
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) {
                     isShowingSplash = false
+                } completion: {
+                    startupPresentationFinished = true
                 }
                 #if DEBUG
                 try? await Task.sleep(for: .milliseconds(400))

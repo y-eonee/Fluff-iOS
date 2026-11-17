@@ -5,6 +5,7 @@ import SwiftUI
 struct MainTabs: View {
     var couch: CouchSession? = nil
     @Environment(AppState.self) private var appState
+    @Environment(\.startupPresentationFinished) private var startupPresentationFinished
     @AppStorage("hapticOn") private var hapticOn = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hidesBar = false
@@ -12,6 +13,10 @@ struct MainTabs: View {
     private var selection: Binding<AppTab> {
         Binding(get: { appState.tab }, set: { appState.roomToolsOpen = false; appState.tab = $0 })
     }
+    private var showsRoomIntro: Bool {
+        startupPresentationFinished && appState.tab == .home && !appState.roomIntroFinished
+    }
+
     var body: some View {
         TabView(selection: selection) {
             Tab(value: AppTab.dolls) { DollListView().toolbar(.hidden, for: .tabBar) } label: { Text("솜뭉치들") }
@@ -26,6 +31,16 @@ struct MainTabs: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !hidesBar {
                 navigationBar.padding(.top, 4).padding(.bottom, 14)
+            }
+        }
+        .allowsHitTesting(!showsRoomIntro)
+        .accessibilityHidden(showsRoomIntro)
+        .overlay {
+            if showsRoomIntro {
+                RoomLoadingView(isReady: appState.roomSceneReady) {
+                    withAnimation(.easeOut(duration: 0.18)) { appState.roomIntroFinished = true }
+                }
+                .transition(.opacity)
             }
         }
         .onPreferenceChange(AppTabBarHiddenPreference.self) { hidesBar = $0 }
@@ -88,7 +103,17 @@ private struct RoomActionButtonFrameKey: EnvironmentKey {
     static let defaultValue = CGRect.zero
 }
 
+private struct StartupPresentationFinishedKey: EnvironmentKey {
+    // Standalone previews do not have the app's splash presentation.
+    static let defaultValue = true
+}
+
 extension EnvironmentValues {
+    var startupPresentationFinished: Bool {
+        get { self[StartupPresentationFinishedKey.self] }
+        set { self[StartupPresentationFinishedKey.self] = newValue }
+    }
+
     var roomActionButtonFrame: CGRect {
         get { self[RoomActionButtonFrameKey.self] }
         set { self[RoomActionButtonFrameKey.self] = newValue }

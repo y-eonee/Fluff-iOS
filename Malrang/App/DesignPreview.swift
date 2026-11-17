@@ -238,6 +238,12 @@ struct DesignPreview: View {
             else if route == "create-done", let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.presetConfiguration?.shape == .bear }) {
                 NavigationStack { DoneStep(doll: doll, onRestart: {}, onPlace: {}) }
             }
+            else if route == "room-loading" {
+                RoomLoadingView(isReady: true,
+                    previewTime: ProcessInfo.processInfo.arguments.first { $0.hasPrefix("--room-loading-time=") }
+                        .flatMap { Double($0.replacingOccurrences(of: "--room-loading-time=", with: "")) },
+                    repeats: true)
+            }
             else if route == "splash-approved" { SplashView() }
             else if route == "profile-create" { NavigationStack { ProfileEditView(isCreating: true) } }
             else if ["tabs-ui", "tabs-dolls", "tabs-profile"].contains(route) { MainTabs(couch: fixture.couch) }

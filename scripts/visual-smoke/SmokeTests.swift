@@ -1,6 +1,32 @@
 import XCTest
 
 final class VisualSmokeTests: XCTestCase {
+    func testRoomLoadingPreviewAndLiveHandoff() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=room-loading", "--room-loading-time=0.45"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["room-loading"].waitForExistence(timeout: 20))
+        let loading = XCTAttachment(screenshot: app.screenshot())
+        loading.name = "room-loading-breathing"
+        loading.lifetime = .keepAlways
+        add(loading)
+        app.terminate()
+        app.launchArguments = ["--design-preview=tabs-ui", "--room-hour=13"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 60))
+        let tools = app.buttons["방 도구"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 10))
+        XCTAssertTrue(tools.isHittable)
+        tools.tap()
+        app.buttons["방 꾸미기"].tap()
+        let done = app.buttons["꾸미기 완료"]
+        XCTAssertTrue(done.waitForExistence(timeout: 30))
+        done.tap()
+        XCTAssertTrue(tools.waitForExistence(timeout: 30))
+        XCTAssertFalse(app.otherElements["room-loading"].exists)
+    }
+
     func testFurnitureCategoryTabsCanBeRepeated() {
         let app = launch("decorate")
         XCTAssertTrue(app.buttons["침대 추가"].waitForExistence(timeout: 40))
@@ -21,31 +47,6 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["가구"].waitForExistence(timeout: 10))
     }
 
-    func testRoomDecoratingCanBeRepeated() {
-        let app = launch("tabs-ui")
-        for _ in 0..<3 {
-            let tools = app.buttons["방 도구"]
-            XCTAssertTrue(tools.waitForExistence(timeout: 40))
-            let loading = app.staticTexts["포근한 방을 준비하고 있어요"]
-            XCTAssertTrue(loading.waitForNonExistence(timeout: 40))
-            tools.tap()
-            app.buttons["방 꾸미기"].tap()
-            let done = app.buttons["꾸미기 완료"]
-            XCTAssertTrue(done.waitForExistence(timeout: 40))
-            XCTAssertTrue(app.buttons["침대 추가"].waitForExistence(timeout: 20))
-            XCTAssertEqual(app.state, .runningForeground)
-            done.tap()
-        }
-        XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 40))
-    }
-
-    private func launch(_ route: String) -> XCUIApplication {
-        continueAfterFailure = false
-        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
-        app.launchArguments = ["--design-preview=" + route, "--room-hour=13", "--focus-doll=bear"]
-        app.launch()
-        return app
-    }
     func testFirstRoomGuideHidesTabBarUntilDismissed() {
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
         app.launchArguments = ["--design-preview=tabs-ui", "--room-hour=13", "--furniture-preview=guide"]
@@ -86,6 +87,24 @@ final class VisualSmokeTests: XCTestCase {
         add(loaded)
         close.tap()
         XCTAssertFalse(sound.exists)
+    }
+
+    func testRoomDecoratingCanBeRepeated() {
+        let app = launch("tabs-ui")
+        for _ in 0..<3 {
+            let tools = app.buttons["방 도구"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 40))
+            let loading = app.staticTexts["포근한 방을 준비하고 있어요"]
+            XCTAssertTrue(loading.waitForNonExistence(timeout: 40))
+            tools.tap()
+            app.buttons["방 꾸미기"].tap()
+            let done = app.buttons["꾸미기 완료"]
+            XCTAssertTrue(done.waitForExistence(timeout: 40))
+            XCTAssertTrue(app.buttons["침대 추가"].waitForExistence(timeout: 20))
+            XCTAssertEqual(app.state, .runningForeground)
+            done.tap()
+        }
+        XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 40))
     }
 
     private func launch(_ route: String) -> XCUIApplication {
