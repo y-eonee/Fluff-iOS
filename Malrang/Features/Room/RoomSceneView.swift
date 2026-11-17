@@ -321,7 +321,8 @@ struct RoomSceneView: UIViewRepresentable {
             parent.placement?.audit = nil
             #endif
             root.stopAllAnimations(recursive: true)
-            root.children.removeAll()
+            // RoomRenderView owns scene release after outstanding GPU frames
+            // finish. The coordinator may disappear earlier during navigation.
             highlights.removeAll()
             accessibleEntities.removeAll()
             latest = nil; rendered = nil; displayed = nil

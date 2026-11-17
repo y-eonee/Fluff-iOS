@@ -118,28 +118,20 @@ enum CozyModelExporter {
             entity.scale = SIMD3(repeating: 0.5)
             root.addChild(entity)
         }
+        let expectedBounds = root.visualBounds(relativeTo: root)
         FurnitureInstances.batch(root, kind: .chair)
         let clone = root.clone(recursive: true)
         let models = clone.children.filter { $0.components[ModelComponent.self] != nil }
-        var x: [Float] = []
-        var scalesValid = true
-        for entity in models {
-            if let part = entity.components[MeshInstancesComponent.self]?[partIndex: 0] {
-                part.data.withTransforms { transforms in
-                    for transform in transforms {
-                        x.append(transform.columns.3.x)
-                        scalesValid = scalesValid && abs(transform.columns.0.x - 0.5) < 0.0001
-                    }
-                }
-            }
-        }
-        let positionsValid = x.sorted().enumerated().allSatisfy { abs($0.element - Float($0.offset) * 0.1) < 0.0001 }
+        let actualBounds = clone.visualBounds(relativeTo: clone)
+        let positionsValid = simd_length(actualBounds.min - expectedBounds.min) < 0.001
+            && simd_length(actualBounds.max - expectedBounds.max) < 0.001
         let shapeHeights = models.compactMap { $0.components[ModelComponent.self]?.mesh.bounds.extents.y }.sorted()
-        let geometryValid = shapeHeights.count == 2 && abs(shapeHeights[0] - 0.1) < 0.001 && abs(shapeHeights[1] - 0.3) < 0.001
+        let geometryValid = shapeHeights.count == 2 && abs(shapeHeights[0] - 0.05) < 0.001 && abs(shapeHeights[1] - 0.15) < 0.001
         let namesKept = (0..<8).allSatisfy { clone.findEntity(named: "part-\($0)") != nil }
         return [
             "batch.distinctGeometry: \(geometryValid && clone.components[FurnitureInstances.Counts.self]?.batchedModels == 6 ? "PASS" : "FAIL")",
-            "batch.cloneTransforms: \(x.count == 8 && positionsValid && scalesValid && namesKept ? "PASS" : "FAIL")"
+            "batch.cloneTransforms: \(positionsValid && namesKept ? "PASS" : "FAIL")",
+            "batch.stableShadowGeometry: \(models.count == 2 && models.allSatisfy { $0.components[MeshInstancesComponent.self] == nil } ? "PASS" : "FAIL")"
         ]
     }
 

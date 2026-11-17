@@ -1,6 +1,51 @@
 import XCTest
 
 final class VisualSmokeTests: XCTestCase {
+    func testFurnitureCategoryTabsCanBeRepeated() {
+        let app = launch("decorate")
+        XCTAssertTrue(app.buttons["침대 추가"].waitForExistence(timeout: 40))
+        for _ in 0..<3 {
+            for title in ["벽지", "바닥재", "소품", "가구"] {
+                let tab = app.buttons[title]
+                XCTAssertTrue(tab.waitForExistence(timeout: 10))
+                tab.tap()
+                XCTAssertEqual(app.state, .runningForeground)
+            }
+            XCTAssertTrue(app.buttons["의자 추가"].waitForExistence(timeout: 10))
+        }
+        app.buttons["의자 추가"].tap()
+        let list = app.buttons["가구 목록"]
+        XCTAssertTrue(list.waitForExistence(timeout: 10))
+        app.buttons["좌우반전"].tap()
+        list.tap()
+        XCTAssertTrue(app.buttons["가구"].waitForExistence(timeout: 10))
+    }
+
+    func testRoomDecoratingCanBeRepeated() {
+        let app = launch("tabs-ui")
+        for _ in 0..<3 {
+            let tools = app.buttons["방 도구"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 40))
+            let loading = app.staticTexts["포근한 방을 준비하고 있어요"]
+            XCTAssertTrue(loading.waitForNonExistence(timeout: 40))
+            tools.tap()
+            app.buttons["방 꾸미기"].tap()
+            let done = app.buttons["꾸미기 완료"]
+            XCTAssertTrue(done.waitForExistence(timeout: 40))
+            XCTAssertTrue(app.buttons["침대 추가"].waitForExistence(timeout: 20))
+            XCTAssertEqual(app.state, .runningForeground)
+            done.tap()
+        }
+        XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 40))
+    }
+
+    private func launch(_ route: String) -> XCUIApplication {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=" + route, "--room-hour=13", "--focus-doll=bear"]
+        app.launch()
+        return app
+    }
     private func launch(_ route: String) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")

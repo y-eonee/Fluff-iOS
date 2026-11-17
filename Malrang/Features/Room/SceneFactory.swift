@@ -54,7 +54,8 @@ enum SceneFactory {
         } else {
             entity = await modeledFurniture(item)
         }
-        // 꾸미기 화면(cutaway)은 매 프레임 그림자 범위를 바꾸는데, 인스턴싱한 부품의 경계가 아직 없으면 RealityKit 그림자 계산이 크래시한다.
+        // 홈의 고정 부품만 일반 메시로 합친다. 편집 장면과 썸네일은
+        // 기존의 독립 부품을 유지하고 저수준 인스턴싱은 사용하지 않는다.
         if cozy && !onFloor && !cutaway { FurnitureInstances.batch(entity, kind: item.kind) }
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor

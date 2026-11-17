@@ -15,6 +15,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     private var event: MTLEvent?
     private var sequence: UInt64 = 0
     private var inFlight: Set<Int> = []
+    private var shuttingDown = false
     private var previousFrame: CFTimeInterval?
     private var interactiveUntil: CFTimeInterval = 0
     private var observations: [AnyCancellable] = []
@@ -140,7 +141,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { sources = [nil, nil] }
     func draw(in view: MTKView) {
-        guard let slot = (0..<2).first(where: { !inFlight.contains($0) }), let renderer, let root, !root.children.isEmpty,
+        guard !shuttingDown, let slot = (0..<2).first(where: { !inFlight.contains($0) }), let renderer, let root, !root.children.isEmpty,
               let drawable = view.currentDrawable, let event, let command = queue?.makeCommandBuffer() else { return }
         let now = CACurrentMediaTime()
         runPerformanceInteraction()
@@ -185,11 +186,13 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         let capturedPixels = pixels
         let width = target.width, height = target.height
         command.present(drawable)
-        command.addCompletedHandler { [weak self] buffer in
-            Task { @MainActor [weak self] in
-                self?.inFlight.remove(slot)
-                if buffer.status == .completed { self?.completedFrames += 1 }
-                else { self?.lastRenderError = buffer.error?.localizedDescription ?? "Metal frame failed" }
+        // Keep the scene, renderer and textures alive until the command waiting
+        // for RealityRenderer's completion signal has finished on the GPU.
+        command.addCompletedHandler { [self] buffer in
+            Task { @MainActor [self] in
+                self.inFlight.remove(slot)
+                if buffer.status == .completed { self.completedFrames += 1 }
+                else { self.lastRenderError = buffer.error?.localizedDescription ?? "Metal frame failed" }
                 if !pending.isEmpty {
                     var image: UIImage?
                     if buffer.status == .completed, let capturedPixels {
@@ -202,6 +205,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
                     }
                     pending.forEach { $0(image) }
                 }
+                if self.shuttingDown && self.inFlight.isEmpty { self.releaseScene() }
             }
         }
         command.commit()
@@ -235,14 +239,24 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         (legacy?.scene ?? root?.scene)?.raycast(origin: origin, direction: direction, length: length, query: .all) ?? []
     }
     func shutdown() {
+        guard !shuttingDown else { return }
+        shuttingDown = true
         observations.removeAll()
         metalView?.isPaused = true; metalView?.delegate = nil
+        performanceInteraction = nil
+        captures.forEach { $0(nil) }; captures.removeAll()
+        // Navigation can dismiss this view while RealityRenderer is still
+        // encoding a frame. Release resources from its completion path instead
+        // of clearing the scene underneath the render thread.
+        if inFlight.isEmpty { releaseScene() }
+    }
+    private func releaseScene() {
         renderer?.entities.removeAll(); renderer?.lighting.resource = nil
         legacy?.renderCallbacks.postProcess = nil
         legacy?.scene.anchors.removeAll(); legacy?.environment.lighting.resource = nil
+        root?.children.removeAll()
         root = nil; camera = nil; sources = [nil, nil]; bloom = nil
-        performanceInteraction = nil
-        captures.forEach { $0(nil) }; captures.removeAll()
+        renderer = nil; queue = nil; event = nil
     }
     private func runPerformanceInteraction() {
         guard RoomPerformanceAudit.enabled else { return }
