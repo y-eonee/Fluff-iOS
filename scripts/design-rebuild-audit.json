@@ -304,5 +304,106 @@
     "Thickened the upholstered bed base and footboard; widened and lowered the pillow to follow the source silhouette.",
     "Raised the sofa arms, reduced their excessive roundness, and split the full-room backrest into two cached cushions. Cutaway sofa geometry is preserved.",
     "Lowered the two full-room sofa back cushions after visual comparison showed their upper silhouette above the source. Recorded the status-background user override in DESIGN.md."
-  ]
+  ],
+  "reportedBugFixValidation20261117": {
+    "date": "2026-11-17",
+    "scope": "Reported runtime/layout/sleep defects; full Figma parity remains in progress",
+    "simulator": "iPhone 17 Pro / iOS 26.4",
+    "physicalDeviceUsed": false,
+    "fixes": [
+      "Skip manual registration of fonts already declared in UIAppFonts; register remaining fonts once.",
+      "Position floating actions above the measured home action button.",
+      "Hide the tab bar until the first room guide has been dismissed.",
+      "Replace low-level furniture instances with cached merged meshes and retain rendering resources until GPU work completes.",
+      "Recline the assembled sleeping doll without a separate head translation; adjust bedding to cover the connected torso.",
+      "Adjust selected focus doll camera/head angle and confine pet gestures to the doll.",
+      "Clamp focus, ASMR and cutout-ready frame dimensions to finite nonnegative sizes."
+    ],
+    "debugBuild": {
+      "status": "passed",
+      "log": "bugfix-20261117/debug-build.log"
+    },
+    "releaseBuild": {
+      "status": "not-rerun-on-final-source",
+      "note": "Final release verification interrupted to incorporate the later invalid-frame warning fix."
+    },
+    "latestUITests": {
+      "passed": 5,
+      "failed": 0,
+      "cases": [
+        "first-room guide hides/restores tab bar",
+        "focus exit/cancel",
+        "focus pause/resume",
+        "ASMR timer apply",
+        "home floating actions spacing"
+      ],
+      "result": "/tmp/malrang-frame-warning-final.xcresult"
+    },
+    "earlierFurnitureUITests": {
+      "passed": 3,
+      "failed": 0,
+      "cases": [
+        "first-room guide hides/restores tab bar",
+        "furniture categories repeatedly switch; add/reflect chair",
+        "enter/leave room editor three times"
+      ],
+      "result": "/tmp/malrang-regression-tabs.xcresult"
+    },
+    "modelChecks": {
+      "passed": 34,
+      "failed": 0,
+      "report": "bugfix-20261117/cozy-model-audit.txt"
+    },
+    "furnitureChecks": {
+      "passed": 100,
+      "failed": 0,
+      "report": "bugfix-20261117/furniture-audit.json"
+    },
+    "renderResourceChecks": {
+      "passed": 10,
+      "failed": 0,
+      "report": "bugfix-20261117/render-resource-audit.txt"
+    },
+    "runtimeWarnings": {
+      "invalidFrameDimension": 0,
+      "GSFont": 0,
+      "since": "2026-11-17 18:48:45 +0900",
+      "report": "bugfix-20261117/runtime-warnings.log",
+      "scope": "Observed simulator launches and UI tests; not a claim about every possible flow."
+    },
+    "sleepVisualReview": {
+      "shapes": [
+        "cat",
+        "bear",
+        "rabbit"
+      ],
+      "status": "passed",
+      "image": "bugfix-20261117/sleep-review.png"
+    },
+    "focusVisualReview": {
+      "image": "bugfix-20261117/focus-angle-comparison.png",
+      "pixelIdentical": false,
+      "note": "Camera and tilt adjusted. Reconstructed character geometry/material differences remain."
+    },
+    "actualUserSimulatorReset": {
+      "id": "95D1F626-6C8E-4B2B-879E-4C9BBE0D452E",
+      "completed": true,
+      "before": {
+        "dolls": 2,
+        "photos": 1,
+        "roomItems": 11
+      },
+      "immediatelyAfter": {
+        "dolls": 0,
+        "photos": 0,
+        "roomItems": 0
+      },
+      "subsequentReadOnlyCheck": {
+        "dolls": 0,
+        "photos": 0,
+        "starterRoomItems": 10
+      },
+      "report": "bugfix-20261117/user-reset-result.json"
+    }
+  }
 }

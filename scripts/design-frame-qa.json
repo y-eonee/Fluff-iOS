@@ -1978,6 +1978,7 @@
       "/tmp/malrang-precision114",
       "/tmp/malrang-precision115",
       "/tmp/malrang-precision116"
-    ]
+    ],
+    "reportedBugFixValidation": "bugfix-20261117/validation.json"
   }
 }
