@@ -24,7 +24,7 @@ final class DesignPreviewData {
         container = try! ModelContainer(for: Doll.self, RoomItem.self, DecorPhoto.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let domain = route == "signup" ? "fluff.signup-preview" : "fluff.design-preview.\(UUID())"
         defaults = UserDefaults(suiteName: domain)!
-        defaults.set(true, forKey: "didSeeFurnitureGuideV2")
+        defaults.set(!ProcessInfo.processInfo.arguments.contains("--furniture-preview=guide"), forKey: "didSeeFurnitureGuideV2")
         if !ProcessInfo.processInfo.arguments.contains("--furniture-hint-preview") {
             defaults.set("소파,책상,창문,침대,액자", forKey: "usedFurnitureActions")
         }

@@ -6,6 +6,7 @@ struct MainTabs: View {
     var couch: CouchSession? = nil
     @Environment(AppState.self) private var appState
     @State private var hidesBar = false
+    @State private var roomActionButtonFrame = CGRect.zero
     private var selection: Binding<AppTab> {
         Binding(get: { appState.tab }, set: { appState.roomToolsOpen = false; appState.tab = $0 })
     }
@@ -24,6 +25,7 @@ struct MainTabs: View {
             }
         }
         .onPreferenceChange(AppTabBarHiddenPreference.self) { hidesBar = $0 }
+        .environment(\.roomActionButtonFrame, roomActionButtonFrame)
         .environment(\.returnToDollList, { appState.tab = .dolls })
     }
     private var navigationBar: some View {
@@ -48,6 +50,8 @@ struct MainTabs: View {
                     }.frame(width: 63.69, height: 63.69).background(Color.rep4.c01, in: Circle())
                 }.buttonStyle(.plain).accessibilityLabel(appState.roomToolsOpen ? "방 도구 닫기" : "방 도구")
                     .accessibilityAddTraits(appState.roomToolsOpen ? .isSelected : [])
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) }
+                        action: { roomActionButtonFrame = $0 }
             }
         }.foregroundStyle(Color.rep4.c03).frame(maxWidth: .infinity).offset(x: appState.tab == .home ? 5.575 : 0)
     }
@@ -72,4 +76,15 @@ struct MainTabs: View {
 struct AppTabBarHiddenPreference: PreferenceKey {
     static var defaultValue = false
     static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
+}
+
+private struct RoomActionButtonFrameKey: EnvironmentKey {
+    static let defaultValue = CGRect.zero
+}
+
+extension EnvironmentValues {
+    var roomActionButtonFrame: CGRect {
+        get { self[RoomActionButtonFrameKey.self] }
+        set { self[RoomActionButtonFrameKey.self] = newValue }
+    }
 }

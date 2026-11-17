@@ -5,6 +5,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
+    @Environment(\.roomActionButtonFrame) private var roomActionButtonFrame
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var isCreating = false
@@ -114,7 +115,8 @@ struct HomeView: View {
             .navigationTitle("내 방")
             .toolbar(.hidden, for: .navigationBar)
             .toolbar(.hidden, for: .tabBar)
-            .preference(key: AppTabBarHiddenPreference.self, value: placementStart != nil || hold != nil || isDecorating)
+            .preference(key: AppTabBarHiddenPreference.self,
+                        value: !didSeeFurnitureGuide || showGuide || placementStart != nil || hold != nil || isDecorating)
             .navigationDestination(isPresented: $isDecorating) {
                 DecorateView()
             }
@@ -285,8 +287,17 @@ struct HomeView: View {
         }
         .overlay {
             if appState.roomToolsOpen && placementStart == nil && hold == nil && !showGuide {
-                Color.clear.contentShape(Rectangle()).onTapGesture { appState.roomToolsOpen = false }
-                    .overlay(alignment: .bottomTrailing) { roomActions.padding(.trailing, 22).padding(.bottom, 20) }
+                GeometryReader { geometry in
+                    let frame = geometry.frame(in: .global)
+                    let bottom = roomActionButtonFrame.isEmpty ? geometry.safeAreaInsets.bottom + 20
+                        : max(0, frame.maxY - roomActionButtonFrame.minY + 12)
+                    let trailing = roomActionButtonFrame.isEmpty ? 22
+                        : max(0, frame.maxX - roomActionButtonFrame.maxX)
+                    Color.clear.contentShape(Rectangle()).onTapGesture { appState.roomToolsOpen = false }
+                        .overlay(alignment: .bottomTrailing) {
+                            roomActions.padding(.trailing, trailing).padding(.bottom, bottom)
+                        }
+                }
             }
         }
         .animation(.easeOut(duration: 0.2), value: appState.roomToolsOpen)
