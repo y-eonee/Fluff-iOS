@@ -170,6 +170,7 @@ struct AmbientSoundView: View {
     VStack(spacing: 34.69) {
       TimelineView(.periodic(from: .now, by: 1)) { context in
         GeometryReader { geometry in
+          let trackWidth = geometry.size.width.isFinite ? max(0, geometry.size.width - 121) : 0
           ZStack(alignment: .topLeading) {
             Text("재생중인 소리").pretendard(.regular, 14, tracking: -0.7).frame(height: 20).offset(x: 24, y: 24)
             Text(player.sound?.title ?? "재생이 끝났어요").pretendard(.bold, 17, tracking: -0.85)
@@ -180,13 +181,13 @@ struct AmbientSoundView: View {
             ZStack(alignment: .leading) {
               Capsule().fill(Color.rep4.c20).frame(height: 7.936)
                 .overlay(Capsule().strokeBorder(Color(uiColor: Palette.uiColor("#7A7A7A")), lineWidth: 0.635))
-              Capsule().fill(Color.rep4.c21).frame(width: (geometry.size.width - 121) * player.progress(at: context.date), height: 6.735)
-            }.frame(width: geometry.size.width - 121, height: 15).offset(x: 24, y: 123.7)
+              Capsule().fill(Color.rep4.c21).frame(width: trackWidth * player.progress(at: context.date), height: 6.735)
+            }.frame(width: trackWidth, height: 15).offset(x: 24, y: 123.7)
             HStack {
               Text("재생시간 · \(player.elapsedLabel(at: context.date))")
               Spacer()
               Text("남은 시간 · \(player.timeLabel(at: context.date))")
-            }.pretendard(.regular, 10.5).frame(width: geometry.size.width - 121, height: 15.225)
+            }.pretendard(.regular, 10.5).frame(width: trackWidth, height: 15.225)
               .offset(x: 24.73, y: 144.4)
             Button { player.toggle() } label: {
               Group {

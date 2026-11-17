@@ -71,6 +71,8 @@ extension FocusFlowView {
 
     private var timerPanel: some View {
         GeometryReader { proxy in
+            // Navigation can briefly propose zero width before layout settles.
+            let width = proxy.size.width.isFinite ? max(0, proxy.size.width) : 0
             ZStack(alignment: .topLeading) {
                 Text(session.resting ? "남은 휴식 시간" : "현재 집중 시간")
                     .pretendard(.bold, 17, tracking: -0.85)
@@ -79,7 +81,7 @@ extension FocusFlowView {
                 Text(FocusSession.clock(session.resting ? session.remaining : session.record.seconds, hours: !session.resting))
                     .pretendard(.regular, 62, tracking: -3.1).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.6)
-                    .frame(width: proxy.size.width - 82, height: 80, alignment: .leading)
+                    .frame(width: max(0, width - 82), height: 80, alignment: .leading)
                     .shadow(color: .black.opacity(0.1), radius: 6.8, x: 1, y: 3)
                     .offset(x: -0.92, y: 20.4)
                 Button { session.togglePause() } label: {
@@ -91,11 +93,11 @@ extension FocusFlowView {
                         Image("rep4_focus_pause").resizable().frame(width: 73.563, height: 73.563)
                     }
                 }.buttonStyle(.plain).contentShape(Circle()).accessibilityLabel(session.paused ? "집중 이어하기" : "일시정지")
-                    .offset(x: proxy.size.width - 69.25, y: 17.08)
+                    .offset(x: width - 69.25, y: 17.08)
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.rep4.c20).frame(height: 7.936)
                         .overlay(Capsule().strokeBorder(Color(uiColor: Palette.uiColor("#7A7A7A")), lineWidth: 0.635))
-                    Capsule().fill(Color.rep4.c21).frame(width: proxy.size.width * setProgress, height: 6.735)
+                    Capsule().fill(Color.rep4.c21).frame(width: width * setProgress, height: 6.735)
                 }.frame(height: 15).offset(y: 114.70)
                 HStack {
                     Text("\(session.resting ? "휴식" : "집중") · \(FocusSession.clock(session.record.seconds, hours: false))")

@@ -15,9 +15,11 @@ struct CutoutReadyStep: View {
                 .foregroundStyle(Color.rep4.c29)
                 .frame(height: 20.3).padding(.top, 19)
             GeometryReader { proxy in
+                let width = proxy.size.width.isFinite ? max(0, proxy.size.width - 90) : 0
+                let height = proxy.size.height.isFinite ? max(0, min(269, proxy.size.height - 100)) : 0
                 Image(uiImage: draft.finalCutout ?? UIImage())
                     .resizable().scaledToFit()
-                    .frame(width: proxy.size.width - 90, height: min(269, proxy.size.height - 100))
+                    .frame(width: width, height: height)
                     .position(x: proxy.size.width / 2, y: proxy.size.height * 224.5 / 426)
             }
             .background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 18))
