@@ -10,7 +10,8 @@ extension FocusFlowView {
                     Group {
                         if let configuration = selected.presetConfiguration {
                             PresetDollView(configuration: configuration, cameraDistance: 0.82, cameraTarget: 0.18,
-                                           fitsModel: true, focusScene: true, showsStudyDesk: false, working: !session.resting,
+                                           cameraYaw: -0.12, cameraPitch: 0.08,
+                                           fitsModel: true, fitMargin: 1.10, focusScene: true, showsStudyDesk: false, working: !session.resting,
                                            happy: happyUntil > .now, animating: !reduceMotion && !session.paused)
                                 .renderedOnlyWhileVisible(background: .clear)
                         } else {
@@ -18,7 +19,8 @@ extension FocusFlowView {
                         }
                     }
                     .frame(width: geometry.size.width * (wide ? 0.5 : 0.92), height: geometry.size.height * 0.48)
-                    .position(x: geometry.size.width * (wide ? 0.68 : 0.52), y: geometry.size.height * 0.49)
+                    .contentShape(Rectangle()).onTapGesture { pet() }
+                    .position(x: geometry.size.width * (wide ? 0.68 : 0.52), y: geometry.size.height * 0.48)
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .mask(alignment: .top) {
                         Rectangle().frame(height: geometry.size.height * 0.635)
@@ -42,7 +44,6 @@ extension FocusFlowView {
                     .padding(.bottom, max(geometry.safeAreaInsets.bottom + 38, geometry.size.height * 0.083))
                     .frame(width: geometry.size.width, height: geometry.size.height)
             }.frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading).clipped().accessibilityHidden(confirmingExit)
-                .contentShape(Rectangle()).onTapGesture { pet() }
         }.ignoresSafeArea()
     }
 
@@ -89,7 +90,7 @@ extension FocusFlowView {
                     } else {
                         Image("rep4_focus_pause").resizable().frame(width: 73.563, height: 73.563)
                     }
-                }.buttonStyle(.plain).accessibilityLabel(session.paused ? "집중 이어하기" : "일시정지")
+                }.buttonStyle(.plain).contentShape(Circle()).accessibilityLabel(session.paused ? "집중 이어하기" : "일시정지")
                     .offset(x: proxy.size.width - 69.25, y: 17.08)
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.rep4.c20).frame(height: 7.936)

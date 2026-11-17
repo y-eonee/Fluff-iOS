@@ -93,7 +93,7 @@ final class FocusDollMotion {
         doll.findEntity(named: "focus.pencil")?.isEnabled = working
         eyes.forEach { $0.isEnabled = !happy }; smiles.forEach { $0.isEnabled = happy }
         if working, let headOrigin = originals[.head] {
-            let tilt = simd_quatf(angle: 0.22, axis: [1, 0, 0]) * simd_quatf(angle: 0.10, axis: [0, 0, 1])
+            let tilt = simd_quatf(angle: 0.12, axis: [1, 0, 0]) * simd_quatf(angle: 0.16, axis: [0, 0, 1])
             for part in [DollPart.head, .ears] {
                 guard let node = doll.findEntity(named: part.rawValue), var pose = originals[part] else { continue }
                 pose.translation = headOrigin.translation + tilt.act(pose.translation - headOrigin.translation)

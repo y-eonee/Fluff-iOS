@@ -7,6 +7,7 @@ struct PresetDollView: UIViewRepresentable {
     var cameraDistance: Float = 0.95
     var cameraTarget: Float = 0.22
     var cameraYaw: Float = 0
+    var cameraPitch: Float = 0
     var fitsModel = false
     var fitMargin: Float = 1.18
     var focusScene = false
@@ -27,7 +28,8 @@ struct PresetDollView: UIViewRepresentable {
         let camera = PerspectiveCamera(); camera.camera.fieldOfViewInDegrees = 32
         let target = configuration.isPhotoSuit == true ? cameraTarget - 0.015 : cameraTarget
         let distance = configuration.isPhotoSuit == true ? cameraDistance * 0.84 : cameraDistance
-        camera.look(at: [0, target, 0], from: [sin(cameraYaw) * distance, target + 0.02, cos(cameraYaw) * distance], relativeTo: nil)
+        camera.look(at: [0, target, 0], from: [sin(cameraYaw) * cos(cameraPitch) * distance,
+                    target + sin(cameraPitch) * distance + 0.02, cos(cameraYaw) * cos(cameraPitch) * distance], relativeTo: nil)
         anchor.addChild(camera)
         let light = DirectionalLight(); light.light.intensity = 2300; light.light.color = Palette.uiColor(configuration.isPhotoSuit == true ? "#FFFDFC" : "#FFF0D4")
         var shadow = DirectionalLightComponent.Shadow()
@@ -49,6 +51,7 @@ struct PresetDollView: UIViewRepresentable {
         context.coordinator.fitsModel = fitsModel
         context.coordinator.fitMargin = fitMargin
         context.coordinator.cameraYaw = cameraYaw
+        context.coordinator.cameraPitch = cameraPitch
         context.coordinator.update(configuration, focusScene: focusScene, showsStudyDesk: showsStudyDesk, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
     }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
@@ -71,6 +74,7 @@ struct PresetDollView: UIViewRepresentable {
         var fitsModel = false
         var fitMargin: Float = 1.18
         var cameraYaw: Float = 0
+        var cameraPitch: Float = 0
         func fitCamera() {
             guard fitsModel, let model, let camera, let view, view.bounds.height > 0, view.bounds.width > 0 else { return }
             let bounds = model.visualBounds(relativeTo: nil)
@@ -78,7 +82,8 @@ struct PresetDollView: UIViewRepresentable {
             let aspect = Float(view.bounds.width / view.bounds.height)
             let halfFOV = camera.camera.fieldOfViewInDegrees * .pi / 360
             let distance = max(size.y / 2, max(size.x, size.z) / (2 * aspect)) / tan(halfFOV) * fitMargin + size.z / 2
-            camera.look(at: bounds.center, from: bounds.center + SIMD3(sin(cameraYaw) * distance, 0.02, cos(cameraYaw) * distance), relativeTo: nil)
+            camera.look(at: bounds.center, from: bounds.center + SIMD3(sin(cameraYaw) * cos(cameraPitch) * distance,
+                        sin(cameraPitch) * distance + 0.02, cos(cameraYaw) * cos(cameraPitch) * distance), relativeTo: nil)
         }
         var anchor: AnchorEntity?
         var model: Entity?
