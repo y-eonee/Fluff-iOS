@@ -72,9 +72,21 @@ enum CozyModelExporter {
                         let covered = torsoBounds.max.y < coverBounds.max.y && torsoBounds.max.z < 0.28
                         let visible = headBounds.max.y > coverBounds.max.y && headBounds.center.z < coverBounds.min.z
                         let pillowTop = model.findEntity(named: "pillow")?.visualBounds(relativeTo: scene).max.y ?? 0
+                        let mattressTop = model.findEntity(named: "mattress")?.visualBounds(relativeTo: scene).max.y ?? 0
                         let headboardFront = model.findEntity(named: "headboard")?.visualBounds(relativeTo: scene).max.z ?? -1
-                        let clear = headBounds.min.y >= pillowTop && headBounds.min.z >= headboardFront
+                        // A soft pillow supports the head's centre; requiring
+                        // the entire head AABB above its highest corner forced
+                        // the previous detached-head pose.
+                        let clear = headBounds.min.y >= mattressTop && headBounds.center.y >= pillowTop - 0.02
+                            && headBounds.min.z >= headboardFront
                         report.append("sleep.\(shape.rawValue): \(covered && visible && clear ? "PASS" : "FAIL") head=\(headBounds.min)...\(headBounds.max), torso=\(torsoBounds.min)...\(torsoBounds.max), duvet=\(coverBounds.min)...\(coverBounds.max)")
+                        if let hood = doll.findEntity(named: "head.fur"), let collar = doll.findEntity(named: "neck.fur") {
+                            let h = hood.visualBounds(relativeTo: scene), n = collar.visualBounds(relativeTo: scene)
+                            let connected = h.min.x <= n.max.x && h.max.x >= n.min.x
+                                && h.min.y <= n.max.y && h.max.y >= n.min.y
+                                && h.min.z <= n.max.z && h.max.z >= n.min.z
+                            report.append("sleep.\(shape.rawValue).neckConnected: \(connected ? "PASS" : "FAIL")")
+                        } else { report.append("sleep.\(shape.rawValue).neckConnected: FAIL missing sewn geometry") }
                     }
                     doll.removeFromParent()
                 }

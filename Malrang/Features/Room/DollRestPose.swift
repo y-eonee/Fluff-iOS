@@ -58,10 +58,10 @@ enum DollRestPose {
     placement.rotation = simd_quatf(angle: bed.yaw, axis: [0, 1, 0])
     set(entity, placement, duration)
     var pose = body.transform
-    // A photo doll has one continuous mesh: incline it onto the pillow instead
-    // of lifting a separate head, keeping its lower half beneath the duvet.
-    pose.rotation = simd_quatf(angle: -.pi / 2 + (isPhotoDoll ? 0.4 : 0), axis: [1, 0, 0])
-    pose.translation.y = (isPhotoDoll ? 0.12 : 0.08) / sleepingScale
+    // Recline the assembled doll around its body centre. Moving only the head
+    // onto the pillow separated it from the sewn collar and torso.
+    pose.rotation = simd_quatf(angle: -.pi / 2 + (isPhotoDoll ? 0.4 : 0.65), axis: [1, 0, 0])
+    pose.translation.y = (isPhotoDoll ? 0.12 : 0.18) / sleepingScale
     pose.translation.z = isPhotoDoll ? 0.09 : 0
     set(body, pose, duration)
     if let head = entity.findEntity(named: DollPart.head.rawValue), head.findEntity(named: "sleep.closed-eyes") == nil {
@@ -80,14 +80,11 @@ enum DollRestPose {
     }
     for (part, angle) in [
       (DollPart.leftArm, Float(-0.8)), (.rightArm, -1.0), (.leftLeg, -0.7), (.rightLeg, -0.55),
-      (.head, 0.12), (.ears, 0.12),
     ] {
       guard let node = entity.findEntity(named: part.rawValue) else { continue }
       let original = node.components[SleepingOrigin.self]?.transform ?? node.transform
       node.components.set(SleepingOrigin(transform: original))
       var pose = original
-      // Raise the head and ears together onto the pillow; the torso stays under the duvet.
-      if part == .head || part == .ears { pose.translation.z += 0.30 }
       pose.rotation = simd_quatf(angle: angle, axis: [1, 0, 0])
       set(node, pose, duration)
     }
@@ -133,7 +130,7 @@ enum DollRestPose {
           target.translation.z = original.translation.z * 0.55 + 0.03
           target.translation.y += 0.06
         case .covered:
-          target.translation.y += 0.13
+          target.translation.y += 0.15
         }
         node.stopAllAnimations()
         set(node, target, animated && !UIAccessibility.isReduceMotionEnabled ? 0.75 : 0)

@@ -150,8 +150,13 @@
           let heading = simd_act(model.orientation * body.orientation, SIMD3<Float>(0, 1, 0))
           let pillow = simd_act(simd_quatf(angle: yaw, axis: [0, 1, 0]), SIMD3<Float>(0, 0, -1))
           let face = simd_act(model.orientation * body.orientation, SIMD3<Float>(0, 0, 1))
-          checks["sleep_head_towards_pillow_\(index)"] = simd_dot(heading, pillow) > 0.99
-          checks["sleep_face_up_\(index)"] = face.y > 0.99
+          // The connected doll reclines on a pillow, rather than lying flat.
+          // Its horizontal heading must still follow the rotated bed, and
+          // its face must point predominantly upward rather than forward.
+          let horizontalHeading = SIMD3<Float>(heading.x, 0, heading.z)
+          checks["sleep_head_towards_pillow_\(index)"] = simd_length(horizontalHeading) > 0.001
+            && simd_dot(simd_normalize(horizontalHeading), pillow) > 0.99
+          checks["sleep_face_up_\(index)"] = face.y > max(abs(face.x), abs(face.z))
         }
       }
       let radio = await RadioModel.make(playing: true)

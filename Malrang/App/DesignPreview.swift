@@ -62,7 +62,9 @@ final class DesignPreviewData {
         }
         let companions: [(DollShape, String)] = ProcessInfo.processInfo.arguments.contains("--empty-reference-room")
             ? [] : [(.cat, "귀염둥이"), (.bear, "몽글이"), (.rabbit, "포근이")]
+        let sleepShape = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("--sleep-shape=") }?.split(separator: "=").last
         for (shape, name) in companions {
+            if let sleepShape, shape.rawValue != sleepShape { continue }
             let renderer = ImageRenderer(content: CottonArtwork(shape: shape).frame(width: 240, height: 253))
             let doll = Doll(name: name, shape: shape, filling: .fluffy, imageData: renderer.uiImage?.pngData() ?? Data())
             doll.presetConfiguration = PresetConfiguration(shape: shape)
