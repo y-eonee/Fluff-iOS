@@ -35,9 +35,10 @@ extension DecorateView {
                     }.allowsHitTesting(false)
                 }
             }
-            .sensoryFeedback(.warning, trigger: rotationFailCount)
+            .sensoryFeedback(trigger: rotationFailCount) { _, _ in hapticOn ? .warning : nil }
+            .sensoryFeedback(trigger: isFull) { _, full in hapticOn && full ? .warning : nil }
             .overlay(alignment: .bottom) { historyRow.padding(.bottom, 6) }
-            editorPanel
+            editorPanel.modifier(RoomReveal(distance: 12))
         }.foregroundStyle(Color.rep4.c03).background { RepresentativeGradientFill(definition: RepresentativeGradients.roomBackground).ignoresSafeArea() }
 
     }
@@ -47,14 +48,14 @@ extension DecorateView {
             .frame(maxWidth: .infinity).frame(height: 44)
             .overlay(alignment: .leading) {
                 Button(action: cancel) { Image("rep4_back").resizable().scaledToFit().frame(width: 32, height: 32).frame(width: 44, height: 44) }
-                    .buttonStyle(.plain).offset(y: 2).accessibilityLabel("뒤로")
+                    .buttonStyle(RoomPressStyle()).offset(y: 2).accessibilityLabel("뒤로")
             }
             .overlay(alignment: .trailing) {
                 Button {
                     do { try modelContext.save(); dismiss() } catch { saveFailed = true }
                 } label: {
                     Image("rep4_edit_confirm").resizable().frame(width: 40.755, height: 40.755)
-                }.buttonStyle(.plain).offset(y: 3.5).accessibilityLabel("꾸미기 완료")
+                }.buttonStyle(RoomPressStyle()).offset(y: 3.5).accessibilityLabel("꾸미기 완료")
             }.padding(.horizontal, 22).offset(y: 3)
     }
 
@@ -69,7 +70,7 @@ extension DecorateView {
                     Text("초기화").pretendard(.regular, 14, tracking: -0.42)
                 }.frame(width: 74, height: 38).background(Color.rep4.c01, in: Capsule())
                     .frame(height: 44, alignment: .top).contentShape(Rectangle())
-            }.buttonStyle(.plain)
+            }.buttonStyle(RoomPressStyle())
                 .disabled(!hasChanges).opacity(hasChanges ? 1 : 0.4)
         }.padding(.leading, 23.23).padding(.trailing, 20)
     }
@@ -77,19 +78,27 @@ extension DecorateView {
     private var categoryTabs: some View {
         HStack(spacing: 0) {
             ForEach([FurnitureCategory.furniture, .wallpaper, .flooring, .decor], id: \.self) { tab in
-                Button { selectCategory(tab) } label: {
+                Button {
+                    withAnimation(reduceMotion ? nil : RoomMotion.response(reduceMotion: false)) { selectCategory(tab) }
+                } label: {
                     Text(tab == .decor ? "소품" : tab.label).pretendard(category == tab ? .medium : .regular, 14, tracking: -0.42)
                         .foregroundStyle(Color.rep4.c03.opacity(category == tab ? 1 : 0.62))
                         .frame(maxWidth: .infinity).frame(height: category == .wallpaper ? 41 : 37)
-                        .overlay(alignment: .bottom) { Rectangle().fill(category == tab ? Color.rep4.c03 : Color.rep4.c07).frame(height: category == tab ? 1 : 0.5) }
-                }.buttonStyle(.plain).accessibilityAddTraits(category == tab ? .isSelected : [])
+                        .overlay(alignment: .bottom) {
+                            Rectangle().fill(Color.rep4.c07).frame(height: 0.5)
+                            if category == tab {
+                                Rectangle().fill(Color.rep4.c03).frame(height: 1)
+                                    .matchedGeometryEffect(id: "category", in: categoryIndicator)
+                            }
+                        }
+                }.buttonStyle(RoomPressStyle()).accessibilityAddTraits(category == tab ? .isSelected : [])
             }
         }
     }
 
     private var editorPanel: some View {
         VStack(spacing: category == .wallpaper ? 13 : 17) {
-            if let item = selectedItem { selectedPanel(item).padding(.horizontal, 6) }
+            if let item = selectedItem { selectedPanel(item).padding(.horizontal, 6).modifier(RoomReveal()).id(item.id) }
             else {
                 categoryTabs.padding(.horizontal, 6)
                 catalogPanel.frame(height: 200, alignment: .top)
@@ -108,7 +117,7 @@ extension DecorateView {
                             Image("rep4_list_back").resizable().frame(width: 20, height: 20)
                             Text("가구 목록").pretendard(.medium, 14)
                         }.frame(minHeight: 44)
-                    }.buttonStyle(.plain).offset(x: -4)
+                    }.buttonStyle(RoomPressStyle()).offset(x: -4)
                 }
             Text("가구를 끌어서 위치를 옮길 수 있어요").pretendard(.regular, 13, tracking: -0.65)
                 .foregroundStyle(Color(uiColor: Palette.uiColor("#707070")))
@@ -133,7 +142,11 @@ extension DecorateView {
     }
 
     private func tool(_ title: String, icon: String, danger: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            let previousFailures = rotationFailCount
+            action()
+            if rotationFailCount == previousFailures { editFeedbackCount += 1 }
+        } label: {
             VStack(spacing: 6) {
                 Image(systemName: icon == "rotate" ? "arrow.clockwise" : icon == "flip" ? "arrow.trianglehead.left.and.right.righttriangle.left.righttriangle.right" : icon == "paint" ? "pencil" : "trash")
                     .font(.system(size: 18, weight: .regular)).offset(y: -1)
@@ -141,7 +154,7 @@ extension DecorateView {
                     .background(Color.rep4.c11, in: Circle())
                 Text(title).pretendard(.medium, 13).foregroundStyle(danger ? Color.mib.semantic.error : Color.mib.text.primary)
             }.frame(maxWidth: .infinity).frame(height: 72).contentShape(Rectangle())
-        }.buttonStyle(.plain)
+        }.buttonStyle(RoomPressStyle())
     }
 
     private var catalogPanel: some View {
@@ -158,11 +171,11 @@ extension DecorateView {
                                     .foregroundStyle(Color.rep4.c03.opacity(catalogSelection == kind ? 1 : 0.78))
                             }.padding(6).frame(maxWidth: .infinity).frame(height: 83.16)
                                 .modifier(RepresentativeSelectionSurface(selected: catalogSelection == kind, radius: 13.23, neutral: Color.rep4.c05)).contentShape(Rectangle())
-                        }.buttonStyle(.plain).accessibilityLabel("\(kind.label) 추가")
+                        }.buttonStyle(RoomPressStyle()).accessibilityLabel("\(kind.label) 추가")
                     }
                 }.padding(.horizontal, 6).padding(.top, 4)
             }
-        }.scrollIndicators(.hidden).id(category)
+        }.scrollIndicators(.hidden).modifier(RoomReveal(distance: 6)).id(category)
     }
 
     private func cancel() {
@@ -171,13 +184,16 @@ extension DecorateView {
 
     func undo() {
         guard let previous = undoStack.popLast() else { return }
+        editFeedbackCount += 1
         redoStack.append(items.map(\.state)); selectedID = nil; apply(previous)
     }
     func redo() {
         guard let next = redoStack.popLast() else { return }
+        editFeedbackCount += 1
         undoStack.append(items.map(\.state)); selectedID = nil; apply(next)
     }
     func reset() {
+        editFeedbackCount += 1
         restoreOriginal(); selectedID = nil; undoStack = []; redoStack = []
     }
 }

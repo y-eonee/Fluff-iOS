@@ -3,6 +3,7 @@ import SwiftData
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
     @Environment(\.roomActionButtonFrame) private var roomActionButtonFrame
@@ -274,16 +275,20 @@ struct HomeView: View {
         }
         .overlay(alignment: .top) { if !showGuide { topOverlay } }
         .overlay {
-            if !isSceneReady, !appState.isShowingAR {
-                VStack(spacing: Spacing.s) {
-                    ProgressView().tint(Color.a.brown)
-                    Text("포근한 방을 준비하고 있어요").appFont(.footnote)
+            ZStack {
+                if !isSceneReady, !appState.isShowingAR {
+                    VStack(spacing: Spacing.s) {
+                        ProgressView().tint(Color.a.brown)
+                        Text("포근한 방을 준비하고 있어요").appFont(.footnote)
+                    }
+                    .foregroundStyle(Color.a.brown)
+                    .padding(Spacing.l)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(CozyHomeStyle.glassHighlight))
+                    .modifier(RoomReveal(distance: 4))
+                    .transition(RoomMotion.reveal(reduceMotion: reduceMotion))
                 }
-                .foregroundStyle(Color.a.brown)
-                .padding(Spacing.l)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
-                .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(CozyHomeStyle.glassHighlight))
-            }
+            }.animation(RoomMotion.response(reduceMotion: reduceMotion), value: isSceneReady)
         }
         .overlay {
             if appState.roomToolsOpen && placementStart == nil && hold == nil && !showGuide {
@@ -300,7 +305,7 @@ struct HomeView: View {
                 }
             }
         }
-        .animation(.easeOut(duration: 0.2), value: appState.roomToolsOpen)
+        .animation(RoomMotion.response(reduceMotion: reduceMotion), value: appState.roomToolsOpen)
         .onChange(of: appState.roomToolsOpen) { _, open in
             if open { showFurnitureHint = false; showGuide = false; furnitureMenu = nil }
         }
@@ -474,7 +479,8 @@ struct HomeView: View {
             roomAction("인형 만들기", icon: "doll") { isCreating = true }
             roomAction("방 꾸미기", icon: "bed") { isDecorating = true }
             roomAction("ASMR", icon: nil) { showingSound = true }
-        }.transition(.move(edge: .bottom).combined(with: .opacity))
+        }.modifier(RoomReveal())
+            .transition(RoomMotion.reveal(reduceMotion: reduceMotion, anchor: .bottomTrailing))
             .accessibilityElement(children: .contain)
             .accessibilityLabel("방 도구")
             .accessibilityAction(.escape) { appState.roomToolsOpen = false }
@@ -491,7 +497,7 @@ struct HomeView: View {
                 Text(title).pretendard(.bold, D1.ctaFontSize).fixedSize()
             }.foregroundStyle(Color.mib.text.primary)
                 .padding(.horizontal, 12).frame(height: 44).d1ImageSurface(radius: 22)
-        }.buttonStyle(.plain)
+        }.buttonStyle(RoomPressStyle())
     }
 
     @ViewBuilder

@@ -54,7 +54,7 @@ struct RoomHistoryButton: View {
       Image(redo ? "rep4_room_redo" : "rep4_room_undo").resizable().frame(width: 20, height: 20)
         .frame(width: 37, height: 37).background(Color.rep4.c02, in: Circle())
         .frame(width: 44, height: 44, alignment: .topLeading).contentShape(Rectangle())
-    }.buttonStyle(.plain).accessibilityLabel(redo ? "다시하기" : "되돌리기")
+    }.buttonStyle(RoomPressStyle()).accessibilityLabel(redo ? "다시하기" : "되돌리기")
   }
 }
 

@@ -5,6 +5,8 @@ import SwiftUI
 struct MainTabs: View {
     var couch: CouchSession? = nil
     @Environment(AppState.self) private var appState
+    @AppStorage("hapticOn") private var hapticOn = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hidesBar = false
     @State private var roomActionButtonFrame = CGRect.zero
     private var selection: Binding<AppTab> {
@@ -19,6 +21,8 @@ struct MainTabs: View {
             } label: { Text("마이") }
         }
         .tint(Color.rep4.c03)
+        .sensoryFeedback(trigger: appState.tab) { _, _ in hapticOn ? .selection : nil }
+        .sensoryFeedback(trigger: appState.roomToolsOpen) { _, _ in hapticOn ? .impact(weight: .light) : nil }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !hidesBar {
                 navigationBar.padding(.top, 4).padding(.bottom, 14)
@@ -47,8 +51,10 @@ struct MainTabs: View {
                     Group {
                         if appState.roomToolsOpen { Image(systemName: "xmark").font(.system(size: 22, weight: .medium)) }
                         else { Image("rep4_tab_tools").resizable().scaledToFit().frame(width: 29.2, height: 22) }
-                    }.frame(width: 63.69, height: 63.69).background(Color.rep4.c01, in: Circle())
-                }.buttonStyle(.plain).accessibilityLabel(appState.roomToolsOpen ? "방 도구 닫기" : "방 도구")
+                    }.contentTransition(.opacity)
+                        .animation(RoomMotion.response(reduceMotion: reduceMotion), value: appState.roomToolsOpen)
+                        .frame(width: 63.69, height: 63.69).background(Color.rep4.c01, in: Circle())
+                }.buttonStyle(RoomPressStyle()).accessibilityLabel(appState.roomToolsOpen ? "방 도구 닫기" : "방 도구")
                     .accessibilityAddTraits(appState.roomToolsOpen ? .isSelected : [])
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) }
                         action: { roomActionButtonFrame = $0 }
@@ -69,7 +75,7 @@ struct MainTabs: View {
                 }
             }
                 .frame(width: 70.046, height: 55.69).contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityAddTraits(appState.tab == tab ? .isSelected : [])
+        }.buttonStyle(RoomPressStyle()).accessibilityAddTraits(appState.tab == tab ? .isSelected : [])
     }
 }
 
