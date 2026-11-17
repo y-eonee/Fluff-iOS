@@ -86,6 +86,7 @@ struct RoomSceneView: UIViewRepresentable {
     var onDeskScreen: (CGPoint?) -> Void = { _ in }
     var onFurnitureScreen: ([String: CGRect]) -> Void = { _ in }
     var onWallScreen: ([CGPoint]) -> Void = { _ in }
+    var entrance: RoomEntrance?
 
     struct Hold: Equatable {
         /// 인형 머리 위 화면 좌표
@@ -140,6 +141,7 @@ struct RoomSceneView: UIViewRepresentable {
         private var aim: (target: SIMD3<Float>, width: Float, height: Float)?
         private var fittedSize = CGSize.zero
         private var wander: RoomDollWander?
+        private var entranceAnimation: RoomSceneEntrance?
         private var updateSubscription: (any Cancellable)?
         private var orbitYaw: Float = 0
         private var lastDollPoint: CGPoint?
@@ -210,7 +212,7 @@ struct RoomSceneView: UIViewRepresentable {
             if parent.isCozyRoom {
                 view.configureBloom()
                 light.light.color = Palette.uiColor("#FFE8DE")
-                view.sceneBackground = parent.mode == .decorate ? .clear : Palette.uiColor("#FFFFF4")
+                view.sceneBackground = parent.mode == .decorate || parent.entrance?.finished == false ? .clear : Palette.uiColor("#FFFFF4")
                 view.lightingExponent = 0.05
             }
             light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 6, depthBias: 2)
@@ -221,6 +223,7 @@ struct RoomSceneView: UIViewRepresentable {
                 MainActor.assumeIsolated {
                     if let self {
                         self.wander?.update(delta: deltaTime, running: self.parent.allowsDollWandering
+                            && self.parent.entrance?.finished != false
                             && self.parent.mode == .home && !self.parent.canMoveDolls && self.drag == nil
                             && !UIAccessibility.isReduceMotionEnabled
                             && UIApplication.shared.applicationState == .active)
@@ -234,6 +237,7 @@ struct RoomSceneView: UIViewRepresentable {
                         }
                     }
                     self?.fitCamera()
+                    if let self, let view = self.view { self.entranceAnimation?.update(in: view, camera: self.camera) }
                     if let self {
                         self.overlayElapsed += deltaTime
                         if self.overlayElapsed >= 0.1 {
@@ -296,6 +300,7 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         func stopRendering() {
+            entranceAnimation?.restore(); entranceAnimation = nil
             lightingTask?.cancel(); lightingTask = nil; lastLightingMinute = nil
             lastLightingProfile = nil
             wander = nil
@@ -463,6 +468,11 @@ struct RoomSceneView: UIViewRepresentable {
                 lastLightingMinute = Int(date.timeIntervalSince1970 / 60)
             }
             guard !Task.isCancelled else { return }
+            entranceAnimation?.restore()
+            entranceAnimation = nil
+            if let entrance = parent.entrance, !entrance.finished {
+                entranceAnimation = RoomSceneEntrance(entrance: entrance, content: content, items: state.items)
+            }
             root.addChild(content)
             root.addChild(camera)
             root.addChild(light)

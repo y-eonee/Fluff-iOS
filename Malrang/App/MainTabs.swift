@@ -14,7 +14,7 @@ struct MainTabs: View {
         Binding(get: { appState.tab }, set: { appState.roomToolsOpen = false; appState.tab = $0 })
     }
     private var showsRoomIntro: Bool {
-        startupPresentationFinished && appState.tab == .home && !appState.roomIntroFinished
+        startupPresentationFinished && appState.tab == .home && !appState.roomEntrance.finished
     }
 
     var body: some View {
@@ -29,7 +29,7 @@ struct MainTabs: View {
         .sensoryFeedback(trigger: appState.tab) { _, _ in hapticOn ? .selection : nil }
         .sensoryFeedback(trigger: appState.roomToolsOpen) { _, _ in hapticOn ? .impact(weight: .light) : nil }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !hidesBar {
+            if !hidesBar || showsRoomIntro {
                 navigationBar.padding(.top, 4).padding(.bottom, 14)
             }
         }
@@ -37,10 +37,7 @@ struct MainTabs: View {
         .accessibilityHidden(showsRoomIntro)
         .overlay {
             if showsRoomIntro {
-                RoomLoadingView(isReady: appState.roomSceneReady) {
-                    withAnimation(.easeOut(duration: 0.18)) { appState.roomIntroFinished = true }
-                }
-                .transition(.opacity)
+                RoomLoadingView(entrance: appState.roomEntrance)
             }
         }
         .onPreferenceChange(AppTabBarHiddenPreference.self) { hidesBar = $0 }
@@ -61,6 +58,7 @@ struct MainTabs: View {
                             .allowsHitTesting(false)
                     }
                 }
+                .modifier(RoomEntranceMotion(entrance: appState.roomEntrance, node: appState.tab == .home ? "6449" : ""))
             if appState.tab == .home {
                 Button { appState.toggleRoomTools() } label: {
                     Group {
@@ -70,6 +68,7 @@ struct MainTabs: View {
                         .animation(RoomMotion.response(reduceMotion: reduceMotion), value: appState.roomToolsOpen)
                         .frame(width: 63.69, height: 63.69).background(Color.rep4.c01, in: Circle())
                 }.buttonStyle(RoomPressStyle()).accessibilityLabel(appState.roomToolsOpen ? "방 도구 닫기" : "방 도구")
+                    .modifier(RoomEntranceMotion(entrance: appState.roomEntrance, node: "6448"))
                     .accessibilityAddTraits(appState.roomToolsOpen ? .isSelected : [])
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) }
                         action: { roomActionButtonFrame = $0 }

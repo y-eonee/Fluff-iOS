@@ -10,7 +10,7 @@ extension DecorateView {
                 onHoldDoll: { hold = $0 }, onMoveDoll: { id, position in dolls.first { $0.id == id }?.position = position },
                 onMoveItem: move, onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
                 selectedItemID: selectedID, onTapItem: { selectedID = $0 }, onFeel: { feelCount += 1 },
-                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onDollScreen: { dollPoint = $0 }, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }
+                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onDollScreen: { dollPoint = $0 }, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }, entrance: entrance
             )
             .renderedOnlyWhileVisible(background: .clear)
             .frame(minHeight: 220).frame(maxHeight: .infinity)
@@ -18,9 +18,9 @@ extension DecorateView {
             .overlay {
                 let target = selectedItem ?? (surfaceKind == .wall ? items.first { $0.kind == .wall } : nil)
                 if let target, target.kind == .wall, wallPolygon.count == 4 {
-                    WallSelectionOverlay(points: wallPolygon)
+                    WallSelectionOverlay(points: wallPolygon).modifier(RoomEntranceMotion(entrance: entrance, node: "8445"))
                 } else if let target, let rect = furnitureBounds[target.id.uuidString] {
-                    FurnitureSelectionOverlay(rect: rect, title: target.kind.label)
+                    FurnitureSelectionOverlay(rect: rect, title: target.kind.label).modifier(RoomEntranceMotion(entrance: entrance, node: "8445"))
                 }
             }
             .overlay(alignment: .top) {
@@ -30,6 +30,7 @@ extension DecorateView {
                 } else if selectedID == nil && hold == nil {
                     GeometryReader { geometry in
                         RoomInstructionBubble(text: category == .wallpaper ? "바꿀 벽을\n골라봐!" : category == .flooring ? "바닥을 바꿔봐!" : "한 손가락으로\n끌어서 옮겨봐!")
+                            .modifier(RoomEntranceMotion(entrance: entrance, node: "8467"))
                             .padding(.leading, geometry.size.width * 108 / 390)
                             .padding(.top, 103.89)
                     }.allowsHitTesting(false)
@@ -37,8 +38,8 @@ extension DecorateView {
             }
             .sensoryFeedback(trigger: rotationFailCount) { _, _ in hapticOn ? .warning : nil }
             .sensoryFeedback(trigger: isFull) { _, full in hapticOn && full ? .warning : nil }
-            .overlay(alignment: .bottom) { historyRow.padding(.bottom, 6) }
-            editorPanel.modifier(RoomReveal(distance: 12))
+            .overlay(alignment: .bottom) { historyRow.modifier(RoomEntranceMotion(entrance: entrance, node: "8457")).padding(.bottom, 6) }
+            editorPanel.allowsHitTesting(entrance.finished)
         }.foregroundStyle(Color.rep4.c03).background { RepresentativeGradientFill(definition: RepresentativeGradients.roomBackground).ignoresSafeArea() }
 
     }
@@ -172,10 +173,22 @@ extension DecorateView {
                             }.padding(6).frame(maxWidth: .infinity).frame(height: 83.16)
                                 .modifier(RepresentativeSelectionSurface(selected: catalogSelection == kind, radius: 13.23, neutral: Color.rep4.c05)).contentShape(Rectangle())
                         }.buttonStyle(RoomPressStyle()).accessibilityLabel("\(kind.label) 추가")
+                            .modifier(RoomEntranceMotion(entrance: entrance, node: entranceNode(for: kind)))
                     }
                 }.padding(.horizontal, 6).padding(.top, 4)
             }
-        }.scrollIndicators(.hidden).modifier(RoomReveal(distance: 6)).id(category)
+        }.scrollIndicators(.hidden).id(category)
+    }
+
+    private func entranceNode(for kind: FurnitureKind) -> String {
+        switch kind {
+        case .bed: "8480"
+        case .desk: "8482"
+        case .shelf: "8484"
+        case .chair: "8486"
+        case .sofa: "8488"
+        default: ""
+        }
     }
 
     private func cancel() {

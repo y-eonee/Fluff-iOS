@@ -54,7 +54,7 @@ struct HomeView: View {
     @AppStorage("usedFurnitureActions") private var usedFurnitureActions = ""
     private enum FurnitureChoice: String, Identifiable { case window, sleep, frame, couch; var id: String { rawValue } }
     private var sleeper: Doll? { placedDolls.first { $0.restingBedID != nil } }
-    private var hintName: String? { ["소파", "책상", "창문", "침대", "액자"].first { furnitureRects[$0] != nil && !usedFurnitureActions.split(separator:",").contains(Substring($0)) } }
+    private var hintName: String? { ["책상", "창문", "침대", "액자"].first { furnitureRects[$0] != nil && !usedFurnitureActions.split(separator:",").contains(Substring($0)) } }
 
 
     init(couch: CouchSession? = nil) {
@@ -85,6 +85,8 @@ struct HomeView: View {
             return state
         }
     }
+    @Environment(\.startupPresentationFinished) private var startupPresentationFinished
+
     var body: some View {
         NavigationStack {
             homeContent
@@ -111,13 +113,16 @@ struct HomeView: View {
             .task(id: isDecorating) {
                 if !isDecorating { relocateBlockedDolls() }
             }
-            .task(id: isSceneReady && !items.isEmpty) { await sceneReady() }
+            .task(id: isSceneReady && !items.isEmpty && appState.roomEntrance.finished) { await sceneReady() }
+            .task(id: startupPresentationFinished && appState.tab == .home) {
+                if startupPresentationFinished && appState.tab == .home { appState.roomEntrance.present() }
+            }
             .background(Color.a.pinkLight)
             .navigationTitle("내 방")
             .toolbar(.hidden, for: .navigationBar)
             .toolbar(.hidden, for: .tabBar)
             .preference(key: AppTabBarHiddenPreference.self,
-                        value: !didSeeFurnitureGuide || showGuide || placementStart != nil || hold != nil || isDecorating)
+                        value: (!didSeeFurnitureGuide && appState.roomEntrance.finished) || showGuide || placementStart != nil || hold != nil || isDecorating)
             .navigationDestination(isPresented: $isDecorating) {
                 DecorateView()
             }
@@ -159,7 +164,8 @@ struct HomeView: View {
     }
 
     private func sceneReady() async {
-                if isSceneReady && !items.isEmpty && !didSeeFurnitureGuide { showGuide = true }
+                guard isSceneReady, appState.roomEntrance.finished else { return }
+                if isSceneReady && appState.roomEntrance.finished && !items.isEmpty && !didSeeFurnitureGuide { showGuide = true }
                 #if DEBUG
                 if isSceneReady, ProcessInfo.processInfo.arguments.contains("--home-drag-audit") {
                     showGuide = false
@@ -203,6 +209,7 @@ struct HomeView: View {
     private var homeContent: some View {
         // 3D 화면은 상단바·탭바가 사라져도 크기가 변하지 않게 화면 전체에 깐다.
         ZStack {
+            RoomLoadingBackdrop(entrance: appState.roomEntrance)
             Group {
                 // 3D 화면 두 개를 동시에 그리면 위에 뜬 쪽이 그려지지 않아서, AR이나 다른 3D 화면을 쓰는 동안 방을 내린다.
                 if appState.tab != .home || appState.isShowingAR || isCreating || isFocusing || isDecorating || showingWindow || showingSound || showingCouch {
@@ -217,7 +224,7 @@ struct HomeView: View {
                         dollRemovalTarget: placementStart == nil ? removalTargetFrame : .zero,
                         onDropDoll: dropDoll,
                         onCannotMoveDoll: { interactionMessage = "잠든 인형은 침대에서 깨운 뒤 옮겨 주세요" },
-                        allowsDollWandering: !openingFocus && furnitureMenu == nil && !showGuide && !appState.roomToolsOpen && !ProcessInfo.processInfo.arguments.contains("--home-drag-audit"),
+                        allowsDollWandering: appState.roomEntrance.finished && !openingFocus && furnitureMenu == nil && !showGuide && !appState.roomToolsOpen && !ProcessInfo.processInfo.arguments.contains("--home-drag-audit"),
                         movingDollID: lastMovedID,
                         placement: roomPlacement,
                         onPickDoll: { lastMovedID = $0 },
@@ -252,9 +259,10 @@ struct HomeView: View {
                             travelingDollID = nil
                             if let doll = placedDolls.first(where: { $0.id == id }) { interactionMessage = doll.restingBedID == nil ? "\(doll.name.josa("이", "가")) 자리로 돌아왔어요" : "\(doll.name.josa("이", "가")) 잠들었어요" }
                         },
-                        onSceneReady: { isSceneReady = true; appState.roomSceneReady = true },
+                        onSceneReady: { isSceneReady = true },
                         onDeskScreen: { deskPoint = $0 },
-                        onFurnitureScreen: { furnitureRects = $0 }
+                        onFurnitureScreen: { furnitureRects = $0 },
+                        entrance: appState.roomEntrance
                     )
                     .renderedOnlyWhileVisible(background: .clear)
                 }
@@ -273,10 +281,10 @@ struct HomeView: View {
             .overlay { holdTooltip }
             .ignoresSafeArea()
         }
-        .overlay(alignment: .top) { if !showGuide { topOverlay } }
+        .overlay(alignment: .top) { if !showGuide { topOverlay.modifier(RoomEntranceMotion(entrance: appState.roomEntrance, node: "6458")) } }
         .overlay {
             ZStack {
-                if !isSceneReady, !appState.isShowingAR, appState.roomIntroFinished {
+                if !isSceneReady, !appState.isShowingAR, appState.roomEntrance.finished {
                     VStack(spacing: Spacing.s) {
                         ProgressView().tint(Color.a.brown)
                         Text("포근한 방을 준비하고 있어요").appFont(.footnote)
@@ -800,22 +808,11 @@ extension HomeView {
                     Text("z z Z").pretendard(.bold,17).foregroundStyle(Color.mib.text.primary)
                         .position(x:rect.midX-24,y:rect.minY-16).allowsHitTesting(false)
                 }
-                if placementStart == nil, hold == nil, showFurnitureHint, !showGuide, furnitureMenu == nil, furnitureChoice == nil, couch.current == nil, !couch.resting, let name=hintName, didSeeFurnitureGuide, (name == "소파" || !placedDolls.isEmpty), let rect=furnitureRects[name] {
-                    if name == "소파" {
-                        ZStack {
-                            ForEach([96.0, 64.0, 40.0], id: \.self) { diameter in
-                                Circle().fill(Color.white.opacity(0.10))
-                                    .overlay(Circle().strokeBorder(Color.white.opacity(0.92), lineWidth: 1.2))
-                                    .frame(width: diameter, height: diameter)
-                            }
-                        }.position(x: rect.midX + rect.width * 0.03, y: rect.midY + rect.height * 0.02)
-                            .allowsHitTesting(false).accessibilityHidden(true)
-                    } else {
-                        RoundedRectangle(cornerRadius:22).stroke(Color.mib.line.selected,style:StrokeStyle(lineWidth:2,dash:[6,4]))
-                            .frame(width:rect.width,height:rect.height).position(x:rect.midX,y:rect.midY).allowsHitTesting(false)
-                        D1Bubble(text:name == "책상" ? "책상 톡톡! 같이 집중해볼까?" : name == "창문" ? "창문 두 번 톡톡! 같이 구름 보자" : name == "침대" ? "침대 톡톡! 인형을 재워줄래?" : "액자 톡톡 하면 같이 사진 찍을 수 있어")
-                            .frame(width:242).position(x:min(max(rect.midX,130),geometry.size.width-130),y:min(rect.maxY+24,geometry.size.height-180)).allowsHitTesting(false)
-                    }
+                if placementStart == nil, hold == nil, showFurnitureHint, !showGuide, furnitureMenu == nil, furnitureChoice == nil, couch.current == nil, !couch.resting, let name=hintName, didSeeFurnitureGuide, !placedDolls.isEmpty, let rect=furnitureRects[name] {
+                    RoundedRectangle(cornerRadius:22).stroke(Color.mib.line.selected,style:StrokeStyle(lineWidth:2,dash:[6,4]))
+                        .frame(width:rect.width,height:rect.height).position(x:rect.midX,y:rect.midY).allowsHitTesting(false)
+                    D1Bubble(text:name == "책상" ? "책상 톡톡! 같이 집중해볼까?" : name == "창문" ? "창문 두 번 톡톡! 같이 구름 보자" : name == "침대" ? "침대 톡톡! 인형을 재워줄래?" : "액자 톡톡 하면 같이 사진 찍을 수 있어")
+                        .frame(width:242).position(x:min(max(rect.midX,130),geometry.size.width-130),y:min(rect.maxY+24,geometry.size.height-180)).allowsHitTesting(false)
                 }
                 if let item=furnitureMenu {
                     Color.black.opacity(0.001).contentShape(Rectangle()).onTapGesture{furnitureMenu=nil}

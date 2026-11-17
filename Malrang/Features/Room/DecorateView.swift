@@ -8,6 +8,8 @@ struct DecorateView: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Namespace var categoryIndicator
     @State var editFeedbackCount = 0
+    @State var entrance = RoomEntrance(.editor)
+    @Environment(\.startupPresentationFinished) var startupPresentationFinished
     @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
     @State var category = FurnitureCategory.furniture
@@ -73,6 +75,9 @@ struct DecorateView: View {
         }
         .navigationDestination(item: $photoItem) { item in
             FurnitureCustomView(item: item, initialStyle: .photo)
+        }
+        .task(id: startupPresentationFinished) {
+            if startupPresentationFinished { entrance.present() }
         }
         .onAppear {
             if original == nil {

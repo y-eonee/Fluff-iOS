@@ -17,6 +17,10 @@ final class DesignPreviewData {
     let appState = AppState()
     init(route: String) {
         self.route = route
+        if route == "room-loading" {
+            appState.roomEntrance.previewTime = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("--room-loading-time=") }
+                .flatMap { Double($0.replacingOccurrences(of: "--room-loading-time=", with: "")) }
+        }
         if route == "tabs-dolls" || route == "tabs-profile" { appState.tab = .dolls }
         if ProcessInfo.processInfo.arguments.contains("--home-tools-preview") { appState.roomToolsOpen = true }
         ambient = route.hasPrefix("radio-") && !["radio-setup", "radio-scroll"].contains(route)
@@ -73,7 +77,7 @@ final class DesignPreviewData {
                 doll.presetConfiguration = nil
                 doll.imageData = Self.cutoutCharacter()
             }
-            if ProcessInfo.processInfo.arguments.contains("--memory-audit") || route == "walking" || route == "home-ui" || route == "tabs-ui" {
+            if ProcessInfo.processInfo.arguments.contains("--memory-audit") || route == "walking" || route == "home-ui" || ["tabs-ui", "room-loading"].contains(route) {
                 doll.id = UUID(uuidString: "00000000-0000-0000-0000-00000000000\(shape == .cat ? 1 : shape == .bear ? 2 : 3)")!
                 doll.isPlaced = true
                 doll.position = [shape == .cat ? 0 : shape == .bear ? -0.35 : 0.35, 0, 0]
@@ -238,12 +242,7 @@ struct DesignPreview: View {
             else if route == "create-done", let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.presetConfiguration?.shape == .bear }) {
                 NavigationStack { DoneStep(doll: doll, onRestart: {}, onPlace: {}) }
             }
-            else if route == "room-loading" {
-                RoomLoadingView(isReady: true,
-                    previewTime: ProcessInfo.processInfo.arguments.first { $0.hasPrefix("--room-loading-time=") }
-                        .flatMap { Double($0.replacingOccurrences(of: "--room-loading-time=", with: "")) },
-                    repeats: true)
-            }
+            else if route == "room-loading" { MainTabs(couch: fixture.couch) }
             else if route == "splash-approved" { SplashView() }
             else if route == "profile-create" { NavigationStack { ProfileEditView(isCreating: true) } }
             else if ["tabs-ui", "tabs-dolls", "tabs-profile"].contains(route) { MainTabs(couch: fixture.couch) }

@@ -6,15 +6,18 @@ struct RoomLoadingTimeline: Decodable {
     let duration: Double
     let nodes: [String: [String: [Key]]]
 
-    static let shared: Self = {
-        guard let url = Bundle.main.url(forResource: "RoomLoadingMotion", withExtension: "json"),
+    static let shared = load("RoomLoadingMotion", duration: 3.4)
+    static let editor = load("RoomEditorMotion", duration: 2)
+
+    private static func load(_ name: String, duration: Double) -> Self {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let timeline = try? JSONDecoder().decode(Self.self, from: data) else {
-            assertionFailure("Missing bundled RoomLoadingMotion.json")
-            return Self(duration: 3.4, nodes: [:])
+            assertionFailure("Missing bundled \(name).json")
+            return Self(duration: duration, nodes: [:])
         }
         return timeline
-    }()
+    }
 
     struct Key: Decodable {
         let time: Double
@@ -39,6 +42,9 @@ struct RoomLoadingTimeline: Decodable {
             default:
                 if css.hasPrefix("linear(") {
                     self = .samples(css.dropFirst(7).dropLast().split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) })
+                } else if css.hasPrefix("cubic-bezier(") {
+                    let values = css.dropFirst(13).dropLast().split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+                    self = values.count == 4 ? .bezier(values[0], values[1], values[2], values[3]) : .linear
                 } else { self = .linear }
             }
         }
@@ -75,24 +81,5 @@ struct RoomLoadingTimeline: Decodable {
             return a.value + (b.value - a.value) * a.curve.value(at: (time - a.time) / (b.time - a.time))
         }
         return last.value
-    }
-}
-
-/// Hold before the completion message until RealityKit reports an actual frame.
-/// The exported loop is a Figma preview; the app plays a single arrival per session.
-struct RoomLoadingClock {
-    var start: TimeInterval
-    private(set) var ready: TimeInterval?
-    static let readinessGate = 1.55
-
-    mutating func markReady(at now: TimeInterval) {
-        if ready == nil { ready = now }
-    }
-
-    func time(at now: TimeInterval) -> Double {
-        let elapsed = max(0, now - start)
-        guard let ready else { return min(elapsed, Self.readinessGate) }
-        let wait = max(0, ready - start - Self.readinessGate)
-        return min(3.4, max(0, elapsed - wait))
     }
 }

@@ -29,7 +29,12 @@ final class VisualSmokeTests: XCTestCase {
 
     func testFurnitureCategoryTabsCanBeRepeated() {
         let app = launch("decorate")
-        XCTAssertTrue(app.buttons["침대 추가"].waitForExistence(timeout: 40))
+        let bed = app.buttons["침대 추가"]
+        XCTAssertTrue(bed.waitForExistence(timeout: 40))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: bed)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 40), .completed)
+        XCTAssertFalse(app.buttons["되돌리기"].isEnabled)
+        XCTAssertFalse(app.buttons["초기화"].isEnabled)
         for _ in 0..<3 {
             for title in ["벽지", "바닥재", "소품", "가구"] {
                 let tab = app.buttons[title]
@@ -91,6 +96,7 @@ final class VisualSmokeTests: XCTestCase {
 
     func testRoomDecoratingCanBeRepeated() {
         let app = launch("tabs-ui")
+        XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 60))
         for _ in 0..<3 {
             let tools = app.buttons["방 도구"]
             XCTAssertTrue(tools.waitForExistence(timeout: 40))
