@@ -29,13 +29,19 @@ extension Color {
 }
 
 extension Font {
-    /// 제목용 Cloudsofa와 본문·한글용 Pretendard 글꼴을 등록한다.
-    static func registerCustomFonts() {
+    /// UIAppFonts에 선언된 글꼴은 iOS가 등록한다. 나머지만 프로세스당 한 번 등록한다.
+    private static let registerBundledFonts: Void = {
+        let automaticFonts = Set(Bundle.main.object(forInfoDictionaryKey: "UIAppFonts") as? [String] ?? [])
         for ext in ["otf", "ttf"] {
             for url in Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) ?? [] {
+                guard !automaticFonts.contains(url.lastPathComponent) else { continue }
                 CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
             }
         }
+    }()
+
+    static func registerCustomFonts() {
+        _ = registerBundledFonts
         let appearance = UINavigationBarAppearance()
         appearance.configureWithDefaultBackground()
         appearance.titleTextAttributes = [.font: UIFont(name: "Pretendard-SemiBold", size: 28) ?? UIFont.systemFont(ofSize: 28)]
