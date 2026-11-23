@@ -31,6 +31,8 @@ struct RepresentativeActionSurface: ViewModifier {
     var primary = true
     var height: CGFloat = RepresentativeLayout.actionHeight
     @Environment(\.isEnabled) private var enabled
+    @Environment(\.updatedFlowDesign) private var updatedFlow
+    @Environment(\.roomFlowDesign) private var roomFlow
     func body(content: Content) -> some View {
         content.pretendard(.medium, 16)
             .foregroundStyle(primary ? Color.rep4.c01 : Color.rep4.c25)
@@ -38,12 +40,16 @@ struct RepresentativeActionSurface: ViewModifier {
             .contentShape(RoundedRectangle(cornerRadius: RepresentativeLayout.actionRadius))
             .background {
                 Group {
-                    if primary { RepresentativeGradientFill(definition: RepresentativeGradients.cta) }
+                    if primary {
+                        if roomFlow { RoomFlowDesign.action }
+                        else if updatedFlow { FlowDesign.action }
+                        else { RepresentativeGradientFill(definition: RepresentativeGradients.cta) }
+                    }
                     else { Color.rep4.c01 }
                 }.clipShape(RoundedRectangle(cornerRadius: RepresentativeLayout.actionRadius))
             }
             .overlay {
-                if !primary {
+                if !primary && !updatedFlow && !roomFlow {
                     RoundedRectangle(cornerRadius: RepresentativeLayout.actionRadius)
                         .strokeBorder(Color.rep4.c07.opacity(0.5))
                 }
@@ -56,14 +62,20 @@ struct RepresentativeSelectionSurface: ViewModifier {
     let selected: Bool
     var radius: CGFloat = 14
     var neutral = Color.rep4.c01
+    @Environment(\.updatedFlowDesign) private var updatedFlow
+    @Environment(\.roomFlowDesign) private var roomFlow
     func body(content: Content) -> some View {
         content.background {
             Group {
-                if selected { RepresentativeGradientFill(definition: RepresentativeGradients.selected) }
+                if selected {
+                    if roomFlow { RepresentativeGradientFill(definition: RoomFlowDesign.selected) }
+                    else if updatedFlow { FlowDesign.selected }
+                    else { RepresentativeGradientFill(definition: RepresentativeGradients.selected) }
+                }
                 else { neutral }
             }.clipShape(RoundedRectangle(cornerRadius: radius))
         }.overlay {
-            RoundedRectangle(cornerRadius: radius).strokeBorder(selected ? Color.rep4.c04 : .clear, lineWidth: 0.7)
+            RoundedRectangle(cornerRadius: radius).strokeBorder(selected && !roomFlow ? (updatedFlow ? FlowDesign.selectionBorder : Color.rep4.c04) : .clear, lineWidth: 0.7)
         }
     }
 }
@@ -71,18 +83,28 @@ struct RepresentativeSelectionSurface: ViewModifier {
 struct RepresentativeHero<Content: View>: View {
     var showsGlow = false
     var compactGlow = false
+    var flowGlow = "flow_making_glow"
+    @Environment(\.updatedFlowDesign) private var updatedFlow
+    @Environment(\.roomFlowDesign) private var roomFlow
     @ViewBuilder var content: Content
     var body: some View {
         ZStack {
             Color.rep4.c01
             if showsGlow {
                 GeometryReader { proxy in
-                    Image("rep4_making_glow").resizable()
-                        .frame(width: proxy.size.width * (compactGlow ? 0.830 : 1.139),
-                               height: proxy.size.height * (compactGlow ? 0.971 : 0.691))
-                        .blur(radius: 21.674)
-                        .position(x: proxy.size.width / 2 - (compactGlow ? 3.15 : 3.65),
-                                  y: proxy.size.height * (compactGlow ? 0.553 : 0.621))
+                    if updatedFlow {
+                        Image(compactGlow ? "flow_name_glow" : flowGlow).resizable().scaledToFit()
+                            .frame(width: compactGlow ? 277.26 : 381.458)
+                            .position(x: proxy.size.width / 2 - (compactGlow ? 3.15 : 3.65),
+                                      y: proxy.size.height * (compactGlow ? 0.505 : 0.621))
+                    } else {
+                        Image("rep4_making_glow").resizable()
+                            .frame(width: proxy.size.width * (compactGlow ? 0.830 : 1.139),
+                                   height: proxy.size.height * (compactGlow ? 0.971 : 0.691))
+                            .blur(radius: 21.674)
+                            .position(x: proxy.size.width / 2 - (compactGlow ? 3.15 : 3.65),
+                                      y: proxy.size.height * (compactGlow ? 0.553 : 0.621))
+                    }
                 }
             }
             content
@@ -101,6 +123,9 @@ struct RepresentativeConfirmDialog: View {
     let title: String
     let message: String
     var verticalOffset: CGFloat = 0
+    var leaveTitle = "나가기"
+    var stayTitle = "머무르기"
+    var outlinesSecondary = false
     let onLeave: () -> Void
     let onStay: () -> Void
     var body: some View {
@@ -113,8 +138,9 @@ struct RepresentativeConfirmDialog: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(minHeight: message.contains("\n") ? 40.6 : 20.3)
                 HStack(spacing: 12) {
-                    Button("나가기", action: onLeave).modifier(RepresentativeActionSurface(primary: false, height: 44))
-                    Button("머무르기", action: onStay).modifier(RepresentativeActionSurface(primary: true, height: 44))
+                    Button(leaveTitle, action: onLeave).modifier(RepresentativeActionSurface(primary: false, height: 44))
+                        .overlay { if outlinesSecondary { Capsule().strokeBorder(Color(uiColor: Palette.uiColor("#EEEEEE")), lineWidth: 1).allowsHitTesting(false) } }
+                    Button(stayTitle, action: onStay).modifier(RepresentativeActionSurface(primary: true, height: 44))
                 }
             }.foregroundStyle(Color.rep4.c03).padding(25)
                 .background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 22)).padding(.horizontal, 22)

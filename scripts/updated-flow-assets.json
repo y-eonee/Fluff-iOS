@@ -1,0 +1,167 @@
+{
+  "figmaFile": "y50EtliLp7YMR80gHuJRLb",
+  "sections": [
+    "1727:21870",
+    "1727:24810",
+    "1727:22870"
+  ],
+  "reviewDate": "2026-11-23",
+  "assets": [
+    {
+      "name": "flow_profile_glow",
+      "figmaAsset": "879c7.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_profile_glow.imageset/image.svg",
+      "sha256": "7e6e0c0d1a691e8826e9a0301cd2e2391a5f1f42b86b19e43bf2e274095c8240"
+    },
+    {
+      "name": "flow_making_glow",
+      "figmaAsset": "ac366.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_making_glow.imageset/image.svg",
+      "sha256": "3a7e4224e7b2d597b714fb1fb60618a3816f9703c714d88811e3539065a0701d"
+    },
+    {
+      "name": "flow_adjust_glow",
+      "figmaAsset": "f562f.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_adjust_glow.imageset/image.svg",
+      "sha256": "a2a4c5aaaaff2ac5c21b4c33db64e61475a842b3d1a6727c718ff2c8350d95fe"
+    },
+    {
+      "name": "flow_done_glow",
+      "figmaAsset": "de240.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_done_glow.imageset/image.svg",
+      "sha256": "7da4f0107076af642dc618c21851361d27d262470d70d1ff37ceeb2b1ab500d8"
+    },
+    {
+      "name": "flow_focus_glow",
+      "figmaAsset": "85d8b.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_focus_glow.imageset/image.svg",
+      "sha256": "16299ee2504425befa70c0d35d420d12c2ea730fcf45bd67b2879bd7823e3e6f"
+    },
+    {
+      "name": "flow_couch_sofa",
+      "figmaAsset": "1db5c.png",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_couch_sofa.imageset/image.png",
+      "sha256": "904c4c0c6981b33fe954fc44d210f392ba5897038555a878b5777a766ae1fde1"
+    },
+    {
+      "name": "flow_couch_pause",
+      "figmaAsset": "28b45.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_couch_pause.imageset/image.svg",
+      "sha256": "c9c0e9fb907cd6c5dc1f1c213ddb55eb7dff3c95d8630f7222b2391cbea2810b"
+    },
+    {
+      "name": "flow_couch_playlist",
+      "figmaAsset": "da755.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_couch_playlist.imageset/image.svg",
+      "sha256": "fc5c08cdc0de92c5a5d8927ed54777de5f9490e481b8ddc6f60e2e06d22182ca"
+    },
+    {
+      "name": "flow_part_head",
+      "figmaAsset": "1ce68.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_part_head.imageset/image.svg",
+      "sha256": "e4954b756a6f29748be5cf325485a3ff07a47b36d495ed41bf923b57fe1931ad"
+    },
+    {
+      "name": "flow_part_torso",
+      "figmaAsset": "e92f3.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_part_torso.imageset/image.svg",
+      "sha256": "1a1d2c3a9cf610ae14a3e2c9d3e2dc68793a15117c9973428a7d5ca94a1b1671"
+    },
+    {
+      "name": "flow_part_leftArm",
+      "figmaAsset": "c9769.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_part_leftArm.imageset/image.svg",
+      "sha256": "e1dafce600af610c370806a1323847adf51e4efb7f80b14c3f510a880d087b5a"
+    },
+    {
+      "name": "flow_part_rightArm",
+      "figmaAsset": "d635d.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_part_rightArm.imageset/image.svg",
+      "sha256": "3b3068024c4d956e1c3f494e3e792225b8201c5c3340b2df575ad404a23b116e"
+    },
+    {
+      "name": "flow_part_leftLeg",
+      "figmaAsset": "41842.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_part_leftLeg.imageset/image.svg",
+      "sha256": "8bc96b823943defde9bbd91fbb23bdc779131c8118bab57fbaf117d6b954ab96"
+    },
+    {
+      "name": "flow_part_rightLeg",
+      "figmaAsset": "fee74.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_part_rightLeg.imageset/image.svg",
+      "sha256": "4b596ab606dba18d54943d9b4d0b173c72f5ab44de4c76aa5fd4b1f9a7dd3366"
+    },
+    {
+      "name": "flow_name_glow",
+      "figmaAsset": "85444.svg",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_name_glow.imageset/image.svg",
+      "sha256": "88a06529683c85feb552c5af3be382902cac2dd557e66fdf4c3c5ff9e2cc17c8"
+    },
+    {
+      "name": "flow_focus_landscape",
+      "figmaAsset": "4b08a.png",
+      "path": "Malrang/Assets.xcassets/UpdatedFlows/flow_focus_landscape.imageset/image.png",
+      "sha256": "7fd060d69a179077a78057dac5c09154ca241319ecf877171753aca9ff858fb4"
+    }
+  ],
+  "behaviorNotes": [
+    "Selected dolls, photos, activity scores, dates and YouTube content remain live data.",
+    "System status bar and keyboard follow the device.",
+    "The existing live 3D room and dolls remain; their materials and lighting differ from the Figma example images."
+  ],
+  "reviewedFrames": [
+    "1727:22027",
+    "1727:22301",
+    "1727:22421",
+    "1727:22478",
+    "1727:22518",
+    "1727:22564",
+    "1727:22610",
+    "1727:22630",
+    "1727:22652",
+    "1727:22708",
+    "1727:22764",
+    "1727:22956",
+    "1727:23026",
+    "1727:23329",
+    "1727:24904",
+    "1727:25012",
+    "1727:25043",
+    "1727:25090",
+    "1727:26653",
+    "1760:27482",
+    "1760:27527",
+    "1760:27649",
+    "1760:27712",
+    "1760:27784",
+    "1760:28583",
+    "1760:29240",
+    "1760:29365",
+    "1894:6855"
+  ],
+  "verification": {
+    "build": "passed (iOS Simulator, Debug)",
+    "interactionTests": {
+      "passed": 13,
+      "coverage": [
+        "creation exit",
+        "blocked placement",
+        "sofa selection from room",
+        "sofa mini player expansion",
+        "profile navigation",
+        "part resizing",
+        "focus exit",
+        "focus pause/resume",
+        "focus landscape",
+        "name keyboard layout",
+        "photo picker notice",
+        "two-seat selection capacity",
+        "first-room tab visibility"
+      ]
+    },
+    "remainingVisualDifferences": [
+      "Live 3D room/doll materials and lighting",
+      "User content and system keyboard/status indicators"
+    ]
+  }
+}

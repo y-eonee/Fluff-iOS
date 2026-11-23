@@ -27,7 +27,7 @@ extension FocusFlowView {
                         .disabled(selection == nil || !dolls.contains { $0.id == selection })
                         .padding(.top, 25).padding(.bottom, 32)
                 }.padding(.horizontal, 22).frame(height: dolls.count <= 2 ? 327 : 467)
-                    .background(FocusStyle.paper, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+                    .background(Color.white, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
                     .overlay(alignment: .top) {
                         Capsule().fill(Color(uiColor: Palette.uiColor("#FFFDF8"))).frame(width: 40, height: 4).offset(y: -10)
                     }
@@ -36,11 +36,11 @@ extension FocusFlowView {
         .overlay(alignment: .topLeading) {
             HStack(spacing: 8) {
                 Image("home_logo_icon")
-                Text("my room").notCliche(25.397, relativeTo: .title).tracking(-1.778)
+                Text("내 방").pretendard(.semiBold, 19, tracking: -0.76)
             }.foregroundStyle(Color.rep4.c01).padding(.horizontal, 40).padding(.top, 24)
         }
         .background {
-            roomBackground.ignoresSafeArea()
+            roomBackground.overlay(Color.white.opacity(0.2)).ignoresSafeArea()
         }.fullScreenCover(isPresented: $creating) { CreateFlowView(onExit: { dismiss() }) { doll in selection = doll.id } }
     }
 
@@ -86,7 +86,7 @@ extension FocusFlowView {
                             }
                         }
                     }.id("focus-time-settings")
-                }.padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 32).id("focus-content")
+                }.padding(.horizontal, 16).padding(.top, 13).padding(.bottom, 32).id("focus-content")
             }.scrollIndicators(.hidden)
                 #if DEBUG
                 .task {
@@ -107,7 +107,7 @@ extension FocusFlowView {
     private func companionPreview(_ doll: Doll) -> some View {
         ZStack {
             Color.white
-            Image("rep4_focus_halo").resizable().frame(width: 277.26, height: 201.95).blur(radius: 21.674).offset(x: -3.15, y: 10)
+            Image("flow_focus_glow").resizable().frame(width: 277.26, height: 201.95).offset(x: -3.15, y: 10)
             Group {
                 if let configuration = doll.presetConfiguration {
                     PresetDollView(configuration: configuration, cameraDistance: 0.88, cameraTarget: 0.19, fitsModel: true, fitMargin: 0.90)
@@ -121,7 +121,7 @@ extension FocusFlowView {
         let chosen = session.activity == activity
         return Button { session.selectActivity(activity); session.confirmTime() } label: {
             VStack(spacing: 4) {
-                D1Icon(name: activity.icon, tint: chosen ? Color.rep4.c03 : Color.rep4.c04).frame(width: 48, height: 48)
+                D1Icon(name: activity.icon, tint: chosen ? Color.rep4.c03 : FlowDesign.blue).frame(width: 48, height: 48)
                 Text(activity.title).pretendard(.regular, 14, tracking: -0.7).frame(height: 20.3)
                 Text("추천 \(activity.recommendedMinutes)분").pretendard(.regular, 14, tracking: -0.7).foregroundStyle(Color.rep4.c08).frame(height: 20.3)
             }.padding(.top, 12).frame(maxWidth: .infinity).frame(height: 128, alignment: .top)

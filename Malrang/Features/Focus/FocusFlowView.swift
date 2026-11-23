@@ -34,8 +34,9 @@ struct FocusFlowView: View {
                 else if showMain, let selected { main(selected) }
                 else { selectionScreen }
             }
-            .foregroundStyle(FocusStyle.ink)
-            .background(FocusStyle.canvas)
+            .foregroundStyle(Color.rep4.c03)
+            .background(FlowDesign.canvas.ignoresSafeArea())
+            .environment(\.updatedFlowDesign, true)
             .toolbar(.hidden, for: .navigationBar)
             .overlay { if confirmingExit { exitDialog } }
             .task {
@@ -82,12 +83,7 @@ struct FocusFlowView: View {
     }
 
     func header(action: @escaping () -> Void) -> some View {
-        Text("focus together").notCliche(25.397, relativeTo: .title).tracking(-1.7778)
-            .frame(maxWidth: .infinity).frame(height: 44)
-            .overlay(alignment: .leading) {
-                Button(action: action) { D1Icon(name: "back").frame(width: 44, height: 44).contentShape(Rectangle()) }
-                    .buttonStyle(.plain).accessibilityLabel("뒤로")
-            }.offset(y: 2).padding(.horizontal, 20).padding(.bottom, 13)
+        FlowHeader(title: "집중하기", onBack: action)
     }
 
     var exitDialog: some View {

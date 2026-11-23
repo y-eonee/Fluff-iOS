@@ -105,6 +105,33 @@
         checks["new_doll_avoids_interactions"] = RoomLayout.canPlaceDoll(
           at: [spot.x, spot.z], in: fullRoom)
       }
+      // Shared home/editor geometry must fit even after rotations and mirroring.
+      for kind in FurnitureKind.allCases where kind.isMovable {
+        let sample = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+        _ = await SceneFactory.furniture(sample, cozy: true, cutaway: true)
+        for yaw: Float in [0, .pi / 4, .pi / 2, .pi] {
+          for mirrored in [false, true] {
+            for corner: SIMD2<Float> in [[-2, -2], [2, 2], [-2, 2], [2, -2]] {
+              var item = sample; item.x = corner.x; item.z = corner.y; item.yaw = yaw; item.isMirrored = mirrored
+              let spot = RoomLayout.constrained(item); item.x = spot.x; item.z = spot.y
+              if !kind.hangsOnWall {
+                let box = RoomLayout.placementFootprint(item)
+                checks["room_bounds_\(kind.rawValue)_\(yaw)_\(mirrored)_\(corner)"] = box.min.x >= -1.001 && box.min.y >= -1.001 && box.max.x <= 1.001 && box.max.y <= 1.001
+              }
+            }
+          }
+        }
+      }
+      let repairedRoom = RoomLayout.repaired(room)
+      checks["repaired_starter_has_no_furniture_overlap"] = repairedRoom.allSatisfy { !RoomLayout.overlaps($0, in: repairedRoom) }
+      checks["repair_is_idempotent"] = RoomLayout.repaired(repairedRoom) == repairedRoom
+      for kind in [FurnitureKind.bed, .sofa, .desk, .chair, .frame, .shelf, .lamp] {
+        let item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+        let home = await SceneFactory.furniture(item, cozy: true)
+        let editor = await SceneFactory.furniture(item, cozy: true, cutaway: true)
+        let a = home.visualBounds(relativeTo: home), b = editor.visualBounds(relativeTo: editor)
+        checks["same_geometry_\(kind.rawValue)"] = simd_distance(a.min, b.min) < 0.001 && simd_distance(a.max, b.max) < 0.001 && home.position == editor.position && home.scale == editor.scale
+      }
       let day = RoomDaylight.at(hour: 12)
       let night = RoomDaylight.at(hour: 23)
       let sunset = RoomDaylight.at(hour: 18)

@@ -10,8 +10,8 @@ struct MyPageView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("my page").notCliche(28, relativeTo: .title).tracking(-1.12).frame(height: 44)
+        VStack(spacing: 8) {
+            FlowHeader(title: "마이페이지")
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     NavigationLink { ProfileEditView() } label: {
@@ -52,7 +52,7 @@ struct MyPageView: View {
                     }
                 }.padding(.horizontal, 22).padding(.bottom, 24)
             }.scrollIndicators(.hidden)
-        }.foregroundStyle(Color.mib.text.primary).tint(Color.mib.action.primary).background(Color.mib.bg.screen)
+        }.foregroundStyle(Color.mib.text.primary).tint(Color.mib.action.primary).background(FlowDesign.canvas.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
     }
 

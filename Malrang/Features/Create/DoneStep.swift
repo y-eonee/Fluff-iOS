@@ -19,12 +19,13 @@ struct DoneStep: View {
                 } else {
                     Image(uiImage: doll.image).resizable().scaledToFit()
                 }
-            }.frame(maxHeight: .infinity).accessibilityLabel(doll.name)
+            }.frame(maxWidth: 316, maxHeight: 437).accessibilityLabel(doll.name)
                 .background {
-                    Image("rep4_making_glow").resizable().scaledToFit()
-                        .frame(height: 300).blur(radius: 21.674)
+                    Image("flow_done_glow").resizable().scaledToFit()
+                        .frame(width: 440.358, height: 300.588)
                 }
-            HStack(spacing: Spacing.s) {
+            Spacer(minLength: 12)
+            HStack(spacing: 12) {
                 Button("다시 만들기", action: onRestart)
                     .buttonStyle(CreationSecondaryButton())
                 Button("방에 배치하기", action: onPlace)
@@ -32,8 +33,8 @@ struct DoneStep: View {
             }
         }
         .foregroundStyle(Color.app.ink)
-        .padding(.horizontal, 18).padding(.top, 23).padding(.bottom, 16)
-        .cozyPageTitle("making fluff")
+        .padding(.horizontal, 18).padding(.top, 81).padding(.bottom, 16)
+        .flowPageTitle("인형 만들기")
         .toolbar(.visible, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()

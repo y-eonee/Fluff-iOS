@@ -5,6 +5,7 @@ struct PhotoPlacementGesture: ViewModifier {
     let draft: DollDraft
     let isPreset: Bool
     var enabled = true
+    @GestureState private var interacting = false
     @State private var lastTranslation = CGSize.zero
     @State private var lastMagnification: CGFloat = 1
 
@@ -34,11 +35,16 @@ struct PhotoPlacementGesture: ViewModifier {
                                     else { draft.customScale = min(2, max(0.6, draft.customScale * factor)) }
                                     draft.snapshot = nil
                                     lastMagnification = value.magnification
-                                }.onEnded { _ in lastMagnification = 1 }))
+                                }.onEnded { _ in lastMagnification = 1 })
+                            .updating($interacting) { _, active, _ in active = true })
                         .accessibilityHidden(true)
                 }
             }
         }
+        .onChange(of: interacting) { _, active in
+            if !active { lastTranslation = .zero; lastMagnification = 1 }
+        }
+        .onChange(of: enabled) { lastTranslation = .zero; lastMagnification = 1 }
         .onChange(of: isPreset) { lastTranslation = .zero; lastMagnification = 1 }
     }
 }

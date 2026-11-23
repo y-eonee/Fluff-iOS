@@ -58,8 +58,9 @@ struct CutoutEditStep: View {
             }
         }
         .padding(.horizontal, 16).padding(.top, 17).padding(.bottom, 16)
-        .background { AppBackground() }
-        .cozyPageTitle("making fluff")
+        .background(FlowDesign.canvas.ignoresSafeArea())
+        .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 1) }
+        .flowPageTitle("인형 만들기")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             #if DEBUG

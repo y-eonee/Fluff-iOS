@@ -2,18 +2,7 @@ import SwiftUI
 
 extension View {
     func cozyPageTitle(_ title: String) -> some View {
-        navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.a.paper, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    CozyTitleText(title: title, size: title == "couch time" || title == "focus together" ? 28 : 25.397)
-                        .tracking(title == "making fluff" ? -1.7778 : 0)
-                        .offset(y: title == "making fluff" ? 2 : 0)
-                        .foregroundStyle(Color.a.brown).accessibilityAddTraits(.isHeader)
-                }
-            }
+        flowPageTitle(title)
     }
 }
 

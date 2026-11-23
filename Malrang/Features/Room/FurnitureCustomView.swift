@@ -17,6 +17,7 @@ struct FurnitureCustomView: View {
     @State private var original: RoomItemState
     @State private var choosingPhoto = false
     @State private var saveFailed = false
+    @State private var confirmsPhotoRemoval = false
     private let initialStyle: Style?
     @State private var undoStack: [PhotoEdit] = []
     @State private var redoStack: [PhotoEdit] = []
@@ -54,10 +55,11 @@ struct FurnitureCustomView: View {
             HStack {
                 Button { item.restore(original); saveAndDismiss() } label: { Image("rep4_edit_back").resizable().frame(width: 31.854, height: 31.854).frame(width: 44, height: 44) }.accessibilityLabel("가구 목록")
                 Spacer()
-                Text("\(item.kind.label) 꾸미기").pretendard(.bold, 17, tracking: -0.85).offset(y: -4)
+                Text("방 꾸미기").pretendard(.semiBold, 19, tracking: -0.76)
                 Spacer()
                 Button(action: saveAndDismiss) { Image("rep4_edit_confirm").resizable().frame(width: 40.755, height: 40.755) }.accessibilityLabel("꾸미기 완료")
-            }.buttonStyle(.plain).padding(.horizontal, 22).offset(y: 6)
+            }.buttonStyle(.plain).padding(.horizontal, 22).padding(.top, 2).frame(height: 60, alignment: .top)
+                .background(FlowDesign.header.ignoresSafeArea(edges: .top))
             RoomSceneView(items: roomItems.map(\.state), dolls: dolls.filter(\.isPlaced).map(\.state), mode: .decorate,
                           isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan,
                           selectedItemID: item.id, isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onFurnitureScreen: { furnitureBounds = $0 })
@@ -101,15 +103,21 @@ struct FurnitureCustomView: View {
             .padding(.horizontal, 24).frame(height: 266)
             .background { Color.rep4.c01.clipShape(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14)).ignoresSafeArea(edges: .bottom) }
         }
+        .environment(\.roomFlowDesign, true)
         .background { RepresentativeGradientFill(definition: RepresentativeGradients.roomBackground).ignoresSafeArea() }
         .toolbar(.hidden, for: .navigationBar)
         .tint(Color.mib.action.primary)
         .foregroundStyle(Color.mib.text.primary)
-        .cozyPageTitle("\(item.kind.label) 꾸미기")
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if item.kind.isMovable {
                 Button("삭제", systemImage: "trash", role: .destructive, action: delete)
+            }
+        }
+        .overlay {
+            if confirmsPhotoRemoval {
+                RoomPhotoRemovalDialog(itemName: item.kind.label, cancel: { confirmsPhotoRemoval = false }) {
+                    remember(); item.photoData = nil; choosingPhoto = false; confirmsPhotoRemoval = false
+                }
             }
         }
         .alert("사진 변경을 저장하지 못했어요", isPresented: $saveFailed) { Button("확인", role: .cancel) {} }
@@ -146,7 +154,7 @@ struct FurnitureCustomView: View {
             }.frame(maxWidth: .infinity).frame(height: 136)
                 .background(Color.rep4.c11, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.rep4.c29, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
-        }.buttonStyle(.plain).contextMenu { photoAdjustmentActions }.frame(maxHeight: .infinity, alignment: .top)
+        }.buttonStyle(.plain).accessibilityLabel("사진 추가하기").contextMenu { photoAdjustmentActions }.frame(maxHeight: .infinity, alignment: .top)
     }
 
     private var photoEditor: some View {
@@ -155,19 +163,15 @@ struct FurnitureCustomView: View {
                 thumbnail(item.photoData ?? Data()).frame(width: 48, height: 48).clipped()
                 Text("적용된 사진").pretendard(.bold, 14)
                 Spacer()
+                Button { confirmsPhotoRemoval = true } label: {
+                    Image(systemName: "trash").font(.system(size: 20)).foregroundStyle(Color.mib.semantic.error)
+                        .frame(width: 44, height: 44)
+                }.buttonStyle(.plain).accessibilityLabel("사진 빼기")
             }.padding(.horizontal, 10).padding(.vertical, 8).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.rep4.c07))
                 .contextMenu { photoAdjustmentActions }
-            HStack(spacing: 12) {
-                Button { remember(); item.photoData = nil; choosingPhoto = false } label: {
-                    Text("사진 빼기").pretendard(.medium, 16).foregroundStyle(Color(uiColor: Palette.uiColor("#AD4141")))
-                        .frame(maxWidth: .infinity).frame(height: 60)
-                        .background(Color.rep4.c11, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Color(uiColor: Palette.uiColor("#AD4141"))))
-                        .contentShape(Capsule())
-                }.buttonStyle(.plain)
-                PhotosPicker(selection: $pickerItem, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle())
-            }.padding(.horizontal, -6)
+            PhotosPicker(selection: $pickerItem, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle())
+                .padding(.horizontal, -6)
         }.frame(maxHeight: .infinity, alignment: .top)
     }
 

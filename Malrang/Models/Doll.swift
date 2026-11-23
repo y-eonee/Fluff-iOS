@@ -135,6 +135,15 @@ enum Filling: String, CaseIterable {
 
 enum DanceMove: String, CaseIterable {
     case bounce, sway, spin, nod, jump, squish
+    case morningExercise, danceDance, wiggle, tapDance
+
+    // Keep old raw values readable for saved dolls; only these four are offered now.
+    static let selectable: [DanceMove] = [.morningExercise, .danceDance, .tapDance, .wiggle]
+
+    static func selection(for saved: DanceMove?) -> DanceMove {
+        guard let saved, selectable.contains(saved) else { return .morningExercise }
+        return saved
+    }
 
     var label: String {
         switch self {
@@ -144,6 +153,10 @@ enum DanceMove: String, CaseIterable {
         case .nod: "까딱까딱"
         case .jump: "폴짝"
         case .squish: "말랑말랑"
+        case .morningExercise: "아침체조"
+        case .danceDance: "댄스댄스"
+        case .wiggle: "씰룩씰룩"
+        case .tapDance: "탭댄스"
         }
     }
 
@@ -155,6 +168,10 @@ enum DanceMove: String, CaseIterable {
         case .nod: "arrow.uturn.down"
         case .jump: "figure.jumprope"
         case .squish: "arrow.down.right.and.arrow.up.left"
+        case .morningExercise: "figure.flexibility"
+        case .danceDance: "figure.dance"
+        case .wiggle: "figure.flexibility"
+        case .tapDance: "shoeprints.fill"
         }
     }
 }

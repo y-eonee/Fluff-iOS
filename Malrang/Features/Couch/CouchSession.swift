@@ -9,7 +9,7 @@ final class CouchSession {
     private var selectedDolls: [DollState] = []
     var dolls: [DollState] {
         get { selectedDolls }
-        set { selectedDolls = Array(newValue.prefix(1)) }
+        set { selectedDolls = Array(newValue.prefix(2)) }
     }
     var sofaID: UUID?
     var current: CouchVideo?

@@ -151,7 +151,7 @@ struct CompanionScene: UIViewRepresentable {
         fill.light.color = Palette.uiColor("#FFF4E7")
         fill.look(at: [0, 0.2, 0], from: [0, 0.7, 3], relativeTo: nil)
         root.addChild(fill)
-        let chosen = Array(dolls.prefix(1))
+        let chosen = Array(dolls.prefix(2))
         for (index, doll) in chosen.enumerated() {
           let model = await model(doll)
           DollRestPose.sitting(model)

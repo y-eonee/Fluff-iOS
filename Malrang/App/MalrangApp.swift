@@ -5,8 +5,15 @@ import SwiftUI
 
 @main
 struct MalrangApp: App {
-    @State private var isShowingSplash = true
     @State private var startupPresentationFinished = false
+    private var skipsBrandSplash: Bool {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains { $0.hasPrefix("--design-preview=") || $0.hasPrefix("--export-") || $0.hasSuffix("-audit") || $0 == "--onboarding-preview" }
+        #else
+        return false
+        #endif
+    }
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -21,7 +28,9 @@ struct MalrangApp: App {
 
     @ViewBuilder private var appContent: some View {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--export-furniture-thumbnails") {
+        if ProcessInfo.processInfo.arguments.contains("--export-motion-review") {
+            MotionReviewExporter().frame(width: 720, height: 480)
+        } else if ProcessInfo.processInfo.arguments.contains("--export-furniture-thumbnails") {
             FurnitureThumbnailExporter().frame(width: 512, height: 384)
         } else if ProcessInfo.processInfo.arguments.contains("--onboarding-preview") {
             RootView().defaultAppStorage(UserDefaults(suiteName: "fluff.onboarding-preview")!).modelContainer(.preview)
@@ -45,17 +54,16 @@ struct MalrangApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                startupContent
-                    .environment(\.startupPresentationFinished, startupPresentationFinished)
-                    .allowsHitTesting(!isShowingSplash)
-                    .accessibilityHidden(isShowingSplash)
-                if isShowingSplash {
-                    SplashView()
-                        .transition(.opacity)
-                        .zIndex(1)
+            startupContent
+                .allowsHitTesting(startupPresentationFinished)
+                .accessibilityHidden(!startupPresentationFinished)
+                .overlay { if !startupPresentationFinished && !skipsBrandSplash { BrandSplashView().transition(.opacity) } }
+                .task {
+                    if !skipsBrandSplash { try? await Task.sleep(for: .milliseconds(1100)) }
+                    guard !Task.isCancelled else { return }
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { startupPresentationFinished = true }
                 }
-            }
+                .environment(\.startupPresentationFinished, startupPresentationFinished)
             .task {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("--data-reset-audit") { try? DesignDataReset.audit() }
@@ -66,16 +74,9 @@ struct MalrangApp: App {
                 await CozyModelExporter.exportIfRequested()
                 await CozyModelExporter.auditIfRequested()
                 #endif
-                do { try await Task.sleep(for: .seconds(1.2)) }
-                catch { return }
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) {
-                    isShowingSplash = false
-                } completion: {
-                    startupPresentationFinished = true
-                }
                 #if DEBUG
                 try? await Task.sleep(for: .milliseconds(400))
-                let nativeRoutes = ["tabs-dolls", "tabs-profile", "photo-pick", "cutout-auto", "cutout-move", "create-ready", "selection", "couch-playlist"]
+                let nativeRoutes = ["radio-playing", "radio-paused", "radio-timer", "radio-sound", "tabs-dolls", "tabs-profile", "photo-pick", "cutout-auto", "cutout-move", "create-ready", "selection", "couch-playlist"]
                 if let route = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--design-preview=") })?.split(separator: "=").last,
                    nativeRoutes.contains(String(route)) { DesignPreviewSignal.sceneReady() }
                 DesignPreviewSignal.startupDidFinish()

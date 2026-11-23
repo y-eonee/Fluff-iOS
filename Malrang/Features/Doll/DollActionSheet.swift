@@ -13,7 +13,7 @@ struct DollActionSheet: View {
     @State private var isChoosingDance = false
     @State private var isConfirmingDelete = false
     @State private var isRemoved = false
-    @State private var move = DanceMove.bounce
+    @State private var move = DanceMove.morningExercise
 
     var body: some View {
         Group {
@@ -25,20 +25,13 @@ struct DollActionSheet: View {
             Group {
                 if !isRemoved {
                     VStack(spacing: 0) {
-                        Text("my fluff").notCliche(28, relativeTo: .title).tracking(-1.96)
-                            .foregroundStyle(Color.rep4.c03).accessibilityAddTraits(.isHeader)
-                            .frame(maxWidth: .infinity).frame(height: 44)
-                            .overlay(alignment: .leading) {
-                                Button { dismiss() } label: {
-                                    Image("rep4_edit_back").resizable().frame(width: 26.425, height: 26.425)
-                                        .frame(width: 44, height: 44, alignment: .leading)
-                                }.buttonStyle(.plain).padding(.leading, 26.25).accessibilityLabel("뒤로")
-                            }.offset(y: 3.47)
+                        FlowHeader(title: "내 인형") { dismiss() }
                         content
                     }
                 }
             }
-            .background { AppBackground() }
+            .background(FlowDesign.profileCanvas.ignoresSafeArea())
+            .environment(\.updatedFlowDesign, true)
             .toolbar(.hidden, for: .tabBar)
             .preference(key: AppTabBarHiddenPreference.self, value: true)
             .toolbar(.hidden, for: .navigationBar)
@@ -65,32 +58,42 @@ struct DollActionSheet: View {
         ScrollViewReader { reader in
             ScrollView {
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: 38)
-                        .overlay(alignment: .topTrailing) {
+                    ZStack(alignment: .top) {
+                        Image("flow_profile_glow").resizable().scaledToFit()
+                            .frame(width: 371, height: 259).offset(y: 163)
+                            .accessibilityHidden(true)
+                        Group {
+                            if isChoosingDance {
+                                DancingDoll(image: doll.image, move: move, preset: doll.presetConfiguration).padding(24)
+                                    .accessibilityLabel("\(doll.name), \(move.label) 춤")
+                            } else {
+                                SquishyDoll(doll: doll.state, usesProfileLayout: true)
+                            }
+                        }.frame(height: 415).padding(.horizontal, 34).padding(.top, 27)
+                            .contextMenu { profileActions }
+                            .accessibilityAction(named: "춤추기") { startDance() }
+                            .accessibilityAction(named: "예절샷 찍기") { startAR() }
+                        HStack {
+                            Spacer()
                             VStack(spacing: 3) {
                                 Text("처음 만난 날").pretendard(.medium, 12)
                                 Text(firstMetDate).pretendard(.regular, 14, tracking: -0.7)
-                            }.frame(width: 96.21, height: 50.28).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 6))
-                        }.padding(.horizontal, 24)
-                    Group {
-                        if isChoosingDance {
-                            DancingDoll(image: doll.image, move: move)
-                                .accessibilityLabel("\(doll.name), \(move.label) 춤")
-                                .padding(24)
-                        } else {
-                            SquishyDoll(doll: doll.state, usesProfileLayout: true)
-                        }
-                    }.frame(height: 400).padding(.horizontal, 34)
-                        .contextMenu { profileActions }
-                        .accessibilityAction(named: "춤추기") { startDance() }
-                        .accessibilityAction(named: "예절샷 찍기") { startAR() }
-                    DollHistoryCard(doll: doll).padding(.horizontal, 18).id("history")
+                            }.frame(width: 96.21, height: 50.28)
+                                .background(.white, in: RoundedRectangle(cornerRadius: 6))
+                        }.padding(.trailing, 34).padding(.top, 9)
+                        Text(doll.name).pretendard(.semiBold, 15, tracking: -0.75)
+                            .padding(.horizontal, 11).padding(.vertical, 3)
+                            .background(.white, in: Capsule())
+                            .shadow(color: .black.opacity(0.09), radius: 3.45)
+                            .offset(y: 422)
+                    }.frame(height: 467, alignment: .top)
+                    DollHistoryCard(doll: doll).padding(.horizontal, 20).id("history")
                     if isChoosingDance {
                         DancePanel(doll: doll, selected: $move) {
                             withAnimation(.spring) { isChoosingDance = false }
                         }
                     }
-                }.padding(.top, 25).padding(.bottom, 24)
+                }.padding(.bottom, 24)
             }.scrollIndicators(.hidden)
                 .onAppear { if initiallyShowsHistory { reader.scrollTo("history", anchor: .top) } }
         }
@@ -109,7 +112,7 @@ struct DollActionSheet: View {
     }
 
     private func startDance() {
-        move = doll.dance ?? .bounce
+        move = DanceMove.selection(for: doll.dance)
         withAnimation(.spring) { isChoosingDance = true }
     }
 

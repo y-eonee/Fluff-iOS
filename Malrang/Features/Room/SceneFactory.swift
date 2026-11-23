@@ -48,7 +48,7 @@ enum SceneFactory {
         if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
         } else if cozy {
-            entity = await CozyFurniture.make(item, photoMaterial: material(item), usesWindowLighting: !onFloor, cutaway: cutaway)
+            entity = await CozyFurniture.make(item, photoMaterial: material(item), usesWindowLighting: !onFloor, roomOverview: cutaway)
         } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
             entity = illustration
         } else {
@@ -60,8 +60,8 @@ enum SceneFactory {
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
         let interiorLift: Float = cozy && hangs
-            ? (cutaway ? (item.kind == .frame ? -0.24 : 0) : (item.kind == .shelf ? 0.64 : 0.23)) : 0
-        if cozy && !cutaway && item.kind == .frame { entity.scale = [1.4, 1.55, 1.4] }
+            ? (item.kind == .shelf ? 0.64 : 0.23) : 0
+        if cozy && item.kind == .frame { entity.scale = [1.4, 1.55, 1.4] }
         entity.position = [item.x, hangs ? item.kind.hangingHeight + interiorLift : elevation, item.z]
         if item.kind.hangsOnWall {
             let pivot = Entity()
@@ -85,6 +85,15 @@ enum SceneFactory {
                 visual.scale.x = -1
                 entity.addChild(visual)
             }
+        }
+        if cozy && item.kind.isMovable && item.yaw == 0 {
+            let shadow = entity.findEntity(named: "contact-shadow")
+            let shadowParent = shadow?.parent
+            shadow?.removeFromParent()
+            let bounds = entity.visualBounds(relativeTo: entity)
+            RoomLayout.registerBounds(for: item.kind, mirrored: item.isMirrored,
+                                      min: bounds.min * entity.scale, max: bounds.max * entity.scale)
+            if let shadow, let shadowParent { shadowParent.addChild(shadow) }
         }
         // 원본 색상별 메시를 합쳐도 벽 사이의 빈 공간이 충돌 영역이 되지 않게 한다.
         let shapes: [ShapeResource]
@@ -161,11 +170,18 @@ enum SceneFactory {
     }
 
     static func play(_ dance: DanceMove, on entity: Entity) {
+        MorningExerciseMotion.stop(on: entity)
+        if let clip = MorningExerciseMotion.Clip(move: dance) {
+            MorningExerciseMotion.play(on: entity, reducedMotion: UIAccessibility.isReduceMotionEnabled,
+                                       clip: clip)
+            return
+        }
         var from = entity.transform
         var to = entity.transform
         let base = entity.orientation
         var duration = 0.4
         switch dance {
+        case .morningExercise, .danceDance, .wiggle, .tapDance: return // Multi-part clips are handled above.
         case .bounce:
             to.translation.y += 0.05
             duration = 0.3
@@ -357,5 +373,18 @@ enum SceneFactory {
             root.addChild(entity)
         }
         return root
+    }
+}
+
+// Shared by room/AR playback and the actual 3D doll preview.
+extension MorningExerciseMotion.Clip {
+    init?(move: DanceMove) {
+        switch move {
+        case .morningExercise: self = .exercise
+        case .danceDance: self = .danceDance
+        case .wiggle: self = .wiggle
+        case .tapDance: self = .tapDance
+        default: return nil
+        }
     }
 }

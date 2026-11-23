@@ -1,22 +1,44 @@
 import SwiftUI
 
 /// 고른 모션을 미리 보여주는 인형.
-/// 지금은 2D 움직임으로 흉내 내고, 인형 3D 모델과 모션이 준비되면 교체한다.
+/// 프리셋은 방과 같은 3D 부위 모션을, 누끼 사진은 전신 리듬을 표시한다.
 struct DancingDoll: View {
     let image: UIImage
     let move: DanceMove
+    var preset: PresetConfiguration? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var exerciseStart = Date()
 
     var body: some View {
-        Image(uiImage: image)
-            .resizable()
-            .scaledToFit()
-            .phaseAnimator([false, true]) { content, phase in
-                dance(content, phase: phase)
-            } animation: { _ in
-                .easeInOut(duration: move == .spin ? 0.8 : 0.4)
+        if let preset, MorningExerciseMotion.Clip(move: move) != nil {
+            PresetDollView(configuration: preset, fitsModel: true, fitMargin: 1.42,
+                           animating: false, dance: reduceMotion ? nil : move)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(move.label)
+        } else if let clip = MorningExerciseMotion.Clip(move: move) {
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { context in
+                let time = reduceMotion ? 0 : context.date.timeIntervalSince(exerciseStart)
+                let pose = clip.pose(at: time)
+                Image(uiImage: image)
+                    .resizable().scaledToFit()
+                    .rotationEffect(.radians(Double(pose.body.z)), anchor: .bottom)
+                    .rotation3DEffect(.radians(Double(pose.body.x + pose.bend)), axis: (1, 0, 0), anchor: .bottom)
+                    .rotation3DEffect(.radians(Double(pose.body.y)), axis: (0, 1, 0))
+                    .offset(x: CGFloat(pose.travel) * 240, y: -CGFloat(pose.lift) * 240)
             }
-            .id(move)
+            .onAppear { exerciseStart = Date() }
+            .onChange(of: move) { _, _ in exerciseStart = Date() }
+        } else {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .phaseAnimator([false, true]) { content, phase in
+                    dance(content, phase: phase)
+                } animation: { _ in
+                    .easeInOut(duration: move == .spin ? 0.8 : 0.4)
+                }
+                .id(move)
+        }
     }
 
     private func dance(_ content: PlaceholderContentView<some View>, phase: Bool) -> some View {
@@ -47,8 +69,8 @@ struct DancePanel: View {
 
     var body: some View {
         VStack(spacing: Spacing.m) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.xs), count: 3), spacing: Spacing.xs) {
-                ForEach(DanceMove.allCases, id: \.self) { move in
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.xs), count: 2), spacing: Spacing.xs) {
+                ForEach(DanceMove.selectable, id: \.self) { move in
                     Button {
                         selected = move
                     } label: {
@@ -60,10 +82,7 @@ struct DancePanel: View {
                         }
                         .foregroundStyle(Color.app.ink)
                         .frame(maxWidth: .infinity, minHeight: 72)
-                        .background(selected == move ? Color.app.accent : Color.app.background,
-                                    in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous)
-                            .stroke(selected == move ? Color.app.ink : Color.app.ink.opacity(0.15)))
+                        .modifier(RepresentativeSelectionSurface(selected: selected == move, radius: Radius.small))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selected == move ? .isSelected : [])
@@ -83,6 +102,7 @@ struct DancePanel: View {
                 onClose()
             }
         }
+        .environment(\.updatedFlowDesign, true)
         .padding(Spacing.m)
         .background {
             UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous)
@@ -96,8 +116,8 @@ struct DancePanel: View {
 
 #Preview {
     VStack {
-        DancingDoll(image: Doll.sample.image, move: .squish)
-        DancePanel(doll: .sample, selected: .constant(.squish)) {}
+        DancingDoll(image: Doll.sample.image, move: .morningExercise)
+        DancePanel(doll: .sample, selected: .constant(.morningExercise)) {}
     }
     .background { AppBackground() }
 }

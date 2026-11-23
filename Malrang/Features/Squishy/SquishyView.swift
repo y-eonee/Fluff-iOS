@@ -45,7 +45,7 @@ struct SquishyDoll: View {
 
     var body: some View {
         VStack(spacing: Spacing.xs) {
-            hint.offset(y: usesProfileLayout ? -20 : 0)
+            hint
             dollImage
                 .scaleEffect(x: 1 + press * 0.15, y: 1 - press * 0.25, anchor: .bottom)
                 .rotationEffect(.degrees(stroke.width * (reduceMotion ? 0.02 : 0.08)), anchor: .bottom)
@@ -66,7 +66,7 @@ struct SquishyDoll: View {
     private var dollImage: some View {
         let image = UIImage(data: doll.imageData) ?? UIImage()
         if let dance = doll.dance {
-            DancingDoll(image: image, move: dance)
+            DancingDoll(image: image, move: dance, preset: doll.preset)
         } else {
             Image(uiImage: image)
                 .resizable()

@@ -5,12 +5,15 @@ import SwiftUI
 struct FurnitureFinishEditor: View {
     @Bindable var item: RoomItem
     let initialPhotoMode: Bool?
+    var requestPhotoRemoval: (() -> Void)? = nil
     @State private var photoMode: Bool
-    init(item: RoomItem, initialPhotoMode: Bool? = nil) {
+    init(item: RoomItem, initialPhotoMode: Bool? = nil, requestPhotoRemoval: (() -> Void)? = nil) {
         self.item = item; self.initialPhotoMode = initialPhotoMode
+        self.requestPhotoRemoval = requestPhotoRemoval
         _photoMode = State(initialValue: initialPhotoMode ?? (item.photoData != nil))
     }
     @State private var selection: PhotosPickerItem?
+    @State private var confirmsPhotoRemoval = false
     var body: some View {
         VStack(spacing: photoMode ? (item.photoData == nil ? 20 : 8) : 12) {
             HStack(spacing: 8) {
@@ -20,24 +23,17 @@ struct FurnitureFinishEditor: View {
             if photoMode {
                 if let data = item.photoData {
                     HStack(spacing: 12) {
-                        DollThumbnail(data: data, fillsFrame: true).frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        DollThumbnail(data: data, fillsFrame: true).frame(width: 48, height: 48).clipShape(RoundedRectangle(cornerRadius: 10))
                         Text("적용된 사진").pretendard(.bold, 14)
                         Spacer()
-                    }.padding(.horizontal, 10).padding(.vertical, 9)
+                        Button { if let requestPhotoRemoval { requestPhotoRemoval() } else { confirmsPhotoRemoval = true } } label: {
+                            Image(systemName: "trash").font(.system(size: 20)).foregroundStyle(Color.mib.semantic.error).frame(width: 44, height: 44)
+                        }.buttonStyle(.plain).accessibilityLabel("사진 빼기")
+                    }.padding(.horizontal, 10).padding(.vertical, 8)
                         .background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.rep4.c07))
                         .padding(.leading, 5.34).padding(.trailing, 10.35)
-                    HStack(spacing: 12) {
-                        Button { item.photoData = nil } label: {
-                            Text("사진 빼기").pretendard(.medium, 16).foregroundStyle(Color.mib.semantic.error)
-                                .frame(maxWidth: .infinity).frame(height: 60)
-                                .background(Color.rep4.c11, in: Capsule())
-                                .overlay(Capsule().strokeBorder(Color.mib.semantic.error))
-                                .contentShape(Capsule())
-                        }.buttonStyle(.plain)
-                        PhotosPicker(selection: $selection, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle())
-                    }.padding(.top, 8)
+                    PhotosPicker(selection: $selection, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle()).padding(.top, 8)
                 } else {
                     PhotosPicker(selection: $selection, matching: .images) {
                         VStack(spacing: 6) {
@@ -49,10 +45,15 @@ struct FurnitureFinishEditor: View {
                         }.frame(maxWidth: .infinity).frame(height: 136)
                             .background(Color.rep4.c11, in: RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.rep4.c29, style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])))
-                    }.buttonStyle(.plain).padding(.leading, 5.34).padding(.trailing, 10.35)
+                    }.buttonStyle(.plain).accessibilityLabel("사진 추가하기").padding(.leading, 5.34).padding(.trailing, 10.35)
                 }
             } else { FurnitureColorChoices(item: item).padding(.leading, 5.34).padding(.trailing, 10.35) }
         }.padding(.top, photoMode ? 6.83 : 0)
+            .fullScreenCover(isPresented: $confirmsPhotoRemoval) {
+                RoomPhotoRemovalDialog(itemName: item.kind.label, cancel: { confirmsPhotoRemoval = false }) {
+                    item.photoData = nil; confirmsPhotoRemoval = false
+                }.presentationBackground(.clear)
+            }
             .onAppear { photoMode = initialPhotoMode ?? (item.photoData != nil) }
             .task(id: selection) {
                 guard let selection, let data = try? await selection.loadTransferable(type: Data.self),

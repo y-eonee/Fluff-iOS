@@ -38,7 +38,7 @@ enum CozyFurniture {
         #endif
     }
 
-    static func make(_ item: RoomItemState, photoMaterial: any Material, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false) async -> Entity {
+    static func make(_ item: RoomItemState, photoMaterial: any Material, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false, roomOverview: Bool = false) async -> Entity {
         if fabricColor == nil { fabricColor = await texture("CozyFabricColor", semantic: .color) }
         if fabricNormal == nil { fabricNormal = await texture("CozyFabricNormal", semantic: .normal) }
         if contactShadow == nil { contactShadow = await shadowMaterial() }
@@ -52,7 +52,10 @@ enum CozyFurniture {
         var materials: [MaterialKey: any Material] = [:]
         func material(_ hex: String, part: String = "") -> any Material {
             let surfacePart = part.replacingOccurrences(of: ".pile", with: "")
-            if part == "floor", let woodFloor { return woodFloor }
+            if part == "floor", var woodFloor {
+                if roomOverview { woodFloor.textureCoordinateTransform.scale = [1, 1] }
+                return woodFloor
+            }
             let scale: Float
             let softness: Float
             switch item.kind {
@@ -294,7 +297,7 @@ enum CozyFurniture {
             box("window.mullion", [0.07, 0.96, 0.035], [-0.93, 1.19, 0.16], CozyRoomPalette.mint)
         case .floor:
             // 홈에서는 바닥 가장자리가 드러나지 않게 화면 밖까지 이어진다.
-            box("floor", [cutaway ? 2 : 8, cutaway ? 0.23 : 0.145, cutaway ? 2 : 8], [0, cutaway ? -0.115 : -0.0725, 0], main)
+            box("floor", [(cutaway || roomOverview) ? 2 : 8, cutaway ? 0.23 : 0.145, (cutaway || roomOverview) ? 2 : 8], [0, cutaway ? -0.115 : -0.0725, 0], main)
             if cutaway, item.colorName == nil, item.photoData == nil {
                 for x in 0..<8 { for z in 0..<8 {
                     box("floor.tile", [0.25, 0.002, 0.25], [-0.875 + Float(x) * 0.25, 0.002, -0.875 + Float(z) * 0.25], (x + z).isMultiple(of: 2) ? CozyRoomPalette.softMint : CozyRoomPalette.floorMint, radius: 0.001)
@@ -659,7 +662,7 @@ enum CozyFurniture {
         }
         if item.photoData != nil, item.kind != .wall {
             let isWall = item.kind.hangsOnWall
-            let size: SIMD2<Float> = item.kind == .floor ? [cutaway ? s.x : 8, cutaway ? s.z : 8]
+            let size: SIMD2<Float> = item.kind == .floor ? [(cutaway || roomOverview) ? s.x : 8, (cutaway || roomOverview) ? s.z : 8]
                 : isWall ? [s.x * 0.76, s.y * 0.77] : [s.x * 0.9, s.z * 0.85]
             let photo = ModelEntity(mesh: .generatePlane(width: size.x, height: size.y), materials: [photoMaterial])
             photo.name = "custom-photo"
@@ -746,7 +749,7 @@ enum CozyFurniture {
         return material
     }
 
-    static func defaultColor(for kind: FurnitureKind, cutaway: Bool = true) -> String {
+    static func defaultColor(for kind: FurnitureKind, cutaway: Bool = false) -> String {
         if cutaway, kind == .bed { return "#A2C6F1" }
         return cutaway ? kind.defaultColorName : interiorColor(for: kind)
     }

@@ -21,7 +21,7 @@ struct ARCaptureView: View {
     @State private var isRecordFailed = false
     @State private var failure: String?
     @State private var isChoosingDance = false
-    @State private var move = DanceMove.bounce
+    @State private var move = DanceMove.morningExercise
     @State private var hasDoll = false
     @State private var removeCount = 0
 
@@ -30,7 +30,10 @@ struct ARCaptureView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background { AppBackground() }
-                .cozyPageTitle("AR로 함께하기")
+                .flowPageTitle("예절샷", isVisible: !isRecording)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("etiquette-photo-screen")
+                .accessibilityValue(doll.name)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(isRecording ? .hidden : .automatic, for: .navigationBar)
                 .alert("녹화하지 못했어요", isPresented: $isRecordFailed) {
@@ -117,7 +120,7 @@ struct ARCaptureView: View {
                 Group {
                     if hasDoll && !isRecording {
                         Button {
-                            move = doll.dance ?? .bounce
+                            move = DanceMove.selection(for: doll.dance)
                             withAnimation(.spring) { isChoosingDance = true }
                         } label: {
                             Label("춤추기", systemImage: "music.note")
@@ -354,9 +357,10 @@ private struct ARDollCamera: UIViewRepresentable {
         func setDance(_ new: DanceMove?) {
             dance = new
             guard let body = doll?.findEntity(named: "body") else { return }
+            MorningExerciseMotion.stop(on: body)
             let rest = bodyRest ?? body.transform
             bodyRest = rest
-            body.stopAllAnimations()
+            body.stopAllAnimations(recursive: true)
             body.transform = rest
             if let new { SceneFactory.play(new, on: body) }
         }

@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [RoomItem]
     @State private var appState = AppState()
+    @State private var signedOutLoadingFinished = false
 
     var body: some View {
         if isSignedIn {
@@ -21,6 +22,9 @@ struct RootView: View {
                 appState = AppState()
                 isSignedIn = true
             }
+            .allowsHitTesting(signedOutLoadingFinished)
+            .accessibilityHidden(!signedOutLoadingFinished)
+            .overlay { StartupLoadingView { signedOutLoadingFinished = true } }
         }
     }
 }

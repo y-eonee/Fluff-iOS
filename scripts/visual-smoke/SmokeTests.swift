@@ -1,6 +1,10 @@
 import XCTest
 
 final class VisualSmokeTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        XCUIDevice.shared.orientation = .portrait
+    }
     func testRoomLoadingPreviewAndLiveHandoff() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
@@ -25,6 +29,47 @@ final class VisualSmokeTests: XCTestCase {
         done.tap()
         XCTAssertTrue(tools.waitForExistence(timeout: 30))
         XCTAssertFalse(app.otherElements["room-loading"].exists)
+    }
+
+    private func captureUpdatedLoading(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
+    func testLoadingUsesOwnedDollOrCottonForEmptyRoom() {
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=room-loading", "--room-loading-time=0.45"]
+        app.launch()
+        let loading = app.otherElements["room-loading"]
+        XCTAssertTrue(loading.waitForExistence(timeout: 30))
+        let selected = loading.value as? String ?? ""
+        XCTAssertTrue(["귀염둥이", "몽글이", "포근이"].contains(selected))
+        Thread.sleep(forTimeInterval: 3)
+        XCTAssertEqual(loading.value as? String, selected)
+        captureUpdatedLoading(app, "loading-owned-doll")
+        app.terminate()
+        app.launchArguments = ["--design-preview=room-loading", "--room-loading-time=0.45", "--loading-empty-room"]
+        app.launch()
+        XCTAssertTrue(loading.waitForExistence(timeout: 30))
+        XCTAssertEqual(loading.value as? String, "솜뭉치")
+        Thread.sleep(forTimeInterval: 3)
+        captureUpdatedLoading(app, "loading-cotton")
+    }
+
+    func testFurniturePhotoRemovalConfirmationAndUndo() {
+        let app = launch("desk-photo")
+        let remove = app.buttons["사진 빼기"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 30))
+        remove.tap()
+        XCTAssertTrue(app.staticTexts["책상에서 사진을 뺄까요?"].waitForExistence(timeout: 5))
+        captureUpdatedLoading(app, "room-photo-removal")
+        app.buttons["취소"].tap()
+        XCTAssertTrue(app.staticTexts["적용된 사진"].exists)
+        remove.tap()
+        app.buttons["빼기"].tap()
+        XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
+        app.buttons["되돌리기"].tap()
+        XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
     }
 
     func testFurnitureCategoryTabsCanBeRepeated() {
@@ -58,17 +103,18 @@ final class VisualSmokeTests: XCTestCase {
         app.launch()
         let done = app.buttons["확인했어요"]
         XCTAssertTrue(done.waitForExistence(timeout: 40))
-        for title in ["솜뭉치들", "내 방", "마이", "방 도구"] {
+        for title in ["내 인형", "내 방", "마이", "방 도구"] {
             XCTAssertFalse(app.buttons[title].exists, title)
         }
         done.tap()
         XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["솜뭉치들"].exists)
+        XCTAssertTrue(app.buttons["내 인형"].exists)
         XCTAssertTrue(app.buttons["마이"].exists)
     }
 
     func testRoomToolsStayAboveActionButton() {
         let app = launch("tabs-ui")
+        waitForHomeControls(app)
         let tools = app.buttons["방 도구"]
         XCTAssertTrue(tools.waitForExistence(timeout: 40))
         tools.tap()
@@ -146,7 +192,7 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(open.waitForExistence(timeout: 40))
         XCTAssertTrue(open.isHittable)
         open.tap()
-        XCTAssertTrue(app.staticTexts["couch time"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["플레이리스트"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["홈에서 계속 보기"].isHittable)
     }
     func testActualCreationExitCanStay() {
@@ -225,7 +271,7 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(finish.isHittable)
         XCTAssertLessThan(field.frame.maxY, finish.frame.minY)
         XCTAssertLessThan(finish.frame.maxY, app.keyboards.firstMatch.frame.minY)
-        app.buttons["이전 단계"].tap()
+        app.buttons["이전"].tap()
         XCTAssertTrue(app.sliders["머리 높이"].waitForExistence(timeout: 10))
     }
     func testFocusExitCanStay() {
@@ -246,22 +292,54 @@ final class VisualSmokeTests: XCTestCase {
         resume.tap()
         XCTAssertTrue(pause.waitForExistence(timeout: 5))
     }
-    func testOneCouchCompanion() {
+    func testFocusLandscapeKeepsControlsOnLeft() {
+        let app = launch("running")
+        XCTAssertTrue(app.buttons["일시정지"].waitForExistence(timeout: 30))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer {
+            XCUIDevice.shared.orientation = .portrait
+            let portrait = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                app.frame.height > app.frame.width
+            }, object: app)
+            _ = XCTWaiter.wait(for: [portrait], timeout: 10)
+        }
+        let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            app.frame.width > app.frame.height
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [landscape], timeout: 10), .completed)
+        let pause = app.buttons["일시정지"]
+        XCTAssertTrue(pause.isHittable)
+        XCTAssertLessThan(pause.frame.maxX, app.frame.width / 2)
+        XCTAssertGreaterThan(pause.frame.minY, app.staticTexts["오늘 목표"].frame.maxY)
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "focus-landscape"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+    func testTwoCouchCompanionsRespectCapacity() {
         let app = launch("couch-choice")
         let bear = app.buttons.containing(.staticText, identifier: "몽글이").firstMatch
         let cat = app.buttons.containing(.staticText, identifier: "귀염둥이").firstMatch
+        let rabbit = app.buttons.containing(.staticText, identifier: "포근이").firstMatch
         XCTAssertTrue(bear.waitForExistence(timeout: 15))
-        bear.tap()
-        XCTAssertTrue(bear.isSelected)
+        // Normalize the initial selection, then fill both seats.
+        for button in [cat, bear, rabbit] where button.isSelected { button.tap() }
         cat.tap()
+        bear.tap()
         XCTAssertTrue(cat.isSelected)
-        XCTAssertFalse(bear.isSelected)
+        XCTAssertTrue(bear.isSelected)
+        XCTAssertFalse(rabbit.isEnabled)
         XCTAssertTrue(app.buttons["다음"].isEnabled)
+        cat.tap()
+        XCTAssertTrue(rabbit.isEnabled)
+        rabbit.tap()
+        XCTAssertTrue(rabbit.isSelected)
+        XCTAssertTrue(bear.isSelected)
     }
     func testDollDetailHidesTabBar() {
         let app = launch("tabs-profile")
         XCTAssertTrue(app.staticTexts["처음 만난 날"].waitForExistence(timeout: 20))
-        XCTAssertFalse(app.buttons["솜뭉치들"].exists)
+        XCTAssertFalse(app.buttons["내 인형"].exists)
         XCTAssertFalse(app.buttons["마이"].exists)
         let back = app.buttons["뒤로"]
         XCTAssertTrue(back.isHittable)
@@ -279,8 +357,63 @@ final class VisualSmokeTests: XCTestCase {
         bear.tap()
         XCTAssertTrue(bear.isSelected)
         app.buttons["다음"].tap()
-        XCTAssertTrue(app.staticTexts["couch time"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["플레이리스트"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts["같이 볼 인형"].exists)
+    }
+
+    func testHomeDollPopupOpensSelectedDollPhoto() {
+        let app = launch("tabs-ui")
+        waitForHomeControls(app)
+        let doll = app.buttons["귀염둥이"]
+        XCTAssertTrue(doll.waitForExistence(timeout: 40))
+        doll.tap()
+        let menu = app.otherElements["home-doll-menu"]
+        XCTAssertTrue(app.buttons["사진 찍기"].waitForExistence(timeout: 5))
+        XCTAssertEqual(menu.value as? String, "귀염둥이")
+        let popup = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        popup.name = "home-doll-popup"; popup.lifetime = .keepAlways; add(popup)
+        app.buttons["사진 찍기"].tap()
+        XCTAssertTrue(app.staticTexts["예절샷"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.otherElements["etiquette-photo-screen"].value as? String, "귀염둥이")
+        let camera = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        camera.name = "home-doll-photo"; camera.lifetime = .keepAlways; add(camera)
+        app.buttons["닫기"].tap()
+        XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["사진 찍기"].exists)
+        XCTAssertTrue(doll.waitForExistence(timeout: 30))
+    }
+
+    func testHomeDollDanceOptionsAndDismissal() {
+        let app = launch("tabs-ui")
+        waitForHomeControls(app)
+        let doll = app.buttons["몽글이"]
+        XCTAssertTrue(doll.waitForExistence(timeout: 40))
+        doll.tap()
+        XCTAssertTrue(app.buttons["춤추기"].waitForExistence(timeout: 5))
+        app.buttons["춤추기"].tap()
+        XCTAssertTrue(app.buttons["아침체조"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["아침체조"].isSelected)
+        for title in ["댄스댄스", "탭댄스", "씰룩씰룩"] {
+            app.buttons[title].tap()
+            XCTAssertTrue(app.buttons[title].isSelected)
+        }
+        // Capture the settled chip after UIKit's pressed-state transition.
+        Thread.sleep(forTimeInterval: 1)
+        let dance = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        dance.name = "home-doll-dance"; dance.lifetime = .keepAlways; add(dance)
+        app.buttons["인형 메뉴 닫기"].coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+        XCTAssertFalse(app.buttons["아침체조"].exists)
+        doll.tap()
+        XCTAssertTrue(app.buttons["사진 찍기"].waitForExistence(timeout: 5))
+    }
+
+    private func waitForHomeControls(_ app: XCUIApplication) {
+        let tools = app.buttons["방 도구"]
+        XCTAssertTrue(tools.waitForExistence(timeout: 40))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            tools.isHittable && tools.frame.maxY < app.frame.maxY - 20
+        }, object: tools)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed)
     }
     func testRadioTimerApply() {
         let app = launch("radio-timer")
@@ -296,7 +429,8 @@ final class VisualSmokeTests: XCTestCase {
         let app = launch("radio-sound")
         let title = app.staticTexts["듣고 싶은 소리를 골라주세요"]
         XCTAssertTrue(title.waitForExistence(timeout: 20))
-        title.swipeDown()
+        let handle = title.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        handle.press(forDuration: 0.1, thenDragTo: handle.withOffset(CGVector(dx: 0, dy: 160)))
         XCTAssertTrue(app.buttons["다른 소리"].waitForExistence(timeout: 5))
         app.buttons["다른 소리"].tap()
         XCTAssertTrue(title.waitForExistence(timeout: 5))

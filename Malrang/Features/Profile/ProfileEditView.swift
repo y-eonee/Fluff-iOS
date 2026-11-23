@@ -22,20 +22,6 @@ struct ProfileEditView: View {
 
     var body: some View {
         VStack(spacing: Spacing.l) {
-            ZStack {
-                Text(isCreating ? "프로필 만들기" : "프로필 편집")
-                    .pretendard(.bold, 18)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("profile-page-title")
-                if !isCreating {
-                    HStack {
-                        Button { dismiss() } label: {
-                            D1Icon(name: "back").frame(width: 44, height: 44).contentShape(Rectangle())
-                        }.buttonStyle(.plain).accessibilityLabel("뒤로가기")
-                        Spacer()
-                    }
-                }
-            }.frame(height: 44)
             if isCreating {
                 Text("내 방에서 사용할 프로필을 정해주세요")
                     .appFont(.footnote)
@@ -91,6 +77,11 @@ struct ProfileEditView: View {
         .padding(Spacing.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { AppBackground() }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            FlowHeader(title: isCreating ? "프로필 만들기" : "프로필 편집",
+                       backLabel: "뒤로가기", onBack: isCreating ? nil : { dismiss() })
+                .accessibilityIdentifier("profile-page-title")
+        }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
