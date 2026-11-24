@@ -70,7 +70,6 @@ struct DollActionSheet: View {
                                 SquishyDoll(doll: doll.state, usesProfileLayout: true)
                             }
                         }.frame(height: 415).padding(.horizontal, 34).padding(.top, 27)
-                            .contextMenu { profileActions }
                             .accessibilityAction(named: "춤추기") { startDance() }
                             .accessibilityAction(named: "예절샷 찍기") { startAR() }
                         HStack {
