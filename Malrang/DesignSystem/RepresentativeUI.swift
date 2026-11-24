@@ -30,6 +30,7 @@ enum RepresentativeLayout {
 struct RepresentativeActionSurface: ViewModifier {
     var primary = true
     var height: CGFloat = RepresentativeLayout.actionHeight
+    var primaryFill: LinearGradient?
     @Environment(\.isEnabled) private var enabled
     @Environment(\.updatedFlowDesign) private var updatedFlow
     @Environment(\.roomFlowDesign) private var roomFlow
@@ -40,11 +41,7 @@ struct RepresentativeActionSurface: ViewModifier {
             .contentShape(RoundedRectangle(cornerRadius: RepresentativeLayout.actionRadius))
             .background {
                 Group {
-                    if primary {
-                        if roomFlow { RoomFlowDesign.action }
-                        else if updatedFlow { FlowDesign.action }
-                        else { RepresentativeGradientFill(definition: RepresentativeGradients.cta) }
-                    }
+                    if primary { primaryFill ?? FlowDesign.action }
                     else { Color.rep4.c01 }
                 }.clipShape(RoundedRectangle(cornerRadius: RepresentativeLayout.actionRadius))
             }

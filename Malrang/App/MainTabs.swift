@@ -35,7 +35,8 @@ struct MainTabs: View {
                 navigationBar.padding(.top, 4).padding(.bottom, 14)
             }
         }
-        .allowsHitTesting(!showsRoomIntro)
+        // The full-screen loading overlay intercepts touches. Disabling the
+        // TabView itself can leave UIKit's tab content unresponsive at handoff.
         .accessibilityHidden(showsRoomIntro)
         .overlay {
             if showsRoomIntro {
@@ -75,15 +76,22 @@ struct MainTabs: View {
     private func destination(_ tab: AppTab, title: String, icon: String) -> some View {
         Button { selection.wrappedValue = tab } label: {
             VStack(spacing: 3.48) {
-                Image(tab == .dolls && appState.tab != .dolls ? "rep4_tab_cloud" :
-                      tab == .home && appState.tab == .home ? "rep4_tab_home" : "fluff_tab_" + icon)
+                Image(tab == .dolls && appState.tab != .dolls ? "fluff_feedback_tab_cloud" :
+                      tab == .home && appState.tab == .home ? "fluff_feedback_tab_home" : tab == .mypage ? "fluff_feedback_tab_user" : "fluff_tab_" + icon)
                     .renderingMode(.template).resizable().scaledToFit()
                     .frame(width: 20.883, height: 20.883)
-                    .foregroundStyle(appState.tab == tab ? Color.rep4.c08 : Color(uiColor: Palette.uiColor("#A2A2A2")))
+                    .foregroundStyle(appState.tab == tab ? Color.rep4.c08 : Color.rep4.c25.opacity(0.6))
                 Text(title).pretendard(.medium, 12)
-                    .foregroundStyle(appState.tab == tab ? Color.rep4.c08 : Color(uiColor: Palette.uiColor("#A2A2A2")))
+                    .foregroundStyle(appState.tab == tab ? Color.rep4.c08 : Color.rep4.c25.opacity(0.6))
             }
                 .frame(width: 70.046, height: 55.69)
+                .background {
+                    if appState.tab == tab {
+                        Capsule().fill(.white.opacity(0.9))
+                            .frame(width: 66, height: 52)
+                            .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
+                    }
+                }
                 .contentShape(Rectangle())
         }.buttonStyle(RoomPressStyle()).accessibilityAddTraits(appState.tab == tab ? .isSelected : [])
     }

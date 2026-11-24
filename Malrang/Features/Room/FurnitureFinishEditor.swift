@@ -39,7 +39,7 @@ struct FurnitureFinishEditor: View {
                         VStack(spacing: 6) {
                             Image("rep4_photo_add").resizable().frame(width: 22, height: 22)
                                 .frame(width: 44, height: 44)
-                                .background { RepresentativeGradientFill(definition: RepresentativeGradients.cta).clipShape(Circle()) }
+                                .background { FlowDesign.action.clipShape(Circle()) }
                             Text("사진 추가하기").pretendard(.bold, 15)
                             Text("\(item.kind.label)에 사진을 붙일 수 있어요").pretendard(.medium, 13).foregroundStyle(Color.rep4.c29)
                         }.frame(maxWidth: .infinity).frame(height: 136)
