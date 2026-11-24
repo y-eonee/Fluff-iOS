@@ -24,8 +24,11 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(tools.isHittable)
         tools.tap()
         app.buttons["방 꾸미기"].tap()
+        XCTAssertTrue(app.otherElements["decorate-loading"].waitForNonExistence(timeout: 60))
         let done = app.buttons["꾸미기 완료"]
         XCTAssertTrue(done.waitForExistence(timeout: 30))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: done)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
         done.tap()
         XCTAssertTrue(tools.waitForExistence(timeout: 30))
         XCTAssertFalse(app.otherElements["room-loading"].exists)
@@ -70,6 +73,84 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
         app.buttons["되돌리기"].tap()
         XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
+    }
+
+    func testDecoratePreservesHomeFurniturePlacements() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--room-hour=13", "--room-layout-audit"]
+        app.launch()
+        waitForHomeControls(app)
+        let audit = app.staticTexts["room-layout-audit"]
+        XCTAssertTrue(audit.waitForExistence(timeout: 10))
+        func furnitureSnapshot() -> String? {
+            guard let value = audit.value as? String, let data = value.data(using: .utf8),
+                  let placements = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+            let furniture = placements.filter { !["wall", "floor"].contains($0["kind"] as? String ?? "") }.map { placement in
+                var transform = placement
+                // Bounds are measured lazily; compare the saved/rendered transforms
+                // separately from the explicit rug-containment assertions below.
+                transform.removeValue(forKey: "footprint")
+                return transform
+            }
+            return (try? JSONSerialization.data(withJSONObject: furniture, options: [.sortedKeys])).flatMap { String(data: $0, encoding: .utf8) }
+        }
+        let home = furnitureSnapshot()
+        XCTAssertNotNil(home)
+        XCTAssertFalse(home?.isEmpty ?? true)
+        func assertRugsInsideRoom() {
+            let placements = try! JSONSerialization.jsonObject(with: Data((audit.value as! String).utf8)) as! [[String: Any]]
+            let rugs = placements.filter { ["rugRound", "rugSquare"].contains($0["kind"] as? String ?? "") }
+            XCTAssertFalse(rugs.isEmpty)
+            for rug in rugs {
+                let footprint = rug["footprint"] as! [Double]
+                XCTAssertGreaterThanOrEqual(footprint[0], -1.001)
+                XCTAssertGreaterThanOrEqual(footprint[1], -1.001)
+                XCTAssertLessThanOrEqual(footprint[2], 1.001)
+                XCTAssertLessThanOrEqual(footprint[3], 1.001)
+            }
+        }
+        assertRugsInsideRoom()
+        captureUpdatedLoading(app, "layout-home-before")
+        app.buttons["방 도구"].tap()
+        app.buttons["방 꾸미기"].tap()
+        let done = app.buttons["꾸미기 완료"]
+        XCTAssertTrue(done.waitForExistence(timeout: 60))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: done)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 60), .completed)
+        XCTAssertTrue(audit.waitForExistence(timeout: 10))
+        XCTAssertEqual(furnitureSnapshot(), home, "Opening the editor must preserve every saved and rendered furniture transform")
+        assertRugsInsideRoom()
+        XCTAssertFalse(app.buttons["초기화"].isEnabled)
+        XCTAssertFalse(app.buttons["되돌리기"].isEnabled)
+        captureUpdatedLoading(app, "layout-editor-unchanged")
+        done.tap()
+        waitForHomeControls(app)
+        XCTAssertTrue(audit.waitForExistence(timeout: 10))
+        XCTAssertEqual(furnitureSnapshot(), home, "Completing without edits must not change the home layout")
+        captureUpdatedLoading(app, "layout-home-after")
+    }
+
+    func testBackWallDeskRestorationDoesNotRepeat() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        let args = ["--design-preview=tabs-ui", "--room-hour=13", "--room-layout-audit", "--desk-restoration-preview"]
+        for alreadyComplete in [false, true] {
+            app.launchArguments = args + (alreadyComplete ? ["--desk-restoration-already-complete"] : [])
+            app.launch()
+            waitForHomeControls(app)
+            let audit = app.staticTexts["room-layout-audit"]
+            XCTAssertTrue(audit.waitForExistence(timeout: 10))
+            let items = try! JSONSerialization.jsonObject(with: Data((audit.value as! String).utf8)) as! [[String: Any]]
+            let desk = items.first { $0["kind"] as? String == "desk" }!["saved"] as! [Double]
+            let lamp = items.first { $0["kind"] as? String == "lamp" }!["saved"] as! [Double]
+            XCTAssertEqual(desk[0], alreadyComplete ? 0.55 : 0.25, accuracy: 0.0001)
+            XCTAssertEqual(desk[1], alreadyComplete ? -0.30 : -0.68, accuracy: 0.0001)
+            XCTAssertEqual(lamp[0], alreadyComplete ? 0.70 : 0.40, accuracy: 0.0001)
+            XCTAssertEqual(lamp[1], alreadyComplete ? -0.18 : -0.56, accuracy: 0.0001)
+            if !alreadyComplete { captureUpdatedLoading(app, "desk-restored-back-wall") }
+            app.terminate()
+        }
     }
 
     func testFurnitureCategoryTabsCanBeRepeated() {
@@ -159,6 +240,65 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 40))
     }
 
+    func testDollTouchDoesNotOpenFunctionMenu() {
+        let app = launch("tabs-profile")
+        XCTAssertTrue(app.staticTexts["처음 만난 날"].waitForExistence(timeout: 20))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.38)).press(forDuration: 1.2)
+        XCTAssertFalse(app.buttons["인형 삭제"].exists)
+        XCTAssertFalse(app.buttons["예절샷 찍기"].exists)
+        XCTAssertTrue(app.buttons["뒤로"].isHittable)
+        captureUpdatedLoading(app, "profile-after-long-press")
+    }
+
+    func testSliderCanLeaveBothEndpointsWithOneDrag() {
+        let app = launch("create-parts")
+        let slider = app.sliders["머리 높이"]
+        XCTAssertTrue(slider.waitForExistence(timeout: 30))
+        slider.adjust(toNormalizedSliderPosition: 0)
+        let lower = slider.value as? String
+        // Start just outside the endpoint, within the expanded thumb target.
+        slider.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
+            .withOffset(CGVector(dx: -8, dy: 0))
+            .press(forDuration: 0.1, thenDragTo: slider.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)))
+        XCTAssertNotEqual(slider.value as? String, lower)
+        slider.adjust(toNormalizedSliderPosition: 1)
+        let upper = slider.value as? String
+        slider.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
+            .withOffset(CGVector(dx: 8, dy: 0))
+            .press(forDuration: 0.1, thenDragTo: slider.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5)))
+        XCTAssertNotEqual(slider.value as? String, upper)
+        captureUpdatedLoading(app, "slider-endpoint-drag")
+    }
+
+    func testDecorateShowsCottonLoadingBeforeEditor() {
+        let app = launch("decorate")
+        let loading = app.otherElements["decorate-loading"]
+        XCTAssertTrue(loading.waitForExistence(timeout: 30))
+        XCTAssertEqual(loading.value as? String, "솜뭉치")
+        captureUpdatedLoading(app, "decorate-cotton-loading")
+        XCTAssertTrue(loading.waitForNonExistence(timeout: 60))
+        let done = app.buttons["꾸미기 완료"]
+        XCTAssertTrue(done.waitForExistence(timeout: 10))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: done)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
+        captureUpdatedLoading(app, "decorate-ready")
+    }
+
+    func testUpdatedTabsAndBoundedRoomRotation() {
+        let app = launch("tabs-dolls")
+        XCTAssertTrue(app.buttons["인형 만들기"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["내 인형"].isSelected)
+        captureUpdatedLoading(app, "updated-doll-list-tabs")
+        app.buttons["내 방"].tap()
+        waitForHomeControls(app)
+        XCTAssertTrue(app.buttons["내 방"].isSelected)
+        app.rotate(.pi * 1.25, withVelocity: 4)
+        captureUpdatedLoading(app, "room-rotation-left-limit")
+        app.rotate(-.pi * 2, withVelocity: -4)
+        captureUpdatedLoading(app, "room-rotation-right-limit")
+        XCTAssertTrue(app.buttons["방 도구"].isHittable)
+    }
+
     private func launch(_ route: String) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
@@ -166,15 +306,30 @@ final class VisualSmokeTests: XCTestCase {
         app.launch()
         return app
     }
+    func testFreeFloorPlacementDesign() {
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=placement", "--room-hour=13"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["인형을 끌거나 놓을 자리를 눌러요."].waitForExistence(timeout: 60))
+        let done = app.buttons["완료"]
+        XCTAssertTrue(done.isEnabled)
+        XCTAssertTrue(app.buttons["취소"].isEnabled)
+        XCTAssertFalse(app.buttons["방 도구"].exists)
+        captureUpdatedLoading(app, "free-floor-placement")
+        app.buttons["취소"].tap()
+        XCTAssertTrue(app.buttons["방 도구"].waitForExistence(timeout: 10))
+    }
+
     func testBlockedPlacementCannotComplete() {
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
         app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=placement", "--blocked-preview", "--room-hour=13"]
         app.launch()
         let done = app.buttons["완료"]
         XCTAssertTrue(done.waitForExistence(timeout: 40))
-        XCTAssertTrue(app.staticTexts["책상에는 이동시킬 수 없어요"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["침대 위에는 인형을 놓을 수 없어요."].waitForExistence(timeout: 10))
         XCTAssertFalse(done.isEnabled)
         XCTAssertTrue(app.buttons["취소"].isEnabled)
+        captureUpdatedLoading(app, "floor-placement-blocked")
     }
     func testRadioActionsStayInsideScreen() {
         let app = launch("radio-playing")
@@ -203,6 +358,7 @@ final class VisualSmokeTests: XCTestCase {
         back.tap()
         let title = app.staticTexts["인형 만들기를 그만할까요?"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
+        captureUpdatedLoading(app, "updated-creation-exit-buttons")
         app.buttons["머무르기"].tap()
         XCTAssertFalse(title.exists)
         XCTAssertTrue(back.isHittable)
@@ -256,8 +412,37 @@ final class VisualSmokeTests: XCTestCase {
         let before = slider.value as? String
         slider.adjust(toNormalizedSliderPosition: 0.85)
         XCTAssertNotEqual(slider.value as? String, before)
-        XCTAssertTrue(app.buttons["완성하기"].isHittable)
+        XCTAssertTrue(app.buttons["다음"].isHittable)
     }
+    func testFillingSelectionBetweenPartsAndName() {
+        let app = launch("create-parts")
+        XCTAssertTrue(app.sliders["머리 높이"].waitForExistence(timeout: 30))
+        app.buttons["다음"].tap()
+        XCTAssertTrue(app.staticTexts["속재료 선택하기"].waitForExistence(timeout: 10))
+        for title in ["샤베트", "왁스", "슬라임", "크런치"] {
+            app.buttons[title].tap()
+            XCTAssertTrue(app.buttons[title].isSelected)
+        }
+        captureUpdatedLoading(app, "filling-outline-icons")
+        app.buttons["다음"].tap()
+        XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 10))
+        app.buttons["이전"].tap()
+        XCTAssertTrue(app.buttons["크런치"].isSelected)
+        app.buttons["이전"].tap()
+        XCTAssertTrue(app.sliders["머리 높이"].waitForExistence(timeout: 10))
+    }
+    func testCustomDollIncludesFillingStep() {
+        let app = launch("create-filling-custom")
+        XCTAssertTrue(app.staticTexts["속재료 선택하기"].waitForExistence(timeout: 30))
+        XCTAssertFalse(app.sliders["머리 높이"].exists)
+        app.buttons["슬라임"].tap()
+        app.buttons["다음"].tap()
+        XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 10))
+        app.buttons["이전"].tap()
+        XCTAssertTrue(app.buttons["슬라임"].isSelected)
+        captureUpdatedLoading(app, "custom-filling-step")
+    }
+
     func testNameEntryStaysClearOfKeyboardAndFooter() {
         let app = launch("create-name-empty")
         let field = app.textFields.firstMatch
@@ -271,6 +456,8 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(finish.isHittable)
         XCTAssertLessThan(field.frame.maxY, finish.frame.minY)
         XCTAssertLessThan(finish.frame.maxY, app.keyboards.firstMatch.frame.minY)
+        app.buttons["이전"].tap()
+        XCTAssertTrue(app.staticTexts["속재료 선택하기"].waitForExistence(timeout: 10))
         app.buttons["이전"].tap()
         XCTAssertTrue(app.sliders["머리 높이"].waitForExistence(timeout: 10))
     }
@@ -410,8 +597,13 @@ final class VisualSmokeTests: XCTestCase {
     private func waitForHomeControls(_ app: XCUIApplication) {
         let tools = app.buttons["방 도구"]
         XCTAssertTrue(tools.waitForExistence(timeout: 40))
+        // Controls can appear in accessibility before the first rendered room
+        // frame. Wait for the loading overlay before querying their hit targets.
+        XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 60))
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            tools.isHittable && tools.frame.maxY < app.frame.maxY - 20
+            let frame = tools.frame
+            return frame.minX.isFinite && frame.minY.isFinite && frame.width > 0
+                && tools.isHittable && frame.maxY < app.frame.maxY - 20
         }, object: tools)
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed)
     }

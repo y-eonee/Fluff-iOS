@@ -44,7 +44,7 @@ final class DesignPreviewData {
         }
         draft.shape = route.hasSuffix("rabbit") ? .rabbit : route.hasSuffix("cat") ? .cat : .bear
         draft.preset.shape = draft.shape
-        if route == "create-custom" { draft.shape = .pillow; draft.photo = UIImage(data: Self.cutoutCharacter()); draft.cutout = draft.photo }
+        if ["create-custom", "create-filling-custom"].contains(route) { draft.shape = .pillow; draft.photo = UIImage(data: Self.cutoutCharacter()); draft.cutout = draft.photo }
         if route == "create-name" { draft.name = "귀염둥이" }
         if ["cutout-auto", "cutout-move", "create-ready"].contains(route) {
             let renderer = ImageRenderer(content: CottonArtwork(shape: .bear).frame(width: 240, height: 253))
@@ -109,6 +109,14 @@ final class DesignPreviewData {
                 item.id = UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", index))!
             }
             container.mainContext.insert(item)
+        }
+        if ProcessInfo.processInfo.arguments.contains("--desk-restoration-preview") {
+            let furniture = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>())) ?? []
+            for item in furniture where item.kind == .desk || item.kind == .lamp {
+                item.x += 0.30; item.z += 0.38
+            }
+            defaults.set(ProcessInfo.processInfo.arguments.contains("--desk-restoration-already-complete"),
+                         forKey: "didRestoreBackWallDesk20261124")
         }
         if route == "home-ui", ProcessInfo.processInfo.arguments.contains("--bed-occupied"),
            let bed = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .bed }),
@@ -282,7 +290,7 @@ struct DesignPreview: View {
             else if route == "photo-finish" { CreateFlowView(previewDraft: draft, startAtMaking: true) { _ in } }
             else if route == "photo-flow" { CreateFlowView(previewDraft: draft) { _ in } }
             else if route == "create-entry" { CreateFlowView { _ in } }
-            else if ["create-name", "create-name-empty", "create-parts", "create-large", "create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
+            else if ["create-name", "create-name-empty", "create-filling", "create-filling-custom", "create-parts", "create-large", "create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
                 creationShell { DollCustomizeStepA(draft: draft) {} }
             } else if ["home-ui", "walking"].contains(route) { NavigationStack { HomeView(couch: fixture.couch) } }
             else if ["window-sky", "window-cutout", "cutout-front"].contains(route) {
