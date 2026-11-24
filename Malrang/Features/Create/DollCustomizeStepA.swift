@@ -24,7 +24,7 @@ struct DollCustomizeStepA: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Keep the name field clear of the footer with taller native keyboards.
-                preview(height: page == 2 ? min(208, max(128, geometry.size.height - 278)) : (page == 1 ? 341.128 : 383.308))
+                preview(height: page == 3 ? min(208, max(128, geometry.size.height - 278)) : (page == 2 ? 280 : (page == 1 ? 341.128 : 383.308)))
                 Group {
                     if page == 0 {
                         if draft.shape == .pillow {
@@ -44,37 +44,39 @@ struct DollCustomizeStepA: View {
                         }
                     }
                     else if page == 1 { partEditor }
+                    else if page == 2 { DollFillingStep(selection: $draft.filling) }
                     else { nameEditor }
                 }.padding(.leading, page == 0 ? 11.08 : 6).padding(.trailing, page == 0 ? 10.92 : 6)
             }.padding(.horizontal, 16).padding(.top, page == 1 ? 4 : 8).padding(.bottom, 16)
         }.scrollIndicators(.hidden).foregroundStyle(Color.a.brown)
-            .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: page == 2 || editingFace ? 3 : 2, partEditor: page == 1, skipsShape: draft.shape == .pillow) }
+            .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: page >= 2 || editingFace ? 3 : 2, partEditor: page == 1, skipsShape: draft.shape == .pillow) }
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 12) {
-                if page != 1 { Button("이전") {
-                    if draft.shape != .pillow && page > 0 { page -= 1 }
+                Button("이전") {
+                    if page > (draft.shape == .pillow ? 2 : 0) { page -= 1 }
                     else if let onPrevious { onPrevious() }
                     else { dismiss() }
-                }.buttonStyle(CreationSecondaryButton()) }
-                Button(page == 0 ? "다음" : "완성하기") {
-                    if page < 2 {
+                }.buttonStyle(CreationSecondaryButton())
+                Button(page < 3 ? "다음" : "완성하기") {
+                    if page < 3 {
                         withAnimation(.easeInOut(duration: 0.2)) { page += 1 } }
                     else {
                         guard !nameIsEmpty else { return }
                         draft.name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
                         draft.preset = configuration; onNext()
                     }
-                }.buttonStyle(CreationPrimaryButton()).disabled(page == 2 && nameIsEmpty)
+                }.buttonStyle(CreationPrimaryButton()).disabled(page == 3 && nameIsEmpty)
                 }.padding(.horizontal, page == 1 ? 22 : 18).padding(.bottom, 16)
             }
             .onAppear {
                 if draft.shape == .pillow { page = 2 }
                 else if canEditFace { editingFace = true }
             }
-            .onChange(of: page) { _, value in nameFocused = value == 2 }
+            .onChange(of: page) { _, value in nameFocused = value == 3 }
             #if DEBUG
-            .onAppear { if ProcessInfo.processInfo.arguments.contains("--design-preview=create-name") || ProcessInfo.processInfo.arguments.contains("--design-preview=create-name-empty") { page = 2 }
+            .onAppear { if ProcessInfo.processInfo.arguments.contains("--design-preview=create-name") || ProcessInfo.processInfo.arguments.contains("--design-preview=create-name-empty") { page = 3 }
                 if ProcessInfo.processInfo.arguments.contains("--design-preview=create-parts") { page = 1 }
+                if ProcessInfo.processInfo.arguments.contains("--design-preview=create-filling") || ProcessInfo.processInfo.arguments.contains("--design-preview=create-filling-custom") { page = 2 }
                 if ProcessInfo.processInfo.arguments.contains("--preview-face-tab") { editingFace = true } }
             #endif
             .navigationBarBackButtonHidden().navigationBarTitleDisplayMode(.inline)
@@ -86,25 +88,26 @@ struct DollCustomizeStepA: View {
     }
     private var previewGuide: String {
         switch page {
-        case 1: "속재료를 눌러 촉감을 비교해보세요"
-        case 2: "인형에게 이름을 지어주세요"
+        case 1: "조절할 인형 부위를 선택해 주세요"
+        case 2: "속재료를 눌러 소리를 비교해 보세요"
+        case 3: "인형에게 이름을 지어주세요"
         default: draft.shape == .pillow ? "편집한 사진으로 만들어요" : "끌어서 얼굴 이동 · 두 손가락으로 확대"
         }
     }
 
     private func preview(height: CGFloat) -> some View {
-        RepresentativeHero(showsGlow: page != 1, compactGlow: page == 2, flowGlow: "flow_adjust_glow") {
+        RepresentativeHero(showsGlow: page != 1, compactGlow: page == 3, flowGlow: "flow_adjust_glow") {
             Group {
                 if draft.shape == .pillow { CustomPhotoPreview(draft: draft) }
                 else {
-                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true, fitMargin: page == 2 ? 0.86 : 1.06,
+                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true, fitMargin: page == 3 ? 0.86 : 1.06,
                                    onPart: { selectedPart = $0 }, onSnapshot: { draft.snapshot = $0 })
                         .renderedOnlyWhileVisible(background: .clear)
                         .offset(y: page == 0 ? -8 : 0)
                 }
             }.modifier(PhotoPlacementGesture(draft: draft, isPreset: draft.shape != .pillow,
                                                enabled: page == 0 && canEditFace))
-                .padding(.horizontal, page == 2 ? 40 : 20).padding(.vertical, 12)
+                .padding(.horizontal, page == 3 ? 40 : 20).padding(.vertical, 12)
         }.frame(height: height)
             .padding(.leading, page == 0 ? 10.92 : (page == 1 ? 10.37 : 12.17))
             .padding(.trailing, page == 0 ? 12.16 : (page == 1 ? 12.71 : 11.83))
@@ -162,9 +165,9 @@ struct DollCustomizeStepA: View {
             Text(label).pretendard(.medium, 12).frame(width: 30, alignment: .leading)
             CreationSlider(value: Binding(get: { draft.preset.part(selectedPart)[keyPath: key] }, set: { value in
                 var part = draft.preset.part(selectedPart); part[keyPath: key] = value; draft.preset.parts[selectedPart.rawValue] = part
-            }), range: range, label: "\(selectedPart.label) \(label)", neutralValue: 1, neutralPosition: 0.625).frame(height: 30)
+            }), range: range, label: "\(selectedPart.label) \(label)", neutralValue: 1, neutralPosition: 0.625).frame(height: 44)
             Text("\(Int((configuration.part(selectedPart)[keyPath: key] * 100).rounded()))").pretendard(.medium, 12).monospacedDigit().frame(width: 26).foregroundStyle(CreationStyle.value)
-        }.padding(.leading, 4).padding(.trailing, 17).frame(height: 34)
+        }.padding(.leading, 4).padding(.trailing, 17).frame(height: 44)
     }
 
 }

@@ -131,6 +131,10 @@ enum Filling: String, CaseIterable {
     }
 
     private static var players: [Filling: AVAudioPlayer] = [:]
+
+    static func stopSounds() {
+        players.values.forEach { $0.stop(); $0.currentTime = 0 }
+    }
 }
 
 enum DanceMove: String, CaseIterable {
