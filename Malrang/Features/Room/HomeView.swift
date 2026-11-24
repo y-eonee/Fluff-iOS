@@ -26,6 +26,7 @@ struct HomeView: View {
     @State private var placementAddedID: UUID?
     @State private var isPlacementSaveFailed = false
     @AppStorage("hapticOn") private var hapticOn = true
+    @AppStorage("didRestoreBackWallDesk20261124") private var didRestoreBackWallDesk = false
     @State private var feelCount = 0
     @State private var hold: RoomSceneView.Hold?
     @State private var removalTargetFrame = CGRect.zero
@@ -41,6 +42,7 @@ struct HomeView: View {
     @State private var travelingDollID: UUID?
     @State private var furnitureChoice: FurnitureChoice?
     @State private var blockedPlacement: FurnitureKind?
+    @State private var blockedDollRect: CGRect?
     @State private var windowSelection: [DollState] = []
     @State private var showingWindow = false
     @State private var showingSound = false
@@ -64,6 +66,31 @@ struct HomeView: View {
 
     init(couch: CouchSession? = nil) {
         _couch = State(initialValue: couch ?? CouchSession())
+    }
+
+    /// One-time correction requested for an already saved room. Later user edits
+    /// remain untouched; entering the editor never reapplies this restoration.
+    private func restoreBackWallDeskIfNeeded() {
+        guard !didRestoreBackWallDesk, let desk = items.first(where: { $0.kind == .desk }) else { return }
+        let before = items.map(\.state)
+        let oldDesk = desk.state
+        let supportedLamps = items.filter { RoomLayout.lampSupport(for: $0.state, in: before)?.id == desk.id }
+        let oldRotation = simd_quatf(angle: oldDesk.yaw, axis: [0, 1, 0])
+        for lamp in supportedLamps {
+            let local = oldRotation.inverse.act(SIMD3<Float>(Float(lamp.x) - oldDesk.x, 0, Float(lamp.z) - oldDesk.z))
+            lamp.x = 0.25 + Double(local.x)
+            lamp.z = -0.68 + Double(local.z)
+        }
+        desk.x = 0.25; desk.z = -0.68; desk.yaw = 0
+        do {
+            try modelContext.save()
+            didRestoreBackWallDesk = true
+        } catch {
+            for item in items {
+                if let original = before.first(where: { $0.id == item.id }) { item.restore(original) }
+            }
+            interactionError = "책상 위치를 복원하지 못했어요. 다시 시도해 주세요."
+        }
     }
 
     private struct Toast: Equatable {
@@ -113,6 +140,7 @@ struct HomeView: View {
                 do { try await Task.sleep(for: .seconds(3)) } catch { return }
                 interactionMessage = nil
             }
+            .onChange(of: items.map(\.id), initial: true) { _, _ in restoreBackWallDeskIfNeeded() }
             .task(id: items.map(\.state)) {
                 if !isDecorating { relocateBlockedDolls() }
             }
@@ -201,7 +229,11 @@ struct HomeView: View {
                     }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=placement") {
                         showGuide = false; beginPlacement()
-                        if ProcessInfo.processInfo.arguments.contains("--blocked-preview") { blockedPlacement = .desk }
+                        lastMovedID = placedDolls.first(where: { $0.presetConfiguration?.shape == .cat })?.id ?? placedDolls.first?.id
+                        if ProcessInfo.processInfo.arguments.contains("--blocked-preview") {
+                            blockedPlacement = .bed
+                            blockedDollRect = lastMovedID.flatMap { roomPlacement.screenRect(of: $0, bodyOnly: true) }
+                        }
                         if ProcessInfo.processInfo.arguments.contains("--placement-exit-preview") { isConfirmingPlacementExit = true }
                     }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=couch-choice") { showGuide=false; furnitureChoice = .couch }
@@ -241,12 +273,16 @@ struct HomeView: View {
                                 if let value, couch.dolls.contains(where: { $0.id == value.id }) { couch.stop() }
                             }
                             hold = value
-                            if value == nil { blockedPlacement = nil; removalTargetFrame = .zero }
+                            if value == nil {
+                                if placementStart == nil { blockedPlacement = nil; blockedDollRect = nil }
+                                removalTargetFrame = .zero
+                            }
                         },
                         onMoveDoll: moveDoll,
                         onBlockedPlacement: {
                             blockedPlacement = $0
-                            if placementStart == nil, let kind = $0 { interactionMessage = "\(kind.label)에는 이동시킬 수 없어요" }
+                            blockedDollRect = $0 == nil ? nil : lastMovedID.flatMap { roomPlacement.screenRect(of: $0, bodyOnly: true) }
+                            if placementStart == nil, let kind = $0 { interactionMessage = "\(kind.label) 위에는 인형을 놓을 수 없어요." }
                         },
                         onDoubleTapItem: { id in
                             guard placementStart == nil, let item = items.first(where: { $0.id == id }) else { return }
@@ -271,6 +307,10 @@ struct HomeView: View {
                         onFurnitureScreen: { furnitureRects = $0 },
                         entrance: appState.roomEntrance
                     )
+                    .onDisappear {
+                        isSceneReady = false
+                        appState.roomEntrance.sceneWasRemoved()
+                    }
                     .renderedOnlyWhileVisible(background: .clear)
                 }
             }
@@ -285,7 +325,16 @@ struct HomeView: View {
                     .onEnded { _ in lastLookTranslation = .zero },
                 including: placementStart == nil ? .all : .none
             )
-            .overlay { holdTooltip }
+            .overlay {
+                if placementStart != nil, blockedPlacement != nil, let rect = blockedDollRect {
+                    Ellipse().stroke(Color.red.opacity(0.54), lineWidth: 12)
+                        .blur(radius: 14)
+                        .frame(width: rect.width, height: rect.height)
+                        .position(x: rect.midX, y: rect.midY + 9)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                }
+                holdTooltip
+            }
             .ignoresSafeArea()
         }
         .overlay(alignment: .top) { if !showGuide { topOverlay.modifier(RoomEntranceMotion(entrance: appState.roomEntrance, node: appState.roomEntrance.loadingDoll == nil ? "1932:6512" : "1913:7875")) } }
@@ -533,8 +582,8 @@ struct HomeView: View {
                         .disabled(isConfirmingPlacementExit).accessibilityHidden(isConfirmingPlacementExit)
                     Spacer()
                 }.padding(.horizontal, 23.81)
-                Text(blockedPlacement.map { "\($0.label)에는 이동시킬 수 없어요" } ?? "인형을 끌거나 놓을 자리를 눌러요")
-                    .pretendard(.medium, 13).foregroundStyle(Color.mib.text.onPrimary)
+                Text(blockedPlacement.map { "\($0.label) 위에는 인형을 놓을 수 없어요." } ?? "인형을 끌거나 놓을 자리를 눌러요.")
+                    .pretendard(.regular, 14).tracking(-0.7).foregroundStyle(Color.mib.text.onPrimary)
                     .multilineTextAlignment(.center).frame(width: 280, height: 34)
                     .background {
                         Group {
@@ -546,7 +595,7 @@ struct HomeView: View {
                     .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(blockedPlacement == nil ? Color.clear : Color.white))
                     .offset(x: 3.9).opacity(isConfirmingPlacementExit ? 0 : 1)
                     .accessibilityAddTraits(.updatesFrequently)
-            }.padding(.top, 11.73)
+            }.padding(.top, 14.73)
         } else if hold != nil {
             HintCapsule(text: blockedPlacement.map { "\($0.label)에는 이동시킬 수 없어요" } ?? "끌어서 옮기고, 아래 휴지통에 놓으면 보관해요")
                 .padding(.horizontal, 22).padding(.top, 8)
@@ -568,7 +617,7 @@ struct HomeView: View {
     /// 인형을 든 동안 머리 위를 따라다니며 어디에 놓일지 알려준다.
     @ViewBuilder
     private var holdTooltip: some View {
-        if let hold, !hold.isOverRemovalTarget {
+        if let hold, placementStart == nil, !hold.isOverRemovalTarget {
             let seat = RoomLayout.seat(at: [hold.position.x, hold.position.z], in: items.map(\.state)).item
             HintCapsule(text: blockedPlacement.map { "\($0.label)에는 이동시킬 수 없어요" } ?? "옮기는 중 · \(seat?.kind.label ?? "바닥")")
                 .fixedSize()
@@ -582,14 +631,21 @@ struct HomeView: View {
         if placementStart != nil {
             HStack(spacing: 12) {
                 Button("취소", action: cancelPlacement).buttonStyle(CreationSecondaryButton())
-                Button("완료", action: finishPlacement).buttonStyle(CreationPrimaryButton()).disabled(blockedPlacement != nil)
-            }.padding(.horizontal, 18).padding(.bottom, 16)
+                Button("완료", action: finishPlacement).buttonStyle(.plain)
+                    .modifier(RepresentativeActionSurface(primaryFill: LinearGradient(stops: [
+                        .init(color: Color(uiColor: Palette.uiColor("#121212")), location: 0.32171),
+                        .init(color: Color(uiColor: Palette.uiColor("#212226")), location: 0.97364)
+                    ], startPoint: .top, endPoint: .bottom)))
+                    .disabled(blockedPlacement != nil)
+            }.environment(\.updatedFlowDesign, true)
+                .padding(.horizontal, 18).padding(.bottom, 16)
         }
     }
 
     private func beginPlacement() {
         guard placementStart == nil else { return }
         toast = nil
+        blockedPlacement = nil; blockedDollRect = nil
         placementStart = Dictionary(uniqueKeysWithValues: placedDolls.map { ($0.id, $0.position) })
         placementPositions = placementStart ?? [:]
     }
@@ -659,6 +715,7 @@ struct HomeView: View {
         placementStart = nil
         placementPositions = [:]
         hold = nil
+        blockedPlacement = nil; blockedDollRect = nil
         guard let moved = dolls.first(where: { $0.id == lastMovedID }) else { return }
         let seat = RoomLayout.seat(at: [moved.position.x, moved.position.z], in: items.map(\.state)).item
         toast = Toast(message: "\(seat?.kind.label ?? "바닥")에 배치했어요", undo: start, addedID: placementAddedID)
@@ -673,6 +730,7 @@ struct HomeView: View {
         placementStart = nil
         placementPositions = [:]
         hold = nil
+        blockedPlacement = nil; blockedDollRect = nil
         lastMovedID = nil
         try? modelContext.save()
     }

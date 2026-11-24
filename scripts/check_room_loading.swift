@@ -39,6 +39,13 @@ struct CheckRoomLoading {
             close(editor.value(node, "opacity", at: delay), 0, "card waits")
             close(editor.value(node, "opacity", at: delay + 0.2), 1, "card arrives")
         }
+        let cottonData = try Data(contentsOf: URL(fileURLWithPath: "Malrang/Resources/CottonLoadingMotion.json"))
+        let cotton = try JSONDecoder().decode(RoomLoadingTimeline.self, from: cottonData)
+        close(cotton.duration, 8.4, "cotton duration")
+        close(cotton.value("1932:6465", "opacity", at: 7.8), 1, "cotton veil holds")
+        close(cotton.value("1932:6465", "opacity", at: 8.3), 0, "cotton veil clears")
+        close(RoomLoadingTimeline.Curve("step-end").value(at: 0.9), 0, "hold before boundary")
+        close(RoomLoadingTimeline.Curve("step-end").value(at: 1), 1, "snap at boundary")
         print("PASS: home keyframes, spring samples, editor order, card stagger and landing restoration")
     }
 }

@@ -18,6 +18,7 @@ final class RoomSceneEntrance {
     #if DEBUG
     private var audited = false
     private var projectionError: Double?
+    private var observedFurnitureMotion = false
     #endif
 
     init(entrance: RoomEntrance, content: Entity, items: [RoomItemState]) {
@@ -42,6 +43,8 @@ final class RoomSceneEntrance {
     func update(in view: RoomRenderView, camera: PerspectiveCamera) {
         guard !restored, view.bounds.width > 0, view.bounds.height > 0 else { return }
         if !prepared {
+            // Keep the SwiftUI loading character until a real scene frame exists.
+            guard view.completedFrames > 0 else { return }
             prepared = true
             entrance.useSceneDoll(entrance.kind == .home && !UIAccessibility.isReduceMotionEnabled && snapshots.contains { $0.node == "6457" })
             entrance.prepareScene()
@@ -93,6 +96,12 @@ final class RoomSceneEntrance {
                     let y = motion.value(snapshot.node, "--motion-translate-y", at: time) * pointsScale
                     move(entity, center: origin, to: CGPoint(x: screen.x, y: screen.y + y), in: view, camera: camera)
                 }
+                #if DEBUG
+                if entity.name.hasPrefix("item|"), entrance.start != nil,
+                   entity.transform != snapshot.transform, opacity > 0.05 {
+                    observedFurnitureMotion = true
+                }
+                #endif
             }
         }
     }
@@ -180,6 +189,16 @@ final class RoomSceneEntrance {
             if let opacity = snapshot.opacity { snapshot.entity.components.set(opacity) }
             else { snapshot.entity.components.remove(OpacityComponent.self) }
         }
+        #if DEBUG
+        if entrance.kind == .editor, entrance.finished,
+           ProcessInfo.processInfo.arguments.contains("--editor-entrance-audit") {
+            let checks = ["visible_furniture_motion": observedFurnitureMotion,
+                          "original_transforms_restored": snapshots.allSatisfy { $0.entity.transform == $0.transform }]
+            if let data = try? JSONSerialization.data(withJSONObject: checks, options: .sortedKeys) {
+                try? data.write(to: URL.documentsDirectory.appending(path: "editor-motion-audit.json"))
+            }
+        }
+        #endif
         restored = true
         snapshots.removeAll()
     }

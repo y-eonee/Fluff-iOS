@@ -235,6 +235,20 @@ enum RoomLayout {
         blockingDollPlacement(at: point, in: items) == nil
     }
 
+    /// Manual placement always uses the floor. Activity seating (sleep/focus/
+    /// couch) remains separate and cannot turn a drag into a furniture snap.
+    static func blockingFloorDollPlacement(at point: SIMD2<Float>, in items: [RoomItemState]) -> RoomItemState? {
+        items.first { item in
+            guard item.kind.blocksFloor else { return false }
+            let delta = point - SIMD2(item.x, item.z)
+            let local = SIMD2(cos(item.yaw) * delta.x - sin(item.yaw) * delta.y,
+                              sin(item.yaw) * delta.x + cos(item.yaw) * delta.y)
+            let b = bounds(for: item.kind, mirrored: item.isMirrored)
+            let nearest = simd_clamp(local, SIMD2(b.min.x, b.min.z), SIMD2(b.max.x, b.max.z))
+            return simd_distance_squared(local, nearest) < 0.08 * 0.08
+        }
+    }
+
     /// 새 가구를 겹치지 않게 놓을 첫 빈자리
     static func freeSpot(for kind: FurnitureKind, among items: [RoomItemState], yaw: Float = 0) -> SIMD2<Float>? {
         if kind.hangsOnWall {

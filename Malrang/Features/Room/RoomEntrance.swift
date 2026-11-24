@@ -40,6 +40,11 @@ final class RoomEntrance {
         return min(timeline.duration, max(0, ProcessInfo.processInfo.systemUptime - start))
     }
 
+    func sceneWasRemoved() {
+        sceneReady = false
+        presentsSceneDoll = false
+        if !finished { start = nil }
+    }
     func prepareScene() { sceneReady = true; beginIfReady() }
     func present() { presentationReady = true; beginIfReady() }
     private func beginIfReady() {

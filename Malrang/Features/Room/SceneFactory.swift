@@ -86,7 +86,7 @@ enum SceneFactory {
                 entity.addChild(visual)
             }
         }
-        if cozy && item.kind.isMovable && item.yaw == 0 {
+        if cozy && item.kind.isMovable && (item.yaw == 0 || item.kind.category == .rug) {
             let shadow = entity.findEntity(named: "contact-shadow")
             let shadowParent = shadow?.parent
             shadow?.removeFromParent()
@@ -95,10 +95,18 @@ enum SceneFactory {
                                       min: bounds.min * entity.scale, max: bounds.max * entity.scale)
             if let shadow, let shadowParent { shadowParent.addChild(shadow) }
         }
+        if cozy && !onFloor && item.kind.category == .rug {
+            // Legacy rugs can extend beyond the editor's finite floor. Resolve
+            // the same measured footprint in both views, without moving other
+            // furniture or rewriting the saved layout on editor entry.
+            let point = RoomLayout.constrained(item)
+            entity.position.x = point.x
+            entity.position.z = point.y
+        }
         // 원본 색상별 메시를 합쳐도 벽 사이의 빈 공간이 충돌 영역이 되지 않게 한다.
         let shapes: [ShapeResource]
         if item.kind == .wall {
-            let height: Float = cozy ? CozyRoomShell.maximumHeight : 1.55
+            let height: Float = cozy ? (cutaway ? CozyRoomShell.overviewHeight(x: 1, z: 1) : CozyRoomShell.maximumHeight) : 1.55
             shapes = [ShapeResource.generateBox(size: [0.04, height, 2]).offsetBy(translation: [-1.02, height / 2, 0]),
                       ShapeResource.generateBox(size: [2, height, 0.04]).offsetBy(translation: [0, height / 2, -1.02])]
         } else if item.kind == .floor {

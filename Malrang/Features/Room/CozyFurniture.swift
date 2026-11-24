@@ -222,7 +222,7 @@ enum CozyFurniture {
             root.addChild(model)
             ball("leg.foot", [0.064, 0.05, 0.064], [x, 0.025, z], color)
         }
-        let baked = useBakedModels && item.kind != .lamp && !(item.kind == .sofa && !cutaway) ? await bakedModel(for: item.kind) : nil
+        let baked = useBakedModels && !(roomOverview && item.kind == .wall) && item.kind != .lamp && !(item.kind == .sofa && !cutaway) ? await bakedModel(for: item.kind) : nil
         if let baked {
             func restoreMaterials(_ entity: Entity) {
                 if var model = entity.components[ModelComponent.self], let source = model.materials.first as? PhysicallyBasedMaterial {
@@ -248,7 +248,7 @@ enum CozyFurniture {
             ball("flower.center", [0.08, 0.09, 0.08], [0, 0.055, 0], CozyRoomPalette.mint)
         case .wall:
             func wallPanel(_ name: String, _ size: SIMD2<Float>, _ center: SIMD2<Float>, _ color: String) {
-                let mesh = CozyRoomShell.panel(size: size, center: center, cutaway: cutaway)
+                let mesh = CozyRoomShell.panel(size: size, center: center, cutaway: cutaway, overview: roomOverview)
                 let model = ModelEntity(mesh: mesh, materials: item.photoData != nil && name == "wall.left" ? [photoMaterial] : [material(color, part: name)])
                 model.name = name
                 model.components.set(DynamicLightShadowComponent(castsShadow: false))
@@ -264,7 +264,7 @@ enum CozyFurniture {
             }
             box("skirting.left", [0.075, 0.13, 2], [-0.976, 0.065, 0], CozyRoomPalette.mint)
             box("skirting.back", [2, 0.13, 0.075], [0, 0.065, -0.976], CozyRoomPalette.mint)
-            if !cutaway {
+            if !cutaway && !roomOverview {
             for isLeft in [true, false] {
                 let slope = isLeft ? CozyRoomShell.riseZ : CozyRoomShell.riseX
                 let center: SIMD2<Float> = isLeft ? [-0.97, 0] : [0, -0.97]
@@ -634,7 +634,7 @@ enum CozyFurniture {
         }
         if item.kind == .wall {
             for child in root.children where child.name.hasPrefix("window.") {
-                let heightScale: Float = cutaway ? 0.85 : 1.14
+                let heightScale: Float = (cutaway || roomOverview) ? 0.85 : 1.14
                 child.position.y = (cutaway ? 0.42 : 0.68) + (child.position.y - 0.70) * heightScale
                 child.scale.y *= heightScale
                 child.position.z += cutaway ? 0.11 : -0.11

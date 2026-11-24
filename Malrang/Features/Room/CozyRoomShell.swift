@@ -18,12 +18,23 @@ enum CozyRoomShell {
         1.1085 + 0.1567 * (x + 1) + 0.1902 * (z + 1)
     }
 
-    static func panel(size: SIMD2<Float>, center: SIMD2<Float>, cutaway: Bool = false) -> MeshResource {
+    // A level wall top stays parallel to its floor edge under the shared camera.
+    // Sloping the physical wall to imitate a 2D reference creates conflicting
+    // perspective lines even when every object uses the same camera.
+    static let overviewWallHeight: Float = 1.65
+    static func overviewHeight(x: Float, z: Float) -> Float {
+        overviewWallHeight
+    }
+
+    static func panel(size: SIMD2<Float>, center: SIMD2<Float>, cutaway: Bool = false, overview: Bool = false) -> MeshResource {
+        func top(_ x: Float, _ z: Float) -> Float {
+            overview ? overviewHeight(x: x, z: z) : (cutaway ? cutawayHeight(x: x, z: z) : height(x: x, z: z))
+        }
         let lo = center - size / 2, hi = center + size / 2
         let vertices: [SIMD3<Float>] = [
             [lo.x, 0, lo.y], [hi.x, 0, lo.y], [hi.x, 0, hi.y], [lo.x, 0, hi.y],
-            [lo.x, (cutaway ? cutawayHeight(x: lo.x, z: lo.y) : height(x: lo.x, z: lo.y)), lo.y], [hi.x, (cutaway ? cutawayHeight(x: hi.x, z: lo.y) : height(x: hi.x, z: lo.y)), lo.y],
-            [hi.x, (cutaway ? cutawayHeight(x: hi.x, z: hi.y) : height(x: hi.x, z: hi.y)), hi.y], [lo.x, (cutaway ? cutawayHeight(x: lo.x, z: hi.y) : height(x: lo.x, z: hi.y)), hi.y]
+            [lo.x, top(lo.x, lo.y), lo.y], [hi.x, top(hi.x, lo.y), lo.y],
+            [hi.x, top(hi.x, hi.y), hi.y], [lo.x, top(lo.x, hi.y), hi.y]
         ]
         let faces = [[0, 3, 2, 1], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]]
         var positions: [SIMD3<Float>] = [], normals: [SIMD3<Float>] = []

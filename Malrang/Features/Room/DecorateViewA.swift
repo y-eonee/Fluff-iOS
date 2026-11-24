@@ -9,7 +9,7 @@ extension DecorateView {
                 items: items.map(\.state), dolls: [], mode: .decorate,
                 onMoveItem: move, onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
                 selectedItemID: selectedID, onTapItem: { selectedID = $0 }, onFeel: { feelCount += 1 },
-                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }, entrance: entrance
+                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onSceneReady: { loadingEntrance.prepareScene() }, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }, entrance: entrance
             )
             .renderedOnlyWhileVisible(background: .clear)
             .frame(minHeight: 220).frame(maxHeight: .infinity)

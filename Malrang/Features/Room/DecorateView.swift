@@ -9,6 +9,7 @@ struct DecorateView: View {
     @Namespace var categoryIndicator
     @State var editFeedbackCount = 0
     @State var entrance = RoomEntrance(.editor)
+    @State var loadingEntrance = RoomEntrance(.home)
     @Environment(\.startupPresentationFinished) var startupPresentationFinished
     @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
@@ -23,7 +24,7 @@ struct DecorateView: View {
     @State var isApplyingHistory = false
     @State var lastEdit = Date.distantPast
     @State var original: [RoomItemState]?
-    @State var placementPrepared = false
+    @State var furniturePrepared = false
     @State var originalDolls: [UUID: SIMD3<Float>] = [:]
     @State var hold: RoomSceneView.Hold?
     @AppStorage("hapticOn") var hapticOn = true
@@ -45,6 +46,14 @@ struct DecorateView: View {
     var body: some View {
         contentA
         .background(Color.mib.bg.screen)
+        .allowsHitTesting(loadingEntrance.finished && entrance.finished)
+        .accessibilityHidden(!loadingEntrance.finished)
+        .overlay {
+            if !loadingEntrance.finished {
+                RoomLoadingView(entrance: loadingEntrance)
+                    .accessibilityIdentifier("decorate-loading")
+            }
+        }
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         .sensoryFeedback(trigger: category) { _, _ in hapticOn ? .selection : nil }
         .sensoryFeedback(trigger: selectedID) { _, new in hapticOn && new != nil ? .selection : nil }
@@ -85,7 +94,7 @@ struct DecorateView: View {
         }
         .task(id: startupPresentationFinished) {
             guard startupPresentationFinished else { return }
-            if !placementPrepared {
+            if !furniturePrepared {
                 if original == nil {
                     original = items.map(\.state)
                     originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
@@ -94,10 +103,19 @@ struct DecorateView: View {
                     _ = await SceneFactory.furniture(RoomItemState(id: UUID(), kind: kind, x: 0, z: 0), cozy: true, cutaway: true)
                 }
                 guard !Task.isCancelled else { return }
-                let repaired = RoomLayout.repaired(items.map(\.state))
-                apply(repaired)
-                placementPrepared = true
+                // Opening the editor must not relocate the saved home layout.
+                // Placement constraints apply only to explicit user edits.
+                furniturePrepared = true
             }
+            loadingEntrance.present()
+            while !loadingEntrance.finished && !Task.isCancelled {
+                do { try await Task.sleep(for: .milliseconds(33)) } catch { return }
+                loadingEntrance.finishIfNeeded()
+            }
+            // The cotton veil remains opaque until 7.8s. Starting the 2s room
+            // motion underneath it hid the furniture rise and chair arrival.
+            // Play the existing source motion only after the loading handoff.
+            guard !Task.isCancelled else { return }
             entrance.present()
         }
         .onAppear {
@@ -106,6 +124,17 @@ struct DecorateView: View {
                 originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
             }
         }
+        #if DEBUG
+        .onChange(of: entrance.finished) { _, finished in
+            guard finished, ProcessInfo.processInfo.arguments.contains("--editor-entrance-audit"),
+                  let loadedAt = loadingEntrance.start, let animatedAt = entrance.start else { return }
+            let checks = ["starts_after_loading": animatedAt >= loadedAt + loadingEntrance.timeline.duration,
+                          "saved_furniture_unchanged": original == items.map(\.state)]
+            if let data = try? JSONSerialization.data(withJSONObject: checks, options: .sortedKeys) {
+                try? data.write(to: URL.documentsDirectory.appending(path: "editor-handoff-audit.json"))
+            }
+        }
+        #endif
         .task(id: isBlocked) {
             guard isBlocked else { return }
             do { try await Task.sleep(for: .seconds(3)) } catch { return }

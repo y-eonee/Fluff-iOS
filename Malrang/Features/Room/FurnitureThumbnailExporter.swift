@@ -14,11 +14,12 @@ struct FurnitureThumbnailExporter: UIViewRepresentable {
             try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
             try? FileManager.default.removeItem(at: output.appending(path: "complete.txt"))
             if let environment = await CozyRoomLighting.environmentResource(at: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: .now)!) { view.environment.lighting.resource = environment }
-            view.environment.lighting.intensityExponent = 0.3
+            view.environment.lighting.intensityExponent = -0.1
             var report: [String] = []
             for kind in FurnitureKind.allCases where kind.isMovable {
                 guard !Task.isCancelled else { return }
                 let model = await CozyFurniture.make(RoomItemState(id: UUID(), kind: kind, x: 0, z: 0), photoMaterial: PhysicallyBasedMaterial(), usesWindowLighting: false)
+                await CozyRoomLighting.apply(RoomDaylight.at(hour: 13), to: model)
                 for child in Array(model.children) where child.name == "contact-shadow" { child.removeFromParent() }
                 let bounds = model.visualBounds(relativeTo: model)
                 let anchor = AnchorEntity(world: .zero); anchor.addChild(model)
@@ -28,8 +29,9 @@ struct FurnitureThumbnailExporter: UIViewRepresentable {
                 let direction = simd_normalize(SIMD3<Float>(1.1, 0.85, 1.6))
                 camera.look(at: bounds.center, from: bounds.center + direction * distance, relativeTo: nil)
                 anchor.addChild(camera)
-                let light = DirectionalLight(); light.light.intensity = 2200
-                light.look(at: bounds.center, from: bounds.center + [-2, 3, 4], relativeTo: nil); anchor.addChild(light)
+                let light = DirectionalLight(); light.light.intensity = 2550
+                light.light.color = Palette.uiColor("#FFE8DE")
+                light.look(at: bounds.center, from: bounds.center + [-0.6, 3, 2], relativeTo: nil); anchor.addChild(light)
                 view.scene.anchors.removeAll(); view.scene.addAnchor(anchor)
                 try? await Task.sleep(for: .milliseconds(700))
                 let snapshot: UIImage? = await withCheckedContinuation { continuation in view.snapshot(saveToHDR: false) { continuation.resume(returning: $0) } }

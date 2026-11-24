@@ -59,6 +59,46 @@ struct RoomItemState: Identifiable, Equatable {
         precondition(RoomLayout.seat(at: .zero, in: [sofa]).item == nil)
         precondition(RoomLayout.seat(at: .zero, in: [sofa], includingActivitySeats: true).item?.id == sofa.id)
         precondition(RoomLayout.seat(at: .zero, in: [chair]).height == FurnitureKind.chair.seatHeight)
-        print("PASS: Korean particles, rotated bed seating, sleeping-area exclusion, blocked furniture, chair placement")
+        // Manual movement rejects every solid piece, including former seats.
+        for kind in [FurnitureKind.bed, .chair, .sofa, .desk, .plant, .lamp] {
+            for yaw: Float in [0, 0.63, .pi / 2] {
+                let item = RoomItemState(id: UUID(), kind: kind, x: 0.173, z: -0.241, yaw: yaw)
+                precondition(RoomLayout.blockingFloorDollPlacement(at: [item.x, item.z], in: [item])?.id == item.id)
+                let outside = simd_quatf(angle: yaw, axis: [0, 1, 0]).act([kind.size.x / 2 + 0.081, 0, 0])
+                precondition(RoomLayout.blockingFloorDollPlacement(at: [item.x + outside.x, item.z + outside.z], in: [item]) == nil)
+            }
+        }
+        for kind in [FurnitureKind.rugRound, .rugSquare, .shelf, .frame] {
+            let item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+            precondition(RoomLayout.blockingFloorDollPlacement(at: .zero, in: [item]) == nil)
+        }
+        let free = SIMD2<Float>(0.173, -0.241)
+        precondition(RoomLayout.clampedToFloor(free) == free) // No grid snapping.
+        // Sample the actual outline, rather than the round rug's rotated
+        // enclosing square, at every room corner and several orientations.
+        for kind in [FurnitureKind.rugRound, .rugSquare] {
+            let radius: SIMD2<Float> = kind == .rugRound ? [0.759, 0.759] : [0.45, 0.30]
+            RoomLayout.registerBounds(for: kind, mirrored: false,
+                                      min: [-radius.x, 0, -radius.y], max: [radius.x, 0.03, radius.y])
+            for yaw: Float in [0, 0.633, .pi / 4, .pi / 2, .pi, -.pi / 3] {
+                for corner: SIMD2<Float> in [[-2, -2], [-2, 2], [2, -2], [2, 2], [0.25, 0.734]] {
+                    let rug = RoomItemState(id: UUID(), kind: kind, x: corner.x, z: corner.y, yaw: yaw)
+                    let center = RoomLayout.constrained(rug)
+                    let outline: [SIMD2<Float>] = kind == .rugRound
+                        ? (0..<360).map { angle in
+                            let t = Float(angle) * .pi / 180
+                            return [radius.x * cos(t), radius.y * sin(t)]
+                        } : [[-radius.x, -radius.y], [-radius.x, radius.y], [radius.x, -radius.y], [radius.x, radius.y]]
+                    for local in outline {
+                        let rotated = simd_quatf(angle: yaw, axis: [0, 1, 0]).act([local.x, 0, local.y])
+                        precondition(abs(center.x + rotated.x) <= 0.986)
+                        precondition(abs(center.y + rotated.z) <= 0.986)
+                    }
+                    var inside = rug; inside.x = center.x; inside.z = center.y
+                    precondition(simd_distance(RoomLayout.constrained(inside), center) < 0.0001)
+                }
+            }
+        }
+        print("PASS: Korean particles, rotated bed seating, sleeping-area exclusion, blocked furniture, chair placement, rotated rug boundaries, free floor placement and all solid furniture rejection")
     }
 }

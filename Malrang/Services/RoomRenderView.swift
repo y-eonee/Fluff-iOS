@@ -25,6 +25,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     private var captures: [(UIImage?) -> Void] = []
     private(set) var root: AnchorEntity?
     private weak var camera: PerspectiveCamera?
+    var onNextPresentedFrame: (() -> Void)?
     private(set) var completedFrames = 0
     private(set) var requestedFPS = 30
     private(set) var lastRenderError: String?
@@ -119,6 +120,9 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         return legacy!.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in
             MainActor.assumeIsolated {
                 self?.completedFrames += 1
+                let ready = self?.onNextPresentedFrame
+                self?.onNextPresentedFrame = nil
+                if let ready { DispatchQueue.main.async(execute: ready) }
                 self?.runPerformanceInteraction()
             }
             update(event.deltaTime)
@@ -183,6 +187,8 @@ final class RoomRenderView: UIView, MTKViewDelegate {
                       destinationOffset: 0, destinationBytesPerRow: bytesPerRow, destinationBytesPerImage: bytesPerRow * target.height)
             blit.endEncoding(); pixels = buffer
         }
+        let framePresented = onNextPresentedFrame
+        onNextPresentedFrame = nil
         let capturedPixels = pixels
         let width = target.width, height = target.height
         command.present(drawable)
@@ -191,8 +197,13 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         command.addCompletedHandler { [self] buffer in
             Task { @MainActor [self] in
                 self.inFlight.remove(slot)
-                if buffer.status == .completed { self.completedFrames += 1 }
-                else { self.lastRenderError = buffer.error?.localizedDescription ?? "Metal frame failed" }
+                if buffer.status == .completed {
+                    self.completedFrames += 1
+                    if !self.shuttingDown { framePresented?() }
+                } else {
+                    self.lastRenderError = buffer.error?.localizedDescription ?? "Metal frame failed"
+                    if self.onNextPresentedFrame == nil { self.onNextPresentedFrame = framePresented }
+                }
                 if !pending.isEmpty {
                     var image: UIImage?
                     if buffer.status == .completed, let capturedPixels {
