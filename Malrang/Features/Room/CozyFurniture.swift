@@ -125,6 +125,10 @@ enum CozyFurniture {
                     if surfacePart == "book.cover" || surfacePart == "book.spine" { color = "#B9C7D1" }
                 }
             }
+            // Resolve each wall independently, after the room palette overrides.
+            if item.kind == .wall, surfacePart == "wall.back" {
+                color = item.rightWallColorName ?? (cutaway ? CozyRoomPalette.ivory : "#F2F2F4")
+            }
             let glow: Float = part.hasPrefix("window") ? (cutaway ? 0.75 : 0.20) : (item.kind == .lamp && part == "shade" ? -0.65 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : (cutaway && item.kind == .chair && !["leg", "leg.foot"].contains(surfacePart) ? 0.75 : 0)))
             // These cushion meshes are closed with outward winding. Threads and
             // open wall/lamp geometry still need both sides of their triangles.

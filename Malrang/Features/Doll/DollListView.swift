@@ -7,6 +7,7 @@ struct DollListView: View {
     @State private var selectedDoll: Doll?
     @State private var isCreating = false
     @State private var sortOrder = DollSort.latest
+    @State private var sorting = false
     private enum DollSort: String, CaseIterable { case latest = "최신순", oldest = "오래된순", name = "이름순" }
     private var sortedDolls: [Doll] {
         switch sortOrder {
@@ -21,19 +22,33 @@ struct DollListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 FlowHeader(title: "내 인형")
                 HStack {
-                    Text("\(dolls.count)개").pretendard(.medium, 12)
+                    Text("\(dolls.count)개").pretendard(.medium, 14)
                     Spacer()
-                    Menu {
-                        Picker("정렬", selection: $sortOrder) {
-                            ForEach(DollSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }
-                    } label: {
-                        HStack(spacing: 3) {
-                            Text(sortOrder.rawValue).pretendard(.medium, 12)
-                            Image("fluff_sort").resizable().scaledToFit().frame(width: 12.4764, height: 12.239)
-                        }.frame(minHeight: 28)
-                    }.accessibilityLabel("인형 정렬").accessibilityValue(sortOrder.rawValue)
+                    Button { withAnimation(.easeOut(duration: 0.18)) { sorting.toggle() } } label: {
+                        HStack(spacing: 6) {
+                            Text(sortOrder.rawValue).pretendard(.medium, 14)
+                            Image("fluff_sort").resizable().scaledToFit().frame(width: 13, height: 13)
+                        }.frame(minHeight: 44)
+                    }.buttonStyle(.plain).accessibilityLabel("인형 정렬").accessibilityValue(sortOrder.rawValue)
                 }.foregroundStyle(Color.rep4.c29).padding(.horizontal, 26).padding(.top, 8)
+                if sorting {
+                    VStack(spacing: 0) {
+                        ForEach(DollSort.allCases, id: \.self) { order in
+                            Button {
+                                sortOrder = order
+                                withAnimation(.easeOut(duration: 0.18)) { sorting = false }
+                            } label: {
+                                HStack {
+                                    Text(order.rawValue)
+                                    Spacer()
+                                    if sortOrder == order { Image(systemName: "checkmark") }
+                                }.pretendard(.medium, 14).padding(.horizontal, 14).frame(width: 148, height: 44)
+                                    .contentShape(Rectangle())
+                            }.buttonStyle(.plain).accessibilityAddTraits(sortOrder == order ? .isSelected : [])
+                        }
+                    }.background(.white, in: RoundedRectangle(cornerRadius: 14))
+                        .frame(maxWidth: .infinity, alignment: .trailing).padding(.horizontal, 26).padding(.bottom, 8)
+                }
                 if dolls.isEmpty {
                     VStack(spacing: 16) {
                         Image("fluff_empty_mongle")

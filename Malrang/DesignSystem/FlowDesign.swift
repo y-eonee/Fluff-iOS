@@ -6,6 +6,15 @@ enum FlowDesign {
     static let canvas = Color(uiColor: Palette.uiColor("#ECEEEF"))
     static let makingCanvas = Color(uiColor: Palette.uiColor("#E5E5E4"))
     static let profileCanvas = Color(uiColor: Palette.uiColor("#EDF0F0"))
+    // Figma 2019:9651 / 1727:22610 share the room gradient's diagonal axis.
+    static let profileBackground = RepresentativeGradient(
+        stops: [.init(color: Color(uiColor: Palette.uiColor("#FEFEFE")), location: 0),
+                .init(color: Color(uiColor: Palette.uiColor("#D5EBFF")), location: 1)],
+        transform: RepresentativeGradients.roomBackground.transform, opacity: 1)
+    static let completionBackground = RepresentativeGradient(
+        stops: [.init(color: Color(uiColor: Palette.uiColor("#FEFEFE")), location: 0),
+                .init(color: Color(uiColor: Palette.uiColor("#E1F8FF")), location: 0.9697805643081665)],
+        transform: RepresentativeGradients.roomBackground.transform, opacity: 1)
     static let headerHeight: CGFloat = 60
     static let header = Color(uiColor: Palette.uiColor("#FDFDFD"))
     static let blue = Color(uiColor: Palette.uiColor("#9CCDFF"))

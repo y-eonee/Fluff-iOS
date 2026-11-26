@@ -14,11 +14,11 @@ struct CouchFlowView: View {
     var body: some View {
         VStack(spacing: 0) {
             FlowHeader(title: "플레이리스트", backLabel: "홈에서 계속 보기") { dismiss() }
-            if session.choosing { picker }
-            else { watching }
+            picker
         }.foregroundStyle(Color.rep4.c08).background(FlowDesign.canvas.ignoresSafeArea())
             .environment(\.updatedFlowDesign, true)
 
+            .onAppear { selected = session.current }
             .task {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--design-preview=") }) {
@@ -85,7 +85,10 @@ struct CouchFlowView: View {
                 .background(.white, in: Capsule()).padding(.horizontal, 22)
             if let linkError { Text(linkError).pretendard(.regular, 12).foregroundStyle(Color.mib.semantic.error) }
             Button("소파에서 같이 보기") {
-                if let selected { session.watch(session.library.videos.first { $0.id == selected.id } ?? selected) }
+                if let selected {
+                    session.watch(session.library.videos.first { $0.id == selected.id } ?? selected)
+                    dismiss()
+                }
             }.buttonStyle(D1PrimaryStyle()).disabled(selected == nil).padding(.horizontal, 22).padding(.top, -4).padding(.bottom, 0)
         }
     }
@@ -134,6 +137,7 @@ struct CouchFlowView: View {
         }
     }
     private func videoRow(_ video: CouchVideo) -> some View {
+        HStack(spacing: 0) {
         Button { selected = video } label: {
             HStack(spacing: 12) {
                 AsyncImage(url: video.thumbnailURL) { image in image.resizable().scaledToFill() } placeholder: {
@@ -158,78 +162,20 @@ struct CouchFlowView: View {
                 .environment(\.updatedFlowDesign, false)
                 .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(selected?.id == video.id ? Color.rep4.c04 : Color(uiColor: Palette.uiColor("#DDDDDD")), lineWidth: selected?.id == video.id ? 1.5 : 1))
         }.buttonStyle(.plain).accessibilityAddTraits(selected?.id == video.id ? .isSelected : [])
+        Button { session.library.toggleFavorite(video) } label: {
+            Image(systemName: session.library.favorite(video) ? "heart.fill" : "heart")
+                .font(.system(size: 20)).foregroundStyle(session.library.favorite(video) ? FlowDesign.blue : Color.rep4.c29)
+                .frame(width: 44, height: 52)
+        }.buttonStyle(.plain)
+            .accessibilityLabel(session.library.favorite(video) ? "찜 해제" : "찜하기")
+            .accessibilityValue(video.title)
+        }
     }
     private func addLink() {
         guard let source = YouTubeSource.parse(link) else { linkError = "YouTube 영상 또는 플레이리스트 링크를 확인해 주세요."; return }
         selected = session.library.add(source); link = ""; linkError = nil; tab = 0
         Task { await session.library.resolveTitle(for: source) }
     }
-    private var watching: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    CouchCompanionPreview(dolls: session.dolls)
-                    VStack(spacing: 46) {
-                        // Render the live player at its supported layout size, then fit it
-                        // into the original 184-point video slot without cropping controls.
-                        GeometryReader { geometry in
-                            YouTubePlayerView(player: session.player)
-                                .frame(width: geometry.size.width / 0.92, height: 200)
-                                .scaleEffect(0.92, anchor: .topLeading)
-                        }.frame(height: 184)
-                            .overlay {
-                                if !session.player.ready {
-                                    CouchLoadingArtwork(title: session.current?.title ?? "YouTube", failed: session.player.error != nil)
-                                }
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                        playbackControls
-                        if let error = session.player.error {
-                            Text(error).pretendard(.regular, 13)
-                            HStack {
-                                Button("다시 시도") { if let source = session.current?.source { session.player.load(source) } }
-                                Button("YouTube에서 열기") { if let url = session.current?.source.url { session.player.pause(); openURL(url) } }
-                            }.pretendard(.medium, 13)
-                        }
-                    }.padding(15).frame(minHeight: 348, alignment: .top).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 21))
-                }.padding(.horizontal, 16)
-            }.scrollIndicators(.hidden)
-            Button {
-                session.player.pause(); selected = session.current; session.choosing = true
-            } label: {
-                HStack(spacing: 9) {
-                    Image("flow_couch_playlist").frame(width: 14.65, height: 13.06)
-                    Text("플레이리스트 변경")
-                }
-            }.modifier(RepresentativeActionSurface(height: 46)).padding(.horizontal, 24).padding(.top, 12)
-                .contextMenu {
-                    if let video = session.current {
-                        Button(session.library.favorite(video) ? "즐겨찾기에서 제거" : "같이 보기 좋은 영상에 추가") { session.library.toggleFavorite(video) }
-                    }
-                }
-            Button("그만 보기") { session.stop(); dismiss() }.pretendard(.medium, 12).underline().foregroundStyle(Color.rep4.c29).frame(minHeight: 44).padding(.top, 4)
-        }
-    }
-    private var playbackControls: some View {
-        HStack(spacing: 22.23) {
-            Spacer()
-            Button { session.player.previous() } label: {
-                Image("rep4_couch_previous").scaleEffect(x: -1, y: 1).frame(width: 16.09, height: 15.94).frame(width: 44, height: 44).background(Color.rep4.c28, in: Circle())
-            }.disabled(session.player.count < 2 || !session.player.ready).accessibilityLabel("이전 영상")
-            Button { session.player.toggle() } label: {
-                if session.player.playing {
-                    Image("flow_couch_pause").resizable().frame(width: 58.46, height: 58.46)
-                } else {
-                    D1PlaybackGlyph(paused: true, color: .white).frame(width: 58.46, height: 58.46).background(.black, in: Circle())
-                }
-            }.disabled(!session.player.ready).accessibilityLabel(session.player.playing ? "일시정지" : "재생")
-            Button { session.player.next() } label: {
-                Image("rep4_couch_next").frame(width: 16.09, height: 15.94).frame(width: 44, height: 44).background(Color.rep4.c28, in: Circle())
-            }.disabled(session.player.count < 2 || !session.player.ready).accessibilityLabel("다음 영상")
-            Spacer()
-        }.buttonStyle(.plain).foregroundStyle(Color.rep4.c03)
-    }
-    private func time(_ value: Double) -> String { let seconds = Int(max(0, value)); return String(format: "%d:%02d", seconds / 60, seconds % 60) }
 }
 
 /// The source player artwork remains visible while the live video is loading.
@@ -291,9 +237,9 @@ struct CouchMiniPlayer: View {
             }
         }.clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white, lineWidth: 4))
-            .accessibilityAction(named: "소파에서 크게 보기", open)
+            .accessibilityAction(named: "영상 선택하기", open)
             .contextMenu {
-                Button("소파에서 크게 보기", action: open)
+                Button("영상 선택하기", action: open)
                 Button("그만 보기") { session.stop() }
             }
     }
@@ -314,7 +260,7 @@ struct CouchMiniControls: View {
                     Text("\(session.player.title.isEmpty ? session.current?.title ?? "YouTube" : session.player.title) · \(FocusSession.clock(session.player.elapsed, hours: false))")
                         .pretendard(.regular, 14, tracking: -0.7).lineLimit(1)
                 }.frame(maxWidth: .infinity, alignment: .leading)
-            }.accessibilityLabel("소파에서 크게 보기")
+            }.accessibilityLabel("영상 선택하기")
             Button { session.player.toggle() } label: {
                 D1PlaybackGlyph(paused: !session.player.playing).scaleEffect(0.43)
                     .frame(width: 33, height: 33).background(FlowDesign.blue, in: RoundedRectangle(cornerRadius: 14))
@@ -322,6 +268,12 @@ struct CouchMiniControls: View {
         }.buttonStyle(.plain).padding(.leading, 12).padding(.trailing, 4)
             .frame(height: 48).background(Color.white, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(uiColor: Palette.uiColor("#E8DDCB")), lineWidth: 1))
-            .contextMenu { Button("그만 보기") { session.stop() } }
+            .contextMenu {
+                Button("이전 영상", systemImage: "backward.end.fill") { session.player.previous() }
+                    .disabled(session.player.count < 2 || !session.player.ready)
+                Button("다음 영상", systemImage: "forward.end.fill") { session.player.next() }
+                    .disabled(session.player.count < 2 || !session.player.ready)
+                Button("그만 보기", systemImage: "stop.fill") { session.stop() }
+            }
     }
 }

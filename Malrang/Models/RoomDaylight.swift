@@ -8,6 +8,8 @@ struct RoomDaylight: Equatable {
   let strength: Float
   let tint: SIMD3<Float>
   let hour: Double
+  /// Stable, neutral illumination for judging furniture colors while editing.
+  static let editor = RoomDaylight(phase: .day, strength: 1, tint: [1, 1, 1], hour: 12)
   var sky: [String] {
     switch phase {
     case .night: ["#1D2949", "#394766", "#65718C"]
@@ -20,16 +22,16 @@ struct RoomDaylight: Equatable {
     #if DEBUG
       if let value = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--room-hour=") }
       )?.split(separator: "=").last,
-        let hour = Int(value), (0...23).contains(hour)
+        let hour = Double(value), (0..<24).contains(hour)
       {
-        return Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: .now) ?? .now
+        return Calendar.current.startOfDay(for: .now).addingTimeInterval(hour * 3600)
       }
     #endif
     return .now
   }
   static func at(_ date: Date = .now, calendar: Calendar = .current) -> Self {
-    let components = calendar.dateComponents([.hour, .minute], from: date)
-    return at(hour: Double(components.hour ?? 12) + Double(components.minute ?? 0) / 60)
+    let components = calendar.dateComponents([.hour, .minute, .second], from: date)
+    return at(hour: Double(components.hour ?? 12) + Double(components.minute ?? 0) / 60 + Double(components.second ?? 0) / 3600)
   }
   static func at(hour: Double) -> Self {
     let h = max(0, min(24, hour))

@@ -15,6 +15,7 @@ struct FocusFlowView: View {
     @State var customTime = false
     @State var happyUntil = Date.distantPast
     @State var touchCount = 0
+    @AppStorage("hapticOn") private var hapticOn = true
     let roomSnapshot: UIImage?
 
     init(session: FocusSession = FocusSession(), showMain: Bool = false, roomSnapshot: UIImage? = nil) {
@@ -61,6 +62,10 @@ struct FocusFlowView: View {
             }
             .onChange(of: scenePhase) { if scenePhase == .active { session.tick() } }
             .sensoryFeedback(.impact(weight: .light), trigger: touchCount)
+            .sensoryFeedback(trigger: session.record.phase) { old, new in
+                guard hapticOn, scenePhase == .active else { return nil }
+                return (old == .focusing && (new == .resting || new == .pausedRest)) || (old == .resting && new == .pausedRest) ? .success : nil
+            }
             .task(id: happyUntil) {
                 guard happyUntil > .now else { return }
                 do { try await Task.sleep(for: .seconds(max(0, happyUntil.timeIntervalSinceNow))) } catch { return }

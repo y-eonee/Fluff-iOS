@@ -7,10 +7,10 @@ struct HomePopup<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).pretendard(.medium, 13).foregroundStyle(Color.rep4.c16)
+            Text(title).pretendard(.medium, 14).foregroundStyle(Color.rep4.c16)
                 .frame(height: 20).lineLimit(1)
             content
-        }.padding(13).frame(width: 204)
+        }.padding(13).frame(width: 232)
             .background(.white, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(HomePopupStyle.border, lineWidth: 1))
             .accessibilityElement(children: .contain)
@@ -41,10 +41,10 @@ struct HomePopupLabel<Icon: View>: View {
             icon.frame(width: 28, height: 28).accessibilityHidden(true)
             Text(title).pretendard(primary ? .medium : .regular, 16).lineLimit(1).minimumScaleFactor(0.85)
             Spacer(minLength: 0)
-        }.foregroundStyle(Color.rep4.c08).padding(.horizontal, 9).frame(height: 44)
+        }.foregroundStyle(Color.rep4.c08).padding(.horizontal, 9).frame(height: 50)
             .background {
                 if primary { RepresentativeGradientFill(definition: HomePopupStyle.selected) }
-                else { Color.rep4.c11 }
+                else { Color.white }
             }.clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(primary ? HomePopupStyle.selectedBorder : HomePopupStyle.border, lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: 10))
@@ -72,24 +72,16 @@ enum HomeDollDance: String, CaseIterable {
 }
 
 struct HomeDollDancePicker: View {
-    @Binding var selection: HomeDollDance
+    @Binding var selection: HomeDollDance?
+    var onClose: () -> Void
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(HomeDollDance.allCases, id: \.self) { dance in
-                Button { selection = dance } label: {
-                    Text((selection == dance ? "✓ " : "") + dance.title)
-                        .pretendard(.regular, 12.167, tracking: -0.6084)
-                        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
-                        .frame(maxWidth: .infinity).frame(width: selection == dance ? 68 : nil).frame(height: 31)
-                        .background {
-                            if selection == dance { RepresentativeGradientFill(definition: HomePopupStyle.danceSelection).clipShape(Capsule()) }
-                        }
-                        .overlay(Capsule().strokeBorder(selection == dance ? FlowDesign.blue : .clear, lineWidth: 0.873))
-                }.buttonStyle(.plain).accessibilityLabel(dance.title)
-                    .accessibilityAddTraits(selection == dance ? .isSelected : [])
-            }
-        }.foregroundStyle(Color.rep4.c08).padding(.horizontal, 5).frame(width: 239, height: 39)
-            .background(.white, in: Capsule()).accessibilityIdentifier("home-doll-dance-picker")
-            .transaction { $0.animation = nil }
+        DanceChoiceContent(selection: selection?.move, onSelect: { move in
+            selection = HomeDollDance.allCases.first { $0.move == move }
+        }, onClose: onClose)
+        .padding(.horizontal,20).padding(.top,20).padding(.bottom,12)
+        .frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.top)
+        .background(Color.white, ignoresSafeAreaEdges: [])
+        .accessibilityElement(children:.contain)
+        .accessibilityIdentifier("home-doll-dance-picker")
     }
 }

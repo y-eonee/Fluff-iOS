@@ -50,7 +50,8 @@ class EfficientARView: ARView {
         // crosses a thermal threshold during consecutive profiling runs.
         if ProcessInfo.processInfo.arguments.contains("--render-comparison") { constrained = true }
         #endif
-        let scale = min(max(1, traitCollection.displayScale), constrained ? 1 : 1.5)
+        let scale = constrained ? min(max(1, traitCollection.displayScale), 1.5)
+            : min(4, max(1, traitCollection.displayScale) * 1.25)
         if contentScaleFactor != scale { contentScaleFactor = scale }
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--render-audit") {

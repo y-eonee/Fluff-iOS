@@ -85,9 +85,12 @@ struct RoomSceneView: UIViewRepresentable {
     var onDollScreen: (CGPoint?) -> Void = { _ in }
     var onSleepSettled: (UUID) -> Void = { _ in }
     var onSceneReady: () -> Void = {}
+    var readiness: RoomSceneReadiness?
     var onDeskScreen: (CGPoint?) -> Void = { _ in }
     var onFurnitureScreen: ([String: CGRect]) -> Void = { _ in }
     var onWallScreen: ([CGPoint]) -> Void = { _ in }
+    var onRightWallScreen: ([CGPoint]) -> Void = { _ in }
+    var onTapWall: (Bool) -> Void = { _ in }
     var entrance: RoomEntrance?
 
     struct Hold: Equatable {
@@ -135,6 +138,8 @@ struct RoomSceneView: UIViewRepresentable {
         private var rendered: SceneState?
         private var displayed: SceneState?
         private var renderTask: Task<Void, Never>?
+        private let sceneID = UUID()
+        private var stopped = false
         private var drag: Drag?
         private var dragPoint = CGPoint.zero
         private var dropBlocked = false
@@ -236,6 +241,7 @@ struct RoomSceneView: UIViewRepresentable {
                         self.restingTime += Float(min(deltaTime, 0.1))
                         if !UIAccessibility.isReduceMotionEnabled {
                             for (id, body) in self.restingBodies where !self.approachingBeds.contains(id) {
+                                if self.parent.entrance?.finished == false, self.parent.entrance?.loadingDoll?.id == id { continue }
                                 body.scale.z = 1 + sin(self.restingTime * 1.7) * 0.012
                             }
                         }
@@ -304,6 +310,15 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         func stopRendering() {
+            stopped = true
+            let readiness = parent.readiness
+            let entrance = parent.entrance
+            let sceneID = sceneID
+            // UIKit teardown can occur during a SwiftUI update. Publish afterward,
+            // and ignore teardown of an older renderer after its replacement began.
+            Task { @MainActor in
+                if readiness?.remove(sceneID) == true { entrance?.sceneWasRemoved() }
+            }
             entranceAnimation?.restore(); entranceAnimation = nil
             lightingTask?.cancel(); lightingTask = nil; lastLightingMinute = nil
             lastLightingProfile = nil
@@ -373,11 +388,27 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func build(_ state: SceneState) async {
+            guard !stopped, !Task.isCancelled else { return }
+            if parent.readiness?.begin(sceneID) == true { parent.entrance?.sceneWasRemoved() }
+            #if DEBUG
+            if parent.mode == .home, parent.entrance?.finished == true,
+               ProcessInfo.processInfo.arguments.contains("--home-return-loading-preview") {
+                do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            }
+            #endif
             lightingTask?.cancel(); lightingTask = nil
             approachingBeds.formIntersection(Set(state.dolls.filter { $0.restingBedID != nil }.map(\.id)))
-            if parent.isCozyRoom, let environment = await CozyRoomLighting.environmentResource(at: RoomDaylight.currentDate) {
+            let lightingDate = RoomDaylight.currentDate
+            let lightingProfile = parent.mode == .decorate ? RoomDaylight.editor : RoomDaylight.at(lightingDate)
+            var roomEnvironment: EnvironmentResource?
+            if parent.isCozyRoom, let environment = await CozyRoomLighting.environmentResource(profile: lightingProfile) {
+                roomEnvironment = environment
                 view?.environmentResource = environment
             }
+            let showsLoadingDoll = parent.mode == .home && parent.entrance?.finished == false
+                && parent.entrance?.loadingDoll != nil && !UIAccessibility.isReduceMotionEnabled
+            let neutralEnvironment = showsLoadingDoll ? await CozyRoomLighting.environmentResource(profile: .editor) : nil
+            var loadingPose: RoomLoadingDollPose?
             let previous = displayed
             var settling: [(Entity, RoomItemState)] = []
             var sitting: [(Entity, RoomItemState, SIMD3<Float>, SIMD3<Float>)] = []
@@ -395,6 +426,7 @@ struct RoomSceneView: UIViewRepresentable {
                     let furniture = await SceneFactory.furniture(item, elevation: RoomLayout.furnitureHeight(item, in: state.items), cozy: parent.isCozyRoom, cutaway: parent.mode == .decorate)
                     if roomHidden { furniture.components.set(OpacityComponent(opacity: 0)) }
                     if item.kind == .bed { DollRestPose.bedding(furniture, pose: .made, animated: false) }
+                    if parent.mode == .decorate, item.id == state.selectedItemID, item.kind.isMovable { SceneFactory.outline(furniture) }
                     content.addChild(furniture)
                 }
                 for var doll in state.dolls {
@@ -402,7 +434,15 @@ struct RoomSceneView: UIViewRepresentable {
                     // 가구 위에 있는 인형은 그 윗면에 서고, 가구가 치워졌으면 바닥으로 내려온다.
                     let support = RoomLayout.seat(at: [doll.position.x, doll.position.z], in: state.items, sleepingBeds: Set(state.dolls.compactMap(\.restingBedID)), includingActivitySeats: doll.couchCompanionScale != nil)
                     doll.position.y = support.height
-                    let model = await SceneFactory.doll(doll)
+                    var presentation = doll
+                    if showsLoadingDoll, parent.entrance?.loadingDoll?.id == doll.id { presentation.dance = nil }
+                    let model = await SceneFactory.doll(presentation)
+                    if showsLoadingDoll, parent.entrance?.loadingDoll?.id == doll.id {
+                        let roomOrientation = model.orientation
+                        model.orientation = simd_quatf(angle: atan2(cameraDirection.x, cameraDirection.z) - orbitYaw, axis: [0, 1, 0])
+                        loadingPose = RoomLoadingDollPose(awake: model)
+                        model.orientation = roomOrientation
+                    }
                     if doll.restingBedID == nil,
                        let seat = support.item,
                        seat.kind == .bed || seat.kind == .chair || doll.couchCompanionScale != nil {
@@ -454,7 +494,7 @@ struct RoomSceneView: UIViewRepresentable {
                 if parent.isCozyRoom {
                     if parent.mode == .decorate { aimCamera(at: [0, 0.82, 0], fitting: 3.15, height: 3.15) }
                     else { aimCamera(at: [-0.10, 0.52, -0.18], fitting: 1.65, height: 3.0) }
-                    content.addChild(CozyRoomLighting.sunlight())
+                    if parent.mode != .decorate { content.addChild(CozyRoomLighting.sunlight()) }
                 } else {
                     aimCamera(at: [0, parent.illustrationTargetY ?? 0.45, 0], fitting: parent.illustrationTargetY == nil ? 3.3 : 3.55, height: parent.illustrationTargetY == nil ? 3.1 : 2.9)
                 }
@@ -463,21 +503,28 @@ struct RoomSceneView: UIViewRepresentable {
             wander = nil
             content.orientation = simd_quatf(angle: orbitYaw, axis: [0, 1, 0])
             if parent.isCozyRoom {
-                let date = RoomDaylight.currentDate
-                let profile = RoomDaylight.at(date)
-                await CozyRoomLighting.apply(profile, to: content)
-                configureDaylight(profile)
-                lastLightingProfile = profile
-                lastLightingMinute = Int(date.timeIntervalSince1970 / 60)
+                await CozyRoomLighting.apply(lightingProfile, to: content, usesDaylight: parent.mode != .decorate)
+                lastLightingProfile = lightingProfile
+                lastLightingMinute = Int(lightingDate.timeIntervalSince1970 / 60)
             }
             guard !Task.isCancelled else { return }
             entranceAnimation?.restore()
             entranceAnimation = nil
+            if parent.isCozyRoom { configureDaylight(lightingProfile) }
             // Keep the previous room visible throughout asynchronous rebuilding.
             root.children.removeAll()
             highlights = []
             if let entrance = parent.entrance, !entrance.finished {
-                entranceAnimation = RoomSceneEntrance(entrance: entrance, content: content, items: state.items)
+                loadingPose?.captureRoomPose()
+                var loadingLighting: RoomLoadingDollLighting?
+                if showsLoadingDoll, let neutralEnvironment, let roomEnvironment,
+                   let id = entrance.loadingDoll?.id, let hero = content.findEntity(named: "doll|\(id)") {
+                    loadingLighting = RoomLoadingDollLighting(doll: hero, content: content, key: light,
+                        neutral: neutralEnvironment, roomEnvironment: roomEnvironment, roomExponent: view?.lightingExponent ?? 0)
+                }
+                entranceAnimation = RoomSceneEntrance(entrance: entrance, content: content, items: state.items,
+                    loadingPose: loadingPose, loadingLighting: loadingLighting,
+                    loadingDance: state.dolls.first { $0.id == entrance.loadingDoll?.id }?.dance)
             }
             root.addChild(content)
             root.addChild(camera)
@@ -492,7 +539,8 @@ struct RoomSceneView: UIViewRepresentable {
             lastStaticProjection = nil
             configureAccessibility(content)
             view?.onNextPresentedFrame = { [weak self] in
-                guard let self else { return }
+                guard let self, !self.stopped, self.displayed == state else { return }
+                self.parent.readiness?.presented(self.sceneID)
                 self.parent.onSceneReady()
                 #if DEBUG
                 DesignPreviewSignal.sceneReady(dollCount: state.dolls.count)
@@ -519,7 +567,8 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func updateDaylight() {
-            guard parent.isCozyRoom, let content = root.children.first else { return }
+            guard parent.isCozyRoom, parent.mode != .decorate, parent.entrance?.finished != false,
+                  let content = root.children.first else { return }
             let date = RoomDaylight.currentDate
             let minute = Int(date.timeIntervalSince1970 / 60)
             guard minute != lastLightingMinute else { return }
@@ -736,7 +785,7 @@ struct RoomSceneView: UIViewRepresentable {
                 if item.kind == .wall {
                     key = "창문"
                     points = parent.mode == .decorate
-                        ? [[-0.995, 0, -1], [-0.995, CozyRoomShell.cutawayHeight(x: -0.995, z: -1), -1], [-0.995, 0, 1], [-0.995, CozyRoomShell.cutawayHeight(x: -0.995, z: 1), 1]]
+                        ? [[-0.995, 0, -1], [-0.995, CozyRoomShell.overviewWallHeight, -1], [-0.995, 0, 1], [-0.995, CozyRoomShell.overviewWallHeight, 1]]
                         : [[-0.92, 0.43, -0.28], [-0.92, 1.48, 0.38]]
                 } else if item.kind == .desk || item.kind == .sofa {
                     key = item.kind == .sofa ? "소파" : item.kind.label
@@ -757,6 +806,8 @@ struct RoomSceneView: UIViewRepresentable {
                 if item.kind == .wall, parent.mode == .decorate, screen.count == 4 {
                     let polygon = [screen[3], screen[1], screen[0], screen[2]]
                     if polygon != lastWallPolygon { lastWallPolygon = polygon; parent.onWallScreen(polygon) }
+                    let right: [SIMD3<Float>] = [[-1, 0, -0.995], [-1, CozyRoomShell.overviewWallHeight, -0.995], [1, CozyRoomShell.overviewWallHeight, -0.995], [1, 0, -0.995]]
+                    parent.onRightWallScreen(right.compactMap { view.project(entity.convert(position: $0, to: nil)) })
                 }
                 if screen.count >= 2 {
                     let xs = screen.map(\.x), ys = screen.map(\.y)
@@ -943,7 +994,12 @@ struct RoomSceneView: UIViewRepresentable {
                 return
             }
             if parent.mode == .decorate {
-                if let hit = target(at: point), !hit.isDoll { parent.onTapItem(hit.id) } else { parent.onTapItem(nil) }
+                if let hit = target(at: point), !hit.isDoll {
+                    if item(hit.id)?.kind == .wall, let collision = hits(at: point).first {
+                        let local = hit.entity.convert(position: collision.position, from: nil)
+                        parent.onTapWall(abs(local.z + 1) < abs(local.x + 1))
+                    } else { parent.onTapItem(hit.id) }
+                } else { parent.onTapItem(nil) }
                 return
             }
             // Furniture uses coarse collision boxes which can overlap a visible

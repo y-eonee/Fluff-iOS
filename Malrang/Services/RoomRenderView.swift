@@ -66,6 +66,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
             metalView = view
             addSubview(view)
             renderer.cameraSettings.isToneMappingEnabled = true
+            renderer.cameraSettings.antialiasing = .multisample4X
         } else {
             let view = EfficientARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
             view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
@@ -108,6 +109,10 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         }
     }
     func attach(_ root: AnchorEntity, camera: PerspectiveCamera) {
+        if let previous = self.root {
+            renderer?.entities.removeAll { $0 === previous }
+            legacy?.scene.removeAnchor(previous)
+        }
         self.root = root; self.camera = camera
         if let renderer { renderer.entities.append(root); renderer.activeCamera = camera }
         else { legacy?.scene.addAnchor(root) }
@@ -136,7 +141,10 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     private func applyBudget() {
         guard let view = metalView else { return }
         let constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-        contentScaleFactor = min(max(1, traitCollection.displayScale), constrained ? 1 : 1.5)
+        // Render above native resolution and let the compositor downsample.
+        // Combined with MSAA this also stabilizes thin fur and distant silhouettes.
+        contentScaleFactor = constrained ? min(max(1, traitCollection.displayScale), 1.5)
+            : min(4, max(1, traitCollection.displayScale) * 1.25)
         view.drawableSize = CGSize(width: max(1, bounds.width * contentScaleFactor), height: max(1, bounds.height * contentScaleFactor))
         view.isPaused = window == nil || UIApplication.shared.applicationState != .active
         if wantsBloom && !constrained, bloom == nil, let device = view.device { bloom = CozyBloom(device: device) }

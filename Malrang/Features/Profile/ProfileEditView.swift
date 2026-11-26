@@ -16,7 +16,6 @@ struct ProfileEditView: View {
     @State private var draftAvatar = Data()
     @State private var pickerItem: PhotosPickerItem?
     @State private var accountError: String?
-    private let maxLength = 10
 
     private var trimmed: String { draftName.trimmingCharacters(in: .whitespacesAndNewlines) }
 
@@ -35,18 +34,13 @@ struct ProfileEditView: View {
                     TextField("", text: $draftName, prompt: Text("닉네임을 입력해주세요").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
                         .submitLabel(isCreating ? .go : .done)
                         .onSubmit { if !trimmed.isEmpty { save() } }
-                        .onChange(of: draftName) {
-                            if draftName.count > maxLength { draftName = String(draftName.prefix(maxLength)) }
-                        }
-                    Text("\(draftName.count)/\(maxLength)")
-                        .appFont(.footnote)
-                        .foregroundStyle(Color.app.inkSecondary)
+
                 }
                 .padding(.horizontal, Spacing.m)
                 .frame(minHeight: 52)
                 .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous).stroke(Color.app.ink.opacity(0.15)))
-                Text("내 방에서 사용할 이름이에요 · 최대 \(maxLength)자")
+                Text("내 방에서 사용할 이름이에요")
                     .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }

@@ -4,11 +4,12 @@ import SwiftUI
 /// SwiftUI의 ColorPicker는 작은 동그라미를 눌러야 열려서, 시스템 컬러 피커를 그대로 감싼다.
 struct ItemColorPicker: UIViewControllerRepresentable {
     let item: RoomItem
+    var rightWall = false
     private var selectedColor: UIColor {
-        Palette.uiColor(item.colorName ?? CozyFurniture.defaultColor(for: item.kind))
+        Palette.uiColor((rightWall ? item.rightWallColorName : item.colorName) ?? (rightWall ? CozyRoomPalette.ivory : CozyFurniture.defaultColor(for: item.kind)))
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(item: item) }
+    func makeCoordinator() -> Coordinator { Coordinator(item: item, rightWall: rightWall) }
 
     func makeUIViewController(context: Context) -> UIColorPickerViewController {
         let controller = UIColorPickerViewController()
@@ -20,6 +21,7 @@ struct ItemColorPicker: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: UIColorPickerViewController, context: Context) {
         context.coordinator.item = item
+        context.coordinator.rightWall = rightWall
         let color = selectedColor
         if !controller.selectedColor.isEqual(color) {
             controller.selectedColor = color
@@ -28,12 +30,13 @@ struct ItemColorPicker: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, UIColorPickerViewControllerDelegate {
         var item: RoomItem
+        var rightWall: Bool
 
-        init(item: RoomItem) { self.item = item }
+        init(item: RoomItem, rightWall: Bool) { self.item = item; self.rightWall = rightWall }
 
         func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
-            item.colorName = Palette.hex(Color(uiColor: color))
-            item.photoData = nil
+            if rightWall { item.rightWallColorName = Palette.hex(Color(uiColor: color)) }
+            else { item.colorName = Palette.hex(Color(uiColor: color)); item.photoData = nil }
         }
     }
 }

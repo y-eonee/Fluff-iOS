@@ -11,6 +11,9 @@ enum RenderMemory {
         SceneFactory.clearCache()
         CozyFurniture.clearCache()
         CozyRoomLighting.clearCache()
+        WindowLandscapeSurface.clearCache()
+        WindowOrganicModels.clearCache()
+        WindowLandscapeModel.clearCache()
         DollThumbnail.clearCache()
     }
 }

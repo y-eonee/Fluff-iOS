@@ -9,6 +9,7 @@ final class RoomItem {
     var z: Double
     var colorName: String?
     var windowFrameColor: String?
+    var rightWallColorName: String? = nil
     @Attribute(.externalStorage) var photoData: Data?
     var photoScale = 1.0
     /// 사진을 프레임에 맞추는 방식. 0은 채우기(넘치는 부분은 잘라냄), 1은 맞추기(전체가 보임)
@@ -32,7 +33,7 @@ final class RoomItem {
     var kind: FurnitureKind { FurnitureKind(rawValue: kindRaw) ?? .bed }
 
     var state: RoomItemState {
-        RoomItemState(id: id, kind: kind, x: Float(x), z: Float(z), colorName: colorName, windowFrameColor: windowFrameColor,
+        RoomItemState(id: id, kind: kind, x: Float(x), z: Float(z), colorName: colorName, windowFrameColor: windowFrameColor, rightWallColorName: rightWallColorName,
                       photoData: photoData, photoScale: Float(photoScale), photoFit: photoFit, photoFlipped: photoFlipped, photoTurns: photoTurns,
                       photoOffsetX: Float(photoOffsetX), photoOffsetY: Float(photoOffsetY), yaw: Float(yaw), isMirrored: isMirrored)
     }
@@ -42,6 +43,7 @@ final class RoomItem {
         z = Double(state.z)
         colorName = state.colorName
         windowFrameColor = state.windowFrameColor
+        rightWallColorName = state.rightWallColorName
         photoData = state.photoData
         photoScale = Double(state.photoScale)
         photoFit = state.photoFit
@@ -88,6 +90,7 @@ struct RoomItemState: Identifiable, Equatable {
     var z: Float
     var colorName: String?
     var windowFrameColor: String?
+    var rightWallColorName: String? = nil
     var photoData: Data?
     var photoScale: Float = 1
     var photoFit = 0

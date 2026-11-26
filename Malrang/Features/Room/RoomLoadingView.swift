@@ -4,6 +4,10 @@ import SwiftUI
 /// coordinates the veil, character, copy and progress before revealing the live room.
 struct RoomLoadingView: View {
     let entrance: RoomEntrance
+    /// Re-entering the room waits only for its first frame, without replaying
+    /// the session's doll arrival or showing completion before it is ready.
+    var waitsForScene = false
+    @State private var waitingSince = Date()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let ink = Color(uiColor: Palette.uiColor("#614A40"))
@@ -13,25 +17,30 @@ struct RoomLoadingView: View {
         transform: [[0.03376460448, 0.63030683994, 0.50053244829], [-0.63030683994, 0.00415693317, 0.92314726114]], opacity: 1)
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: scenePhase != .active || entrance.finished)) { _ in
-            let cotton = entrance.loadingDoll == nil
-            let time = entrance.time
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: scenePhase != .active || (!waitsForScene && entrance.finished))) { context in
+            let cotton = waitsForScene || entrance.loadingDoll == nil
+            // Loop the source's preparation segment, before its completion copy.
+            let time = waitsForScene ? max(0, context.date.timeIntervalSince(waitingSince)).truncatingRemainder(dividingBy: 5.4) : entrance.time
             GeometryReader { geometry in
                 let scale = min(geometry.size.width / 390, geometry.size.height / 844)
                 ZStack {
                     RepresentativeGradientFill(definition: Self.veil)
-                        .opacity(entrance.presentsSceneDoll ? 0 : value(cotton ? "1932:6465" : "1904:6845", "opacity", time, 1))
+                        .opacity(!waitsForScene && entrance.presentsSceneDoll ? 0 : value(cotton ? "1932:6465" : "1904:6845", "opacity", time, 1))
                     ZStack(alignment: .topLeading) {
-                        if let doll = entrance.loadingDoll {
-                            if !entrance.presentsSceneDoll { ownedDoll(doll, time: time) }
+                        if let doll = entrance.loadingDoll, !waitsForScene {
+                            // A second preview renderer caused a visible pose change at handoff.
+                            // Normal motion uses only the selected live room entity from its first frame.
+                            if reduceMotion { ownedDoll(doll, time: time) }
                         } else {
                             CottonLoadingCharacter(time: reduceMotion ? 0 : time)
-                                .modifier(RoomEntranceMotion(entrance: entrance, node: "1918:7552"))
+                                .modifier(motion("1918:7552", time: time))
                                 .offset(x: 116, y: 282)
                         }
-                        message("인형들을 깨우고 있어요.", node: cotton ? "1932:6469" : "1904:6856", y: cotton ? 566 : 478)
-                        message("이불을 폭신하게 펴는 중…", node: cotton ? "1932:6485" : "1904:6882", y: cotton ? 566 : 478)
-                        message("포근한 방 완성!", node: cotton ? "1932:6497" : "1904:6893", y: cotton ? 566 : 478)
+                        message("인형들을 깨우고 있어요.", node: cotton ? "1932:6469" : "1904:6856", y: cotton ? 566 : 478, time: time)
+                        message("이불을 폭신하게 펴는 중…", node: cotton ? "1932:6485" : "1904:6882", y: cotton ? 566 : 478, time: time)
+                        if !waitsForScene {
+                            message("포근한 방 완성!", node: cotton ? "1932:6497" : "1904:6893", y: cotton ? 566 : 478, time: time)
+                        }
                         Capsule().fill(.white).frame(width: 305.38, height: 6)
                             .overlay(alignment: .leading) {
                                 Capsule().fill(Color(uiColor: Palette.uiColor("#76D9F9")))
@@ -51,17 +60,21 @@ struct RoomLoadingView: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("인형들을 깨우고 있어요. 잠시만 기다려 주세요.")
-            .accessibilityValue(entrance.loadingDoll?.name ?? "솜뭉치")
+            .accessibilityValue(waitsForScene ? "솜뭉치" : entrance.loadingDoll?.name ?? "솜뭉치")
             .accessibilityIdentifier("room-loading")
         }.ignoresSafeArea().contentShape(Rectangle())
     }
 
+    private var timeline: RoomLoadingTimeline { waitsForScene ? .cotton : entrance.timeline }
     private func value(_ node: String, _ property: String, _ time: Double, _ fallback: Double) -> Double {
-        entrance.timeline.value(node, property, at: time, fallback: fallback)
+        timeline.value(node, property, at: time, fallback: fallback)
     }
-    private func message(_ text: String, node: String, y: Double) -> some View {
+    private func motion(_ node: String, time: Double, spatialScale: Double = 1) -> RoomLoadingElementMotion {
+        RoomLoadingElementMotion(timeline: timeline, node: node, time: time, spatialScale: spatialScale, reduceMotion: reduceMotion)
+    }
+    private func message(_ text: String, node: String, y: Double, time: Double) -> some View {
         Text(text).pretendard(.semiBold, 16).foregroundStyle(Color.rep4.c03).frame(width: 390)
-            .modifier(RoomEntranceMotion(entrance: entrance, node: node, spatialScale: entrance.loadingDoll == nil ? 1 : 390 / 334.831)).offset(y: y)
+            .modifier(motion(node, time: time, spatialScale: waitsForScene || entrance.loadingDoll == nil ? 1 : 390 / 334.831)).offset(y: y)
     }
     private func ownedDoll(_ doll: DollState, time: Double) -> some View {
         let ratio = 390 / 334.831
@@ -80,6 +93,23 @@ struct RoomLoadingView: View {
         .offset(x: (45.3 + (reduceMotion ? 80.13 : value("1904:6939", "--motion-translate-x", time, 80.13))) * ratio,
                 y: (285.49 + (reduceMotion ? 29.27 : value("1904:6939", "--motion-translate-y", time, 29.27))) * ratio)
         .opacity(time < 2.45 ? 1 : max(0, 1 - (time - 2.45) / 0.3))
+    }
+}
+
+private struct RoomLoadingElementMotion: ViewModifier {
+    let timeline: RoomLoadingTimeline
+    let node: String
+    let time: Double
+    let spatialScale: Double
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(x: reduceMotion ? 1 : timeline.value(node, "--motion-scale-x", at: time, fallback: 1),
+                         y: reduceMotion ? 1 : timeline.value(node, "--motion-scale-y", at: time, fallback: 1))
+            .offset(x: reduceMotion ? 0 : timeline.value(node, "--motion-translate-x", at: time) * spatialScale,
+                    y: reduceMotion ? 0 : timeline.value(node, "--motion-translate-y", at: time) * spatialScale)
+            .opacity(timeline.value(node, "opacity", at: time, fallback: 1))
     }
 }
 

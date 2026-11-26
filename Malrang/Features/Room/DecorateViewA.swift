@@ -9,14 +9,15 @@ extension DecorateView {
                 items: items.map(\.state), dolls: [], mode: .decorate,
                 onMoveItem: move, onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
                 selectedItemID: selectedID, onTapItem: { selectedID = $0 }, onFeel: { feelCount += 1 },
-                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onSceneReady: { loadingEntrance.prepareScene() }, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }, entrance: entrance
+                isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onSceneReady: { loadingEntrance.prepareScene() }, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }, onRightWallScreen: { rightWallPolygon = $0 },
+                onTapWall: { selectedRightWall = $0; selectedID = nil; category = .wallpaper }, entrance: entrance
             )
             .renderedOnlyWhileVisible(background: .clear)
             .frame(minHeight: 220).frame(maxHeight: .infinity)
             .overlay {
                 let target = selectedItem ?? (surfaceKind == .wall ? items.first { $0.kind == .wall } : nil)
                 if let target, target.kind == .wall, wallPolygon.count == 4 {
-                    WallSelectionOverlay(points: wallPolygon).modifier(RoomEntranceMotion(entrance: entrance, node: "8445"))
+                    WallSelectionOverlay(points: selectedRightWall ? rightWallPolygon : wallPolygon, title: selectedRightWall ? "오른쪽 벽" : "왼쪽 벽").modifier(RoomEntranceMotion(entrance: entrance, node: "8445"))
                 } else if let target, let rect = furnitureBounds[target.id.uuidString] {
                     FurnitureSelectionOverlay(rect: rect, title: target.kind.label).modifier(RoomEntranceMotion(entrance: entrance, node: "8445"))
                 }
@@ -30,7 +31,7 @@ extension DecorateView {
             .sensoryFeedback(trigger: rotationFailCount) { _, _ in hapticOn ? .warning : nil }
             .sensoryFeedback(trigger: isFull) { _, full in hapticOn && full ? .warning : nil }
             .overlay(alignment: .bottom) { historyRow.modifier(RoomEntranceMotion(entrance: entrance, node: "8457")).padding(.bottom, 6) }
-            editorPanel.allowsHitTesting(entrance.finished)
+            editorPanel.disabled(!entrance.finished)
         }.environment(\.roomFlowDesign, true).foregroundStyle(Color.rep4.c03).background { RepresentativeGradientFill(definition: RepresentativeGradients.roomBackground).ignoresSafeArea() }
 
     }
@@ -153,7 +154,17 @@ extension DecorateView {
     private var catalogPanel: some View {
         ScrollView {
             if let kind = surfaceKind, let surface = items.first(where: { $0.kind == kind }) {
-                FurnitureFinishEditor(item: surface, initialPhotoMode: surfacePhotoMode, requestPhotoRemoval: { photoRemovalItem = surface })
+                if kind == .wall {
+                    HStack(spacing: 8) {
+                        D1Choice(title: "왼쪽 벽", selected: !selectedRightWall, fillsWidth: true) { selectedRightWall = false }
+                        D1Choice(title: "오른쪽 벽", selected: selectedRightWall, fillsWidth: true) { selectedRightWall = true }
+                    }.padding(.bottom, 8)
+                }
+                if kind == .wall && selectedRightWall {
+                    FurnitureColorChoices(item: surface, rightWall: true)
+                } else {
+                    FurnitureFinishEditor(item: surface, initialPhotoMode: surfacePhotoMode, requestPhotoRemoval: { photoRemovalItem = surface })
+                }
             } else {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                     ForEach(FurnitureKind.allCases.filter { $0.category == category || (category == .decor && $0.category == .rug) }, id: \.self) { kind in

@@ -10,6 +10,7 @@ struct RoomLoadingTimeline: Decodable {
     static let editor = load("RoomEditorMotion", duration: 2)
     static let cotton = load("CottonLoadingMotion", duration: 8.4)
     static let ownedDoll = load("OwnedDollLoadingMotion", duration: 3.4)
+    static let prelogin = load("PreloginSplashMotion", duration: 8.4)
 
     private static func load(_ name: String, duration: Double) -> Self {
         guard let url = Bundle.main.url(forResource: name, withExtension: "json"),

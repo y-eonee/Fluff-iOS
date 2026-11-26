@@ -118,7 +118,7 @@ final class DesignPreviewData {
             defaults.set(ProcessInfo.processInfo.arguments.contains("--desk-restoration-already-complete"),
                          forKey: "didRestoreBackWallDesk20261124")
         }
-        if route == "home-ui", ProcessInfo.processInfo.arguments.contains("--bed-occupied"),
+        if ["home-ui", "room-loading", "tabs-ui"].contains(route), ProcessInfo.processInfo.arguments.contains("--bed-occupied"),
            let bed = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .bed }),
            let dolls = try? container.mainContext.fetch(FetchDescriptor<Doll>()) {
             if let sleeper = dolls.first(where: { $0.presetConfiguration?.shape == .cat }) {
@@ -233,6 +233,8 @@ final class DesignPreviewData {
 
 struct DesignPreview: View {
     @State private var fixture: DesignPreviewData
+    @State private var previewDance: DanceMove?
+    @State private var previewDanceClosed = false
     init(route: String) { _fixture = State(initialValue: DesignPreviewData(route: route)) }
     private var route: String { fixture.route }
     private var draft: DollDraft { fixture.draft }
@@ -253,6 +255,16 @@ struct DesignPreview: View {
             else if ["doll-profile", "doll-history"].contains(route), let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first {
                 DollActionSheet(doll: doll, initiallyShowsHistory: route == "doll-history")
             }
+            else if route == "ar-dance-panel", let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.name == "몽글이" }) {
+                VStack {
+                    Spacer()
+                    if previewDanceClosed {
+                        Text(doll.dance?.label ?? "선택 없음").accessibilityIdentifier("saved-ar-dance")
+                    } else {
+                        DancePanel(doll:doll,selected:$previewDance) { previewDanceClosed = true }
+                    }
+                }.background(Color.gray.opacity(0.2))
+            }
             else if route == "photo-pick" { creationShell { PhotoPickStep(draft: draft) {} } }
             else if ["cutout-auto", "cutout-move"].contains(route) { creationShell { CutoutEditStep(draft: draft, onReselect: {}, onNext: {}) } }
             else if route == "create-ready" { creationShell { CutoutReadyStep(draft: draft, onEdit: {}, onNext: {}) } }
@@ -261,6 +273,11 @@ struct DesignPreview: View {
             }
             else if route == "room-loading" { MainTabs(couch: fixture.couch) }
             else if route == "splash-approved" { BrandSplashView() }
+            else if route == "prelogin-splash" {
+                PreloginSplashView(previewTime: ProcessInfo.processInfo.arguments
+                    .first { $0.hasPrefix("--splash-time=") }
+                    .flatMap { Double($0.replacingOccurrences(of: "--splash-time=", with: "")) })
+            }
             else if route == "profile-create" { NavigationStack { ProfileEditView(isCreating: true) } }
             else if ["tabs-ui", "tabs-dolls", "tabs-profile"].contains(route) { MainTabs(couch: fixture.couch) }
             else if route == "couch-artwork" {

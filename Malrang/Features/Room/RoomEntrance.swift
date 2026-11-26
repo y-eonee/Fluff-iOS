@@ -40,6 +40,13 @@ final class RoomEntrance {
         return min(timeline.duration, max(0, ProcessInfo.processInfo.systemUptime - start))
     }
 
+    var dollArrivalProgress: Float {
+        guard time >= 1.95 else { return 0 }
+        guard time < 2.95 else { return 1 }
+        let x = timeline.value("1904:6939", "--motion-translate-x", at: time, fallback: 80.131523)
+        return Float(min(1, max(0, 1 - x / 81.13221)))
+    }
+
     func sceneWasRemoved() {
         sceneReady = false
         presentsSceneDoll = false

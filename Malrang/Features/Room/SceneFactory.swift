@@ -119,10 +119,29 @@ enum SceneFactory {
         return entity
     }
 
+    /// Inverted hulls follow each model's real silhouette, including rotations.
+    /// The front-facing original mesh occludes the enlarged back-facing outline.
+    static func outline(_ furniture: Entity) {
+        var ink = UnlitMaterial(color: Palette.uiColor("#659DDF"))
+        ink.faceCulling = .front
+        func visit(_ node: Entity) {
+            for child in Array(node.children) { visit(child) }
+            guard let model = node.components[ModelComponent.self],
+                  !node.name.contains("shadow"), !node.name.contains(".pile"),
+                  !node.name.contains("glow"), !node.name.contains("light") else { return }
+            let outline = ModelEntity(mesh: model.mesh, materials: model.materials.map { _ in ink })
+            outline.name = "selection-outline"
+            outline.scale = SIMD3(repeating: 1.025)
+            outline.components.set(DynamicLightShadowComponent(castsShadow: false))
+            node.addChild(outline)
+        }
+        visit(furniture)
+    }
+
     static func doll(_ doll: DollState) async -> Entity {
         if let preset = doll.preset {
             let entity = Entity()
-            let visual = await PresetDollModel.make(preset, detail: .room)
+            let visual = await PresetDollModel.make(preset, detail: .full)
             // Edited head/body proportions must not change the doll's world height.
             // Match the room's placement and collision height using the final mesh.
             let bounds = visual.visualBounds(relativeTo: visual)

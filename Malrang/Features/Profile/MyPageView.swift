@@ -23,7 +23,7 @@ struct MyPageView: View {
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium)).accessibilityHidden(true)
-                        }.padding(16).d1Surface(radius: 14)
+                        }.padding(.horizontal, 20).padding(.vertical, 26).d1Surface(radius: 14)
                     }.buttonStyle(.plain)
                     VStack(alignment: .leading, spacing: 12) {
                         Text("앱 설정").pretendard(.bold, 17)
@@ -50,7 +50,7 @@ struct MyPageView: View {
                             }.frame(minHeight: 52)
                         }.pretendard(.regular, 16).padding(.horizontal, 16).d1Surface(radius: 14)
                     }
-                }.padding(.horizontal, 22).padding(.bottom, 24)
+                }.padding(.horizontal, 16).padding(.bottom, 24)
             }.scrollIndicators(.hidden)
         }.foregroundStyle(Color.mib.text.primary).tint(Color.mib.action.primary).background(FlowDesign.canvas.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)

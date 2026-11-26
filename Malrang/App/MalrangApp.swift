@@ -5,10 +5,15 @@ import SwiftUI
 
 @main
 struct MalrangApp: App {
+    @AppStorage("isSignedIn") private var isSignedIn = false
     @State private var startupPresentationFinished = false
+    private var isStartupReady: Bool {
+        startupPresentationFinished || skipsBrandSplash
+    }
     private var skipsBrandSplash: Bool {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
+        if args.contains("--show-startup-splash") { return false }
         return args.contains { $0.hasPrefix("--design-preview=") || $0.hasPrefix("--export-") || $0.hasSuffix("-audit") || $0 == "--onboarding-preview" }
         #else
         return false
@@ -55,15 +60,21 @@ struct MalrangApp: App {
     var body: some Scene {
         WindowGroup {
             startupContent
-                .allowsHitTesting(startupPresentationFinished)
-                .accessibilityHidden(!startupPresentationFinished)
-                .overlay { if !startupPresentationFinished && !skipsBrandSplash { BrandSplashView().transition(.opacity) } }
-                .task {
-                    if !skipsBrandSplash { try? await Task.sleep(for: .milliseconds(1100)) }
+                .allowsHitTesting(isStartupReady)
+                .accessibilityHidden(!isStartupReady)
+                .overlay {
+                    if !isStartupReady {
+                        if isSignedIn { BrandSplashView().transition(.opacity) }
+                        else { PreloginSplashView { startupPresentationFinished = true } }
+                    }
+                }
+                .task(id: isSignedIn) {
+                    guard isSignedIn || skipsBrandSplash else { return }
+                    if !isStartupReady { try? await Task.sleep(for: .milliseconds(1100)) }
                     guard !Task.isCancelled else { return }
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.22)) { startupPresentationFinished = true }
                 }
-                .environment(\.startupPresentationFinished, startupPresentationFinished)
+                .environment(\.startupPresentationFinished, isStartupReady)
             .task {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("--data-reset-audit") { try? DesignDataReset.audit() }

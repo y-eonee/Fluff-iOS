@@ -113,7 +113,7 @@ extension FocusFlowView {
                     Text("\(session.resting ? "휴식" : "집중") · \(FocusSession.clock(session.record.seconds, hours: false))")
                     Spacer()
                     Text("\(session.resting ? "시작 남음" : "휴식까지") · \(FocusSession.clock(session.remaining, hours: false))")
-                }.pretendard(.regular, 10.5).frame(height: 15.225)
+                }.pretendard(.regular, 14).frame(minHeight: 21)
                     .padding(.leading, 2).offset(y: 137.06)
             }
         }.frame(height: 152.285).foregroundStyle(Color.rep4.c01)

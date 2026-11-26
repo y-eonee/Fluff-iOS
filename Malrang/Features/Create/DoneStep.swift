@@ -20,10 +20,6 @@ struct DoneStep: View {
                     Image(uiImage: doll.image).resizable().scaledToFit()
                 }
             }.frame(maxWidth: 316, maxHeight: 437).accessibilityLabel(doll.name)
-                .background {
-                    Image("flow_done_glow").resizable().scaledToFit()
-                        .frame(width: 440.358, height: 300.588)
-                }
             Spacer(minLength: 12)
             HStack(spacing: 12) {
                 Button("다시 만들기", action: onRestart)
@@ -43,7 +39,9 @@ struct DoneStep: View {
                 CreationBackButton(label: "다시 만들기", action: onRestart)
             }.sharedBackgroundVisibility(.hidden)
         }
-        .background { AppBackground() }
+        .background {
+            RepresentativeGradientFill(definition: FlowDesign.completionBackground).ignoresSafeArea()
+        }
         .sensoryFeedback(.success, trigger: isDone)
         .onAppear { isDone = true }
     }

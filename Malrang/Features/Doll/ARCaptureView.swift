@@ -1,4 +1,5 @@
 import ARKit
+import Photos
 import AVFoundation
 import AVKit
 import RealityKit
@@ -21,16 +22,18 @@ struct ARCaptureView: View {
     @State private var isRecordFailed = false
     @State private var failure: String?
     @State private var isChoosingDance = false
-    @State private var move = DanceMove.morningExercise
+    @State private var move: DanceMove?
     @State private var hasDoll = false
     @State private var removeCount = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hintPulse = false
 
     var body: some View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background { AppBackground() }
-                .flowPageTitle("예절샷", isVisible: !isRecording)
+                .flowPageTitle("사진 찍기", isVisible: !isRecording)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("etiquette-photo-screen")
                 .accessibilityValue(doll.name)
@@ -83,13 +86,32 @@ struct ARCaptureView: View {
     }
 
     private var camera: some View {
-        ARDollCamera(dollImage: doll.image, shutterCount: shutterCount, removeCount: removeCount, dance: isChoosingDance ? move : doll.dance,
+        ARDollCamera(dollState: doll.state, shutterCount: shutterCount, removeCount: removeCount, dance: isChoosingDance ? move : doll.dance,
                      onCapture: { photo = $0 }, onFail: { failure = $0 }, onPlaced: { hasDoll = $0 })
             .ignoresSafeArea(edges: .bottom)
             .overlay(alignment: .top) {
                 if !isRecording {
-                    HintCapsule(text: hasDoll ? "끌어서 옮기고, 두 손가락으로 크기를 바꿔요" : "바닥을 비춘 뒤 원하는 곳을 탭해 인형을 놓으세요", isLight: true)
-                        .padding(.top, Spacing.xs)
+                    VStack(spacing: 12) {
+                        HintCapsule(text: hasDoll ? "끌어서 옮기고, 두 손가락으로 크기를 바꿔요" : "바닥을 비춘 뒤 원하는 곳을 탭해 인형을 놓으세요", isLight: true)
+                        if hasDoll {
+                            HStack(spacing: 12) {
+                                Button {
+                                    move = doll.dance.flatMap { DanceMove.selectable.contains($0) ? $0 : nil }
+                                    withAnimation(.spring) { isChoosingDance = true }
+                                } label: { Label("춤추기", systemImage: "music.note") }
+                                Button { removeCount += 1 } label: { Label("인형 삭제", systemImage: "trash") }
+                            }.pretendard(.medium, 14).buttonStyle(.bordered).tint(.white)
+                        } else {
+                            Image(systemName: "hand.tap")
+                                .font(.system(size: 30)).foregroundStyle(.white)
+                                .opacity(reduceMotion || hintPulse ? 1 : 0.35)
+                                .padding(14).background(.black.opacity(0.3), in: Circle())
+                                .allowsHitTesting(false).accessibilityHidden(true)
+                                .onAppear {
+                                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 1).repeatForever(autoreverses: true)) { hintPulse = true }
+                                }
+                        }
+                    }.padding(.top, Spacing.xs)
                 }
             }
             .overlay(alignment: .bottom) {
@@ -107,7 +129,7 @@ struct ARCaptureView: View {
             .sensoryFeedback(.impact, trigger: isRecording)
     }
 
-    /// 가운데 셔터, 왼쪽 춤추기, 오른쪽 인형 삭제. 녹화 중에는 셔터만 남긴다.
+    /// 촬영 컨트롤은 하단, 인형 편집은 상단에 분리한다.
     private var controls: some View {
         VStack(spacing: Spacing.s) {
             if !isRecording && onUsePhoto == nil {
@@ -116,33 +138,7 @@ struct ARCaptureView: View {
                     Chip(title: "영상", isSelected: isVideoMode) { isVideoMode = true }
                 }
             }
-            HStack(spacing: Spacing.s) {
-                Group {
-                    if hasDoll && !isRecording {
-                        Button {
-                            move = DanceMove.selection(for: doll.dance)
-                            withAnimation(.spring) { isChoosingDance = true }
-                        } label: {
-                            Label("춤추기", systemImage: "music.note")
-                                .minimumScaleFactor(0.8)
-                        }
-                        .buttonStyle(.secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                shutter
-                Group {
-                    if hasDoll && !isRecording {
-                        Button("인형 삭제") { removeCount += 1 }
-                            .appFont(.headline)
-                            .foregroundStyle(Color.app.surface)
-                            .frame(maxWidth: .infinity, minHeight: 56)
-                            .background(Color.app.danger, in: RoundedRectangle(cornerRadius: Radius.large, style: .continuous))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.horizontal, Spacing.m)
+            shutter.frame(maxWidth: .infinity)
         }
         .padding(.bottom, Spacing.xl)
     }
@@ -196,6 +192,9 @@ private struct CapturedVideoView: View {
     let onRetake: () -> Void
     @State private var player: AVPlayer
     @State private var isSaved = false
+    @State private var isSaving = false
+    @State private var showSavedToast = false
+    @State private var libraryError: String?
 
     init(url: URL, onRetake: @escaping () -> Void) {
         self.url = url
@@ -208,26 +207,41 @@ private struct CapturedVideoView: View {
             VideoPlayer(player: player)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 .frame(maxHeight: .infinity)
-            if isSaved {
-                Label("사진에 저장했어요", systemImage: "checkmark.circle.fill")
-                    .appFont(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
-            }
             HStack(spacing: Spacing.s) {
                 Button("다시 찍기", action: onRetake)
                     .buttonStyle(.secondary)
-                Button(isSaved ? "저장됨" : "저장") {
-                    UISaveVideoAtPathToSavedPhotosAlbum(url.path, nil, nil, nil)
-                    isSaved = true
+                Button(isSaved ? "저장됨" : isSaving ? "저장 중…" : "저장") {
+                    isSaving = true
+                    Task {
+                        do { try await CaptureLibrary.save(video: url); isSaved = true; showSavedToast = true }
+                        catch { libraryError = error.localizedDescription }
+                        isSaving = false
+                    }
                 }
                 .buttonStyle(.primary)
-                .disabled(isSaved)
+                .disabled(isSaved || isSaving)
 
             }
         }
         .padding(Spacing.m)
         .onAppear { player.play() }
         .sensoryFeedback(.success, trigger: isSaved)
+        .overlay(alignment: .bottom) {
+            if showSavedToast {
+                Text("사진 앱에 저장했어요").pretendard(.medium, 14)
+                    .padding(.horizontal, 20).padding(.vertical, 12)
+                    .foregroundStyle(.white).background(.black.opacity(0.8), in: Capsule())
+                    .padding(.bottom, 94).allowsHitTesting(false)
+            }
+        }
+        .task(id: showSavedToast) {
+            guard showSavedToast else { return }
+            do { try await Task.sleep(for: .seconds(1.5)) } catch { return }
+            showSavedToast = false
+        }
+        .alert("저장하지 못했어요", isPresented: Binding(get: { libraryError != nil }, set: { if !$0 { libraryError = nil } })) {
+            Button("확인", role: .cancel) { libraryError = nil }
+        } message: { Text(libraryError ?? "사진 접근 권한을 확인해 주세요") }
     }
 }
 
@@ -237,6 +251,9 @@ private struct CapturedPhotoView: View {
     var onUsePhoto: ((UIImage) throws -> Void)? = nil
     @State private var saveFailed = false
     @State private var isSaved = false
+    @State private var isSaving = false
+    @State private var showSavedToast = false
+    @State private var libraryError: String?
 
     var body: some View {
         VStack(spacing: Spacing.m) {
@@ -245,11 +262,6 @@ private struct CapturedPhotoView: View {
                 .scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 .frame(maxHeight: .infinity)
-            if isSaved {
-                Label("사진에 저장했어요", systemImage: "checkmark.circle.fill")
-                    .appFont(.footnote)
-                    .foregroundStyle(Color.app.inkSecondary)
-            }
             HStack(spacing: Spacing.s) {
                 Button("다시 찍기", action: onRetake)
                     .buttonStyle(.secondary)
@@ -259,27 +271,60 @@ private struct CapturedPhotoView: View {
                         catch { saveFailed = true }
                     }.buttonStyle(D1PrimaryStyle())
                 } else {
-                Button(isSaved ? "저장됨" : "저장") {
-                    UIImageWriteToSavedPhotosAlbum(photo, nil, nil, nil)
-                    isSaved = true
+                Button(isSaved ? "저장됨" : isSaving ? "저장 중…" : "저장") {
+                    isSaving = true
+                    Task {
+                        do { try await CaptureLibrary.save(photo: photo); isSaved = true; showSavedToast = true }
+                        catch { libraryError = error.localizedDescription }
+                        isSaving = false
+                    }
                 }
                 .buttonStyle(.primary)
-                .disabled(isSaved)
+                .disabled(isSaved || isSaving)
 
                 }
             }
         }
         .padding(Spacing.m)
         .sensoryFeedback(.success, trigger: isSaved)
+        .overlay(alignment: .bottom) {
+            if showSavedToast {
+                Text("사진 앱에 저장했어요").pretendard(.medium, 14)
+                    .padding(.horizontal, 20).padding(.vertical, 12)
+                    .foregroundStyle(.white).background(.black.opacity(0.8), in: Capsule())
+                    .padding(.bottom, 94).allowsHitTesting(false)
+            }
+        }
+        .task(id: showSavedToast) {
+            guard showSavedToast else { return }
+            do { try await Task.sleep(for: .seconds(1.5)) } catch { return }
+            showSavedToast = false
+        }
+        .alert("저장하지 못했어요", isPresented: Binding(get: { libraryError != nil }, set: { if !$0 { libraryError = nil } })) {
+            Button("확인", role: .cancel) { libraryError = nil }
+        } message: { Text(libraryError ?? "사진 접근 권한을 확인해 주세요") }
         .alert("사진을 액자에 넣지 못했어요", isPresented: $saveFailed) {
             Button("확인", role: .cancel) {}
         } message: { Text("사진은 그대로 있어요. 다시 시도해 주세요.") }
     }
 }
 
+private enum CaptureLibrary {
+    static func save(photo: UIImage? = nil, video: URL? = nil) async throws {
+        let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+        guard status == .authorized || status == .limited else {
+            throw NSError(domain: "CaptureLibrary", code: 1, userInfo: [NSLocalizedDescriptionKey: "설정에서 사진 추가 접근을 허용해 주세요."])
+        }
+        try await PHPhotoLibrary.shared().performChanges {
+            if let photo { PHAssetChangeRequest.creationRequestForAsset(from: photo) }
+            if let video { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: video) }
+        }
+    }
+}
+
 /// AR 카메라. 탭한 바닥에 인형을 세우고, shutterCount가 바뀌면 카메라 화면과 인형만 찍는다.
 private struct ARDollCamera: UIViewRepresentable {
-    let dollImage: UIImage
+    let dollState: DollState
     let shutterCount: Int
     let removeCount: Int
     let dance: DanceMove?
@@ -287,7 +332,7 @@ private struct ARDollCamera: UIViewRepresentable {
     let onFail: (String) -> Void
     let onPlaced: (Bool) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onFail: onFail, onPlaced: onPlaced) }
+    func makeCoordinator() -> Coordinator { Coordinator(dollState: dollState, onFail: onFail, onPlaced: onPlaced) }
 
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
@@ -304,7 +349,6 @@ private struct ARDollCamera: UIViewRepresentable {
         view.addSubview(coaching)
 
         context.coordinator.view = view
-        context.coordinator.dollImage = dollImage
         context.coordinator.lastShutter = shutterCount
         context.coordinator.lastRemove = removeCount
         context.coordinator.dance = dance
@@ -335,7 +379,7 @@ private struct ARDollCamera: UIViewRepresentable {
         let onFail: (String) -> Void
         let onPlaced: (Bool) -> Void
         weak var view: ARView?
-        var dollImage = UIImage()
+        let dollState: DollState
         var lastShutter = 0
         var lastRemove = 0
         private var pinchBase: Float = 1
@@ -343,7 +387,8 @@ private struct ARDollCamera: UIViewRepresentable {
         private var bodyRest: Transform?
         private var doll: Entity?
 
-        init(onFail: @escaping (String) -> Void, onPlaced: @escaping (Bool) -> Void) {
+        init(dollState: DollState, onFail: @escaping (String) -> Void, onPlaced: @escaping (Bool) -> Void) {
+            self.dollState = dollState
             self.onFail = onFail
             self.onPlaced = onPlaced
         }
@@ -401,7 +446,11 @@ private struct ARDollCamera: UIViewRepresentable {
                 return
             }
             Task {
-                let state = DollState(id: UUID(), name: "", imageData: dollImage.pngData() ?? Data(), filling: .fluffy, position: position)
+                // Preserve the room's 3D configuration instead of inflating its thumbnail.
+                var state = dollState
+                state.position = position
+                // AR animates the body separately so placement and pinch scale stay intact.
+                state.dance = nil
                 let doll = await SceneFactory.doll(state)
                 doll.orientation = facing
                 let anchor = AnchorEntity(world: .zero)

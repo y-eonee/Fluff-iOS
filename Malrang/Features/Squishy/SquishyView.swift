@@ -75,15 +75,15 @@ struct SquishyDoll: View {
     }
 
     private var hint: some View {
-        VStack(spacing: Spacing.xxs) {
-            Text("↓").pretendard(.medium, 44)
-                .frame(height: 64)
-            Text("만져 보세요")
-                .pretendard(.semiBold, 13)
-        }
-        .foregroundStyle(Color.app.ink)
-        .opacity(hasTouched ? 0 : 1)
-        .accessibilityHidden(true)
+        VStack(spacing: 4) {
+            if usesProfileLayout {
+                Text("만져 보세요").pretendard(.semiBold, 13)
+                Image(systemName: "arrow.down").font(.system(size: 24)).frame(height: 30)
+            } else {
+                Text("↓").pretendard(.medium, 44).frame(height: 64)
+                Text("만져 보세요").pretendard(.semiBold, 13)
+            }
+        }.foregroundStyle(Color.app.ink).opacity(hasTouched ? 0 : 1).accessibilityHidden(true)
     }
 
     private var touch: some Gesture {

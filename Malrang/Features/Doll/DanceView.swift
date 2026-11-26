@@ -64,30 +64,12 @@ struct DancingDoll: View {
 /// 적용하면 방에서도 계속 춤춘다.
 struct DancePanel: View {
     let doll: Doll
-    @Binding var selected: DanceMove
+    @Binding var selected: DanceMove?
     let onClose: () -> Void
 
     var body: some View {
         VStack(spacing: Spacing.m) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.xs), count: 2), spacing: Spacing.xs) {
-                ForEach(DanceMove.selectable, id: \.self) { move in
-                    Button {
-                        selected = move
-                    } label: {
-                        VStack(spacing: Spacing.xxs) {
-                            Image(systemName: selected == move ? "checkmark" : move.symbol)
-                                .appFont(.title3)
-                            Text(move.label)
-                                .appFont(.footnote)
-                        }
-                        .foregroundStyle(Color.app.ink)
-                        .frame(maxWidth: .infinity, minHeight: 72)
-                        .modifier(RepresentativeSelectionSurface(selected: selected == move, radius: Radius.small))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selected == move ? .isSelected : [])
-                }
-            }
+            DanceChoiceContent(selection: selected, onSelect: { selected = $0 }, onClose: onClose)
             if doll.dance != nil {
                 Button("춤 멈추기") {
                     doll.dance = nil
@@ -97,16 +79,20 @@ struct DancePanel: View {
                 .foregroundStyle(Color.app.inkSecondary)
                 .frame(minHeight: 44)
             }
-            CancelConfirmButtons(onCancel: onClose) {
-                doll.dance = selected
-                onClose()
+            HStack(spacing: Spacing.s) {
+                Button("취소",action:onClose).buttonStyle(.secondary)
+                Button("완료") {
+                    guard let selected else { return }
+                    doll.dance = selected
+                    onClose()
+                }.buttonStyle(.primary).disabled(selected == nil)
             }
         }
         .environment(\.updatedFlowDesign, true)
         .padding(Spacing.m)
         .background {
             UnevenRoundedRectangle(topLeadingRadius: Radius.large, topTrailingRadius: Radius.large, style: .continuous)
-                .fill(Color.app.surface)
+                .fill(Color.white)
                 .ignoresSafeArea(edges: .bottom)
         }
         .shadow(color: Color.app.ink.opacity(0.08), radius: 12, y: -4)

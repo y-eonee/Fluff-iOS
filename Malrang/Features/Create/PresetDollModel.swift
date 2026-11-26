@@ -151,7 +151,7 @@ enum PresetDollModel {
         var uv: [SIMD2<Float>] = []
         var normals: [SIMD3<Float>] = []
         var triangles: [UInt32] = []
-        let rows = 48, columns = 64
+        let rows = 72, columns = 128
         for row in 0...rows {
             let v = Float(row) / Float(rows), a = v * Float.pi
             let y = cos(a)

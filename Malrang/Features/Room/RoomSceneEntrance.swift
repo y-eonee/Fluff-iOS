@@ -12,6 +12,9 @@ final class RoomSceneEntrance {
         let node: String
     }
     private let entrance: RoomEntrance
+    private let loadingPose: RoomLoadingDollPose?
+    private let loadingLighting: RoomLoadingDollLighting?
+    private let loadingDance: DanceMove?
     private var snapshots: [Snapshot] = []
     private var prepared = false
     private var restored = false
@@ -21,8 +24,12 @@ final class RoomSceneEntrance {
     private var observedFurnitureMotion = false
     #endif
 
-    init(entrance: RoomEntrance, content: Entity, items: [RoomItemState]) {
+    init(entrance: RoomEntrance, content: Entity, items: [RoomItemState],
+         loadingPose: RoomLoadingDollPose? = nil, loadingLighting: RoomLoadingDollLighting? = nil, loadingDance: DanceMove? = nil) {
         self.entrance = entrance
+        self.loadingPose = loadingPose
+        self.loadingLighting = loadingLighting
+        self.loadingDance = loadingDance
         let hero = entrance.loadingDoll.flatMap { doll in content.children.first { $0.name == "doll|\(doll.id)" } }
         for entity in content.children {
             let node: String
@@ -59,12 +66,13 @@ final class RoomSceneEntrance {
         view.isUserInteractionEnabled = false
         view.markInteraction()
         if entrance.kind == .home {
+            loadingLighting?.apply(arrival: entrance.dollArrivalProgress)
             let node = entrance.loadingDoll == nil ? "1932:6465" : "1904:6845"
             let opacity = 1 - entrance.timeline.value(node, "opacity", at: entrance.time, fallback: 1)
             for snapshot in snapshots {
                 snapshot.entity.transform = snapshot.transform
                 let isHero = snapshot.node == "6457"
-                snapshot.entity.components.set(OpacityComponent(opacity: Float(isHero && !UIAccessibility.isReduceMotionEnabled ? 1 : opacity) * (snapshot.opacity?.opacity ?? 1)))
+                snapshot.entity.components.set(OpacityComponent(opacity: Float(isHero && !UIAccessibility.isReduceMotionEnabled ? min(1, entrance.time / 0.18) : opacity) * (snapshot.opacity?.opacity ?? 1)))
                 if isHero && !UIAccessibility.isReduceMotionEnabled {
                     animateHomeDoll(snapshot.entity, in: view, camera: camera)
                 }
@@ -109,6 +117,9 @@ final class RoomSceneEntrance {
     /// Animate the same rendered entity that stays in the room. At the end its
     /// original transform is restored exactly, so there is no sprite/3D handoff.
     private func animateHomeDoll(_ entity: Entity, in view: RoomRenderView, camera: PerspectiveCamera) {
+        // Measure the destination in its real activity pose before presenting
+        // this same doll upright. Restore every limb and its eyes on arrival.
+        loadingPose?.restore()
         let time = entrance.time
         guard time < 2.95 else { return }
         let motion = entrance.timeline
@@ -117,12 +128,15 @@ final class RoomSceneEntrance {
         let pointsScale = min(screen.width / 390, screen.height / 844)
         let layoutOrigin = CGPoint(x: (screen.width - 390 * pointsScale) / 2,
                                    y: (screen.height - 844 * pointsScale) / 2)
-        let tx = motion.value("1904:6939", "--motion-translate-x", at: time, fallback: 80.131523)
         let ty = motion.value("1904:6939", "--motion-translate-y", at: time, fallback: 29.270287)
-        let progress = time < 1.95 ? 0 : min(1, max(0, 1 - tx / 81.13221))
-        let bounds = entity.visualBounds(relativeTo: nil)
-        let center = bounds.center
+        let progress = Double(entrance.dollArrivalProgress)
+        let center = entity.visualBounds(relativeTo: nil).center
         guard let landing = view.project(center) else { return }
+        // Keep the loading character upright until it is nearly at its saved place.
+        let poseProgress = Float(max(0, min(1, (progress - 0.72) / 0.28)))
+        let easedPose = poseProgress * poseProgress * (3 - 2 * poseProgress)
+        loadingPose?.apply(arrival: easedPose)
+        let bounds = entity.visualBounds(relativeTo: nil)
         var projected: [CGPoint] = []
         for x in [bounds.min.x, bounds.max.x] {
             for y in [bounds.min.y, bounds.max.y] {
@@ -157,8 +171,14 @@ final class RoomSceneEntrance {
         var checks: [String: Bool] = [:]
         checks["exactly_selected_home_entity"] = heroes.count == 1 && heroes.first?.entity.name == entrance.loadingDoll.map { "doll|\($0.id)" }
         checks["single_scene_character"] = entrance.presentsSceneDoll
+        if entrance.time < 1.95 {
+            checks["awake_loading_pose"] = loadingPose?.hasAwakeParts == true
+            checks["neutral_loading_light"] = loadingLighting?.isNeutral == true
+        }
         if entrance.time >= 2.95 {
             checks["exact_original_transform_on_arrival"] = heroes.first.map { $0.entity.transform == $0.transform } ?? false
+            checks["activity_pose_restored"] = loadingPose?.hasRoomPose == true
+            checks["room_lighting_restored"] = loadingLighting?.isRestored == true
         } else {
             checks["screen_path_matches_within_one_point"] = (projectionError ?? .infinity) < 1
         }
@@ -184,6 +204,8 @@ final class RoomSceneEntrance {
 
     func restore() {
         guard !restored else { return }
+        loadingPose?.restore()
+        loadingLighting?.restore()
         for snapshot in snapshots {
             snapshot.entity.transform = snapshot.transform
             if let opacity = snapshot.opacity { snapshot.entity.components.set(opacity) }
@@ -199,6 +221,9 @@ final class RoomSceneEntrance {
             }
         }
         #endif
+        if entrance.finished, let loadingDance, let hero = snapshots.first(where: { $0.node == "6457" }) {
+            SceneFactory.play(loadingDance, on: hero.entity)
+        }
         restored = true
         snapshots.removeAll()
     }

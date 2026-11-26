@@ -65,7 +65,7 @@ extension FocusFlowView {
                 VStack(alignment: .leading, spacing: 24) {
                     companionPreview(doll)
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("오늘 \(doll.name.josa("이랑", "랑")) 할 공부").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
+                        Text("오늘 \(doll.name.josa("이랑", "랑")) 함께할 활동").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
                         HStack(spacing: 10) {
                             ForEach(StudyActivity.allCases) { activity in activityCard(activity) }
                         }.padding(.trailing, 12)

@@ -41,7 +41,7 @@ struct CreateMethodStep: View {
                     if usesPreset {
                         HStack(spacing: 6) {
                             ForEach([DollShape.bear, .cat, .rabbit], id: \.self) { shape in
-                                mode((shape == .bear ? "🐻 " : shape == .cat ? "🐈 " : "🐰 ") + shape.label, selected: configuration.shape == shape) {
+                                mode(shape.label, icon: shape == .bear ? "shape_bear" : shape == .cat ? "shape_cat" : "shape_rabbit", selected: configuration.shape == shape) {
                                     draft.shape = shape; draft.snapshot = nil
                                 }
                             }
@@ -60,9 +60,13 @@ struct CreateMethodStep: View {
             .onAppear { usesPreset = draft.shape != .pillow }
             .flowPageTitle("인형 만들기").navigationBarBackButtonHidden()
     }
-    private func mode(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func mode(_ title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text((selected ? "✓ " : "") + title).pretendard(.regular, 12.743, tracking: -0.637)
+            HStack(spacing: 4) {
+                if selected { Image(systemName: "checkmark").font(.system(size: 10)) }
+                Image(icon).resizable().scaledToFit().frame(width: 16, height: 16).accessibilityHidden(true)
+                Text(title).pretendard(.regular, 12.743, tracking: -0.637)
+            }
                 .padding(.horizontal, 12).frame(height: 32.914)
                 .modifier(RepresentativeSelectionSurface(selected: selected, radius: 18.286))
                 .frame(height: 44)

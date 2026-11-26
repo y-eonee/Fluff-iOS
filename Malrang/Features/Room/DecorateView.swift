@@ -19,6 +19,8 @@ struct DecorateView: View {
     @State var dollPoint: CGPoint?
     @State var furnitureBounds: [String: CGRect] = [:]
     @State var wallPolygon: [CGPoint] = []
+    @State var rightWallPolygon: [CGPoint] = []
+    @State var selectedRightWall = false
     @State var undoStack: [[RoomItemState]] = []
     @State var redoStack: [[RoomItemState]] = []
     @State var isApplyingHistory = false
