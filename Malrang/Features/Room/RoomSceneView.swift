@@ -770,7 +770,9 @@ struct RoomSceneView: UIViewRepresentable {
             let tanHalf = tan(camera.camera.fieldOfViewInDegrees / 2 * .pi / 180)
             let horizontal = aim.width / 2 / (tanHalf * aspect)
             let vertical = aim.height / 2 / tanHalf
-            let distance = max(horizontal, vertical)
+            var distance = max(horizontal, vertical)
+            // 가로로 넓은 화면(iPhone Duo 펼침)에서는 방 바깥이 보이지 않게 보이는 너비를 제한한다.
+            if parent.mode == .home { distance = min(distance, horizontal * 1.35) }
             fitDistance = distance
             placeCamera()
         }
