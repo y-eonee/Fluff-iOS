@@ -5,6 +5,7 @@ extension DecorateView {
     var contentA: some View {
         VStack(spacing: 0) {
             header
+            SplitStack { _ in
             RoomSceneView(
                 items: items.map(\.state), dolls: [], mode: .decorate,
                 onMoveItem: move, onDoubleTapItem: { id in selectedID = id; editingItem = items.first { $0.id == id } },
@@ -31,7 +32,11 @@ extension DecorateView {
             .sensoryFeedback(trigger: rotationFailCount) { _, _ in hapticOn ? .warning : nil }
             .sensoryFeedback(trigger: isFull) { _, full in hapticOn && full ? .warning : nil }
             .overlay(alignment: .bottom) { historyRow.modifier(RoomEntranceMotion(entrance: entrance, node: "8457")).padding(.bottom, 6) }
-            editorPanel.disabled(!entrance.finished)
+            } secondary: { wide in
+                editorPanel(wide: wide).disabled(!entrance.finished)
+                    .fixedSize(horizontal: false, vertical: !wide)
+                    .padding(.top, wide ? 12 : 0)
+            }
         }.environment(\.roomFlowDesign, true).foregroundStyle(Color.rep4.c03).background { RepresentativeGradientFill(definition: RepresentativeGradients.roomBackground).ignoresSafeArea() }
 
     }
@@ -50,7 +55,8 @@ extension DecorateView {
                     Image("rep4_edit_confirm").resizable().frame(width: 40.755, height: 40.755)
                 }.buttonStyle(RoomPressStyle()).offset(y: 3.5).accessibilityLabel("꾸미기 완료")
             }.padding(.horizontal, 22).padding(.top, 2).frame(height: 60, alignment: .top)
-            .background(FlowDesign.header.ignoresSafeArea(edges: .top))
+            .padding(.top, hasNoTopInset ? Spacing.l : 0)
+            .background(FlowDesign.header.ignoresSafeArea(edges: [.top, .horizontal]))
     }
 
     private var historyRow: some View {
@@ -90,7 +96,7 @@ extension DecorateView {
         }
     }
 
-    private var editorPanel: some View {
+    private func editorPanel(wide: Bool) -> some View {
         VStack(spacing: category == .wallpaper ? 13 : 17) {
             if let item = editingItem, item.id == selectedID {
                 VStack(spacing: 12) {
@@ -101,16 +107,16 @@ extension DecorateView {
                     }.frame(height: 40)
                     ScrollView {
                         FurnitureFinishEditor(item: item, requestPhotoRemoval: { photoRemovalRightWall = false; photoRemovalItem = item })
-                    }.frame(height: 205).scrollIndicators(.hidden)
+                    }.frame(height: wide ? nil : 205).scrollIndicators(.hidden)
                 }.padding(.horizontal, 6)
             } else if let item = selectedItem { selectedPanel(item).padding(.horizontal, 6).modifier(RoomReveal()).id(item.id) }
             else {
                 categoryTabs.padding(.horizontal, 6)
-                catalogPanel.frame(height: 200, alignment: .top)
+                catalogPanel.frame(height: wide ? nil : 200, alignment: .top)
             }
         }.padding(.horizontal, 18).padding(.top, selectedItem == nil ? 2 : 14).padding(.bottom, selectedItem == nil ? 10 : 16)
-            .frame(maxWidth: .infinity, minHeight: 266, alignment: .top)
-            .background { Color.rep4.c01.clipShape(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14)).ignoresSafeArea(edges: .bottom) }
+            .frame(maxWidth: .infinity, minHeight: 266, maxHeight: wide ? .infinity : nil, alignment: .top)
+            .background { Color.rep4.c01.clipShape(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14)).ignoresSafeArea(edges: [.bottom, .horizontal]) }
     }
 
     private func selectedPanel(_ item: RoomItem) -> some View {

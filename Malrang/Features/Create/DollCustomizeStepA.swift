@@ -5,6 +5,7 @@ struct DollCustomizeStepA: View {
     var onPrevious: (() -> Void)? = nil
     let onNext: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.hasNoTopInset) private var hasNoTopInset
     @State private var page = 0
     @State private var selectedPart = DollPart.head
     @State private var editingFace = false
@@ -20,11 +21,15 @@ struct DollCustomizeStepA: View {
         return value
     }
     var body: some View {
+        SplitStack { wide in
+            if wide { preview(height: nil).padding(.vertical, 16) }
+        } secondary: { wide in
         GeometryReader { geometry in
+        VStack(spacing: 0) {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 // Keep the name field clear of the footer with taller native keyboards.
-                preview(height: page == 3 ? min(208, max(128, geometry.size.height - 278)) : (page == 2 ? 280 : (page == 1 ? 341.128 : 383.308)))
+                if !wide { preview(height: previewHeight(available: geometry.size.height)) }
                 Group {
                     if page == 0 {
                         if draft.shape == .pillow {
@@ -48,9 +53,7 @@ struct DollCustomizeStepA: View {
                     else { nameEditor }
                 }.padding(.leading, page == 0 ? 11.08 : 6).padding(.trailing, page == 0 ? 10.92 : 6)
             }.padding(.horizontal, 16).padding(.top, page == 1 ? 4 : 8).padding(.bottom, 16)
-        }.scrollIndicators(.hidden).foregroundStyle(Color.a.brown)
-            .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: page >= 2 || editingFace ? 3 : 2, partEditor: page == 1, skipsShape: draft.shape == .pillow) }
-            .safeAreaInset(edge: .bottom) {
+        }.scrollIndicators(.hidden).scrollEdgeEffectHidden(true, for: .top).foregroundStyle(Color.a.brown)
                 HStack(spacing: 12) {
                 Button("이전") {
                     if page > (draft.shape == .pillow ? 2 : 0) { page -= 1 }
@@ -66,8 +69,8 @@ struct DollCustomizeStepA: View {
                         draft.preset = configuration; onNext()
                     }
                 }.buttonStyle(CreationPrimaryButton()).disabled(page == 3 && nameIsEmpty)
-                }.padding(.horizontal, page == 1 ? 22 : 18).padding(.bottom, 16)
-            }
+                }.padding(.horizontal, page == 1 ? 22 : 18).padding(.top, 8).padding(.bottom, 16)
+        }
             .onAppear {
                 if draft.shape == .pillow { page = 2 }
                 else if canEditFace { editingFace = true }
@@ -79,9 +82,22 @@ struct DollCustomizeStepA: View {
                 if ProcessInfo.processInfo.arguments.contains("--design-preview=create-filling") || ProcessInfo.processInfo.arguments.contains("--design-preview=create-filling-custom") { page = 2 }
                 if ProcessInfo.processInfo.arguments.contains("--preview-face-tab") { editingFace = true } }
             #endif
-            .navigationBarBackButtonHidden().navigationBarTitleDisplayMode(.inline)
+        }
+        }
+            .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: page >= 2 || editingFace ? 3 : 2, partEditor: page == 1, skipsShape: draft.shape == .pillow) }
+        .background(FlowDesign.canvas.ignoresSafeArea())
+            .navigationBarBackButtonHidden()
             .flowPageTitle("인형 만들기")
-        }.background(FlowDesign.canvas.ignoresSafeArea()).environment(\.updatedFlowDesign, true)
+    }
+    private func previewHeight(available: CGFloat) -> CGFloat {
+        // 상태 표시가 옆에 있는 낮은 화면(iPhone Duo)에서는 입력창이 보이도록 더 줄인다.
+        if page == 3 { return min(208, hasNoTopInset ? max(40, available - 316) : max(128, available - 278)) }
+        let height: CGFloat = page == 2 ? 280 : (page == 1 ? 341.128 : 383.308)
+        // 낮은 화면(iPhone Duo)에서는 아래 조작부가 한 화면에 들어오도록 미리보기를 줄인다.
+        guard available < 600 else { return height }
+        // 조작부와 하단 버튼이 차지하는 높이
+        let controls: CGFloat = page == 2 ? 290 : (page == 1 ? 330 : (editingFace ? 410 : 230))
+        return min(height, max(160, available - controls))
     }
     private var previewGuide: String {
         switch page {
@@ -92,7 +108,7 @@ struct DollCustomizeStepA: View {
         }
     }
 
-    private func preview(height: CGFloat) -> some View {
+    private func preview(height: CGFloat?) -> some View {
         RepresentativeHero(showsGlow: page != 1, compactGlow: page == 3, flowGlow: "flow_adjust_glow") {
             Group {
                 if draft.shape == .pillow { CustomPhotoPreview(draft: draft) }

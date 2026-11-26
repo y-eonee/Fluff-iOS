@@ -60,7 +60,7 @@ struct FurnitureColorChoices: View {
             }
         }.foregroundStyle(Color.mib.text.primary)
             .sheet(isPresented: $showingPicker) {
-                ItemColorPicker(item: item, rightWall: rightWall).presentationDetents([.medium, .large]).presentationDragIndicator(.visible).presentationCornerRadius(22)
+                ItemColorPicker(item: item, rightWall: rightWall).presentationDetents([.medium, .large]).presentationDragIndicator(.visible).presentationCornerRadius(22).trailingSheetPlacement()
             }
     }
 }

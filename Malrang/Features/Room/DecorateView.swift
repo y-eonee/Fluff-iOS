@@ -3,6 +3,7 @@ import SwiftUI
 
 /// 마이 홈: 가구를 더하고 옮기고, 두 번 탭해 색이나 사진으로 꾸민다. 적용하기 전에는 되돌릴 수 있다.
 struct DecorateView: View {
+    @Environment(\.hasNoTopInset) var hasNoTopInset
     @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @Environment(\.accessibilityReduceMotion) var reduceMotion

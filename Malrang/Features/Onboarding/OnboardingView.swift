@@ -53,6 +53,7 @@ struct OnboardingView: View {
             NavigationStack { PrivacyPolicyView().toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("닫기") { showsPrivacy = false } }
             } }
+            .trailingSheetPlacement()
         }
     }
 }

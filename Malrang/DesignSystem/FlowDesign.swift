@@ -49,8 +49,7 @@ private struct FlowPageTitle: ViewModifier {
         content
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(FlowDesign.header, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(title).pretendard(.semiBold, 19, tracking: -0.76)
@@ -63,6 +62,7 @@ private struct FlowPageTitle: ViewModifier {
                 if isVisible {
                     FlowDesign.header
                         .frame(height: max(0, FlowDesign.headerHeight - navigationBarHeight))
+                        .background(FlowDesign.header.ignoresSafeArea(edges: [.top, .horizontal]))
                         .accessibilityHidden(true)
                 }
             }
@@ -113,6 +113,7 @@ struct FlowHeader: View {
     let title: String
     var backLabel = "뒤로"
     var onBack: (() -> Void)? = nil
+    @Environment(\.hasNoTopInset) private var hasNoTopInset
     var body: some View {
         Text(title).pretendard(.semiBold, 19, tracking: -0.76)
             .foregroundStyle(Color.rep4.c10)
@@ -125,6 +126,7 @@ struct FlowHeader: View {
                 }
             }
             .padding(.top, 2).frame(height: FlowDesign.headerHeight, alignment: .top)
-            .background(FlowDesign.header.ignoresSafeArea(edges: .top))
+            .padding(.top, hasNoTopInset ? Spacing.l : 0)
+            .background(FlowDesign.header.ignoresSafeArea(edges: [.top, .horizontal]))
     }
 }

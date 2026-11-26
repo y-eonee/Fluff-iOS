@@ -27,10 +27,16 @@ struct AmbientSoundView: View {
   var body: some View {
     VStack(spacing: 0) {
       FlowHeader(title: "배경음 설정", backLabel: "방으로 돌아가기") { dismiss() }
+      SplitStack { wide in
+        if wide {
+          RadioCompanionPreview(doll: dolls.first, playing: player.isPlaying, choosing: choosing).padding(16)
+        }
+      } secondary: { wide in
+       VStack(spacing: 0) {
       ScrollViewReader { proxy in
         ScrollView {
           VStack(alignment: .leading, spacing: choosing ? 24 : 16) {
-            RadioCompanionPreview(doll: dolls.first, playing: player.isPlaying, choosing: choosing)
+            if !wide { RadioCompanionPreview(doll: dolls.first, playing: player.isPlaying, choosing: choosing) }
             if choosing {
               VStack(alignment: .leading, spacing: 12) {
                 Text("듣고 싶은 소리").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
@@ -53,6 +59,8 @@ struct AmbientSoundView: View {
       if choosing {
         bottomButton.padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 6)
       }
+       }
+      }
     }.background {
       FlowDesign.canvas.ignoresSafeArea()
     }.foregroundStyle(Color.rep4.c08)
@@ -70,14 +78,18 @@ struct AmbientSoundView: View {
       .overlay {
         if let selectedSheet = sheet {
           GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
+            let wide = geometry.size.width > max(600, geometry.size.height)
+            ZStack(alignment: wide ? .bottomTrailing : .bottom) {
               Color.black.opacity(0.28).ignoresSafeArea()
                 .onTapGesture { sheet = nil }
               sheetContent(selectedSheet)
                 .frame(height: selectedSheet == .timer ? 345 : 358)
                 .padding(.bottom, geometry.safeAreaInsets.bottom)
-                .frame(maxWidth: .infinity)
-                .background(Color.rep4.c01, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+                .frame(maxWidth: wide ? (geometry.size.width - geometry.safeAreaInsets.trailing) / 2 : .infinity)
+                .background {
+                  UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: wide ? 0 : 22)
+                    .fill(Color.rep4.c01).ignoresSafeArea(edges: .horizontal)
+                }
                 .contentShape(Rectangle())
                 .highPriorityGesture(DragGesture(minimumDistance: 25).onEnded { value in
                   if value.translation.height > 40 || value.predictedEndTranslation.height > 80 { sheet = nil }
@@ -266,7 +278,8 @@ private struct RadioCompanionPreview: View {
             .frame(width: 157.905 * scale, height: 167.193).offset(x: 21.1 * scale, y: 72.4).allowsHitTesting(false)
         }
       }.frame(width: geo.size.width, height: 312, alignment: .topLeading).clipped()
-    }.frame(height: 312).clipShape(RoundedRectangle(cornerRadius: 22))
+    }.frame(maxWidth: 408).frame(height: 312).clipShape(RoundedRectangle(cornerRadius: 22))
+      .frame(maxWidth: .infinity)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(doll.map { "\($0.name)와 함께 듣는 라디오" } ?? "포근한 라디오")
       .accessibilityIdentifier("radio-companion-preview")

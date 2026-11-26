@@ -214,6 +214,7 @@ struct HomeView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackgroundInteraction(.enabled)
                 .presentationBackground(.white)
+                .trailingSheetPlacement()
         }
     }
 

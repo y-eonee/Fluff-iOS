@@ -17,19 +17,17 @@ struct CreateMethodStep: View {
         return value
     }
     var body: some View {
+        SplitStack { wide in
+            if wide { hero.padding(16) }
+        } secondary: { wide in
+        VStack(spacing: 0) {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    RepresentativeHero(showsGlow: true) {
-                        Group {
-                            if usesPreset {
-                                PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true, fitMargin: 1.0)
-                                    .renderedOnlyWhileVisible(background: .clear)
-                                    .offset(y: -6)
-                            } else { CustomPhotoPreview(draft: draft) }
-                        }.padding(.horizontal, 24).padding(.vertical, 20)
-                    }.frame(height: 383.308)
-                        .padding(.horizontal, 9).padding(.bottom, 16.69)
+                    if !wide {
+                        hero.frame(height: min(383.308, max(160, geometry.size.height - 175)))
+                            .padding(.horizontal, 9).padding(.bottom, 16.69)
+                    }
                     HStack(spacing: 0) {
                         methodMode("프리셋", selected: usesPreset) { usesPreset = true }
                         methodMode("커스텀", selected: !usesPreset) { usesPreset = false }
@@ -48,17 +46,28 @@ struct CreateMethodStep: View {
                         }.padding(.top, 1.48).padding(.leading, 6)
                     }
                 }.padding(.horizontal, 18).padding(.top, 8).padding(.bottom, 20)
-            }.scrollIndicators(.hidden)
-        }.background(FlowDesign.canvas.ignoresSafeArea()).foregroundStyle(Color.rep4.c08)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            }.scrollIndicators(.hidden).scrollEdgeEffectHidden(true, for: .top)
+        }
                 HStack(spacing: 12) {
                     Button("다시 선택") { if let onPrevious { onPrevious() } else { dismiss() } }.buttonStyle(CreationSecondaryButton())
                     Button("다음") { if usesPreset { onPreset() } else { onCutout() } }.buttonStyle(CreationPrimaryButton())
                 }.padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 16)
-            }
+        }
+        }.background(FlowDesign.canvas.ignoresSafeArea()).foregroundStyle(Color.rep4.c08)
             .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: usesPreset ? 2 : 3, skipsShape: !usesPreset) }
             .onAppear { usesPreset = draft.shape != .pillow }
             .flowPageTitle("인형 만들기").navigationBarBackButtonHidden()
+    }
+    private var hero: some View {
+        RepresentativeHero(showsGlow: true) {
+            Group {
+                if usesPreset {
+                    PresetDollView(configuration: configuration, cameraDistance: 0.90, cameraTarget: 0.19, fitsModel: true, fitMargin: 1.0)
+                        .renderedOnlyWhileVisible(background: .clear)
+                        .offset(y: -6)
+                } else { CustomPhotoPreview(draft: draft) }
+            }.padding(.horizontal, 24).padding(.vertical, 20)
+        }
     }
     private func mode(_ title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
