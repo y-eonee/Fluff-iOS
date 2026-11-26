@@ -111,7 +111,7 @@ struct RepresentativeHero<Content: View>: View {
 
 #Preview {
     VStack {
-        RepresentativeHero { Image("rep4_character_bear").resizable().scaledToFit().padding(20) }.frame(height: 383)
+        RepresentativeHero { CottonArtwork(shape: .bear).padding(20) }.frame(height: 383)
         Button("다음으로") {}.buttonStyle(CreationPrimaryButton())
     }.padding(18).background(Color.rep4.c11)
 }

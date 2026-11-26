@@ -259,14 +259,7 @@ enum PresetDollModel {
         }
     }
 
-    private static func build(_ sourceConfiguration: PresetConfiguration, happy: Bool, detail: Detail) async -> Entity {
-        var configuration = sourceConfiguration
-        if configuration.face == nil, configuration.shape == .bear,
-           let source = UIImage(named: "rep4_character_bear")?.cgImage,
-           let face = source.cropping(to: CGRect(x: 224, y: 290, width: 514, height: 458)) {
-            configuration.face = UIImage(cgImage: face).pngData()
-            configuration.faceOpeningScale = 0.96
-        }
+    private static func build(_ configuration: PresetConfiguration, happy: Bool, detail: Detail) async -> Entity {
         if configuration.isPhotoSuit == true { return await PhotoSuitModel.make(configuration) }
         let root = Entity()
         let textile = await PresetTextile.textures()
