@@ -103,7 +103,7 @@ struct HomeView: View {
 
     private var placedDolls: [Doll] { dolls.filter(\.isPlaced) }
     private var showsRoomScene: Bool {
-        appState.tab == .home && !appState.isShowingAR && !isCreating && !isFocusing
+        scenePhase == .active && appState.tab == .home && !appState.isShowingAR && !isCreating && !isFocusing
             && !isDecorating && !showingWindow && !showingSound && !showingCouch
     }
     private var roomDolls: [DollState] {
@@ -319,7 +319,8 @@ struct HomeView: View {
                         onFurnitureScreen: { furnitureRects = $0 },
                         entrance: appState.roomEntrance
                     )
-                    .renderedOnlyWhileVisible(background: .clear)
+                    // showsRoomScene owns this renderer's lifetime. A second onAppear/
+                    // onDisappear gate can retain false when a cached tab returns.
                     .padding(.bottom, dancingDoll == nil ? 0 : 152)
                 }
             }

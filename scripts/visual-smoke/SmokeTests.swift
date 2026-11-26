@@ -43,6 +43,30 @@ final class VisualSmokeTests: XCTestCase {
             app.terminate()
         }
     }
+    func testProductionHomeStartupAndTabReturns() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        // Exercise RootView and the real startup gate, without a design-preview route.
+        app.launchArguments = ["-isSignedIn", "YES", "-didSeeFurnitureGuideV2", "YES", "--ui-testing"]
+        app.launch()
+        waitForHomeControls(app)
+        XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 20))
+        for title in ["내 인형", "마이", "내 인형", "마이"] {
+            app.buttons[title].tap()
+            app.buttons["내 방"].tap()
+            waitForHomeControls(app)
+            XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 20))
+            app.buttons["방 도구"].tap()
+            XCTAssertTrue(app.buttons["방 꾸미기"].waitForExistence(timeout: 5))
+            app.buttons["방 도구 닫기"].tap()
+        }
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        waitForHomeControls(app)
+        XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 20))
+        captureUpdatedLoading(app, "production-home-after-tab-returns")
+    }
+
     func testRoomLoadingPreviewAndLiveHandoff() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
@@ -113,6 +137,37 @@ final class VisualSmokeTests: XCTestCase {
         waitForHomeControls(app)
         XCTAssertTrue(app.staticTexts["z z Z"].waitForExistence(timeout: 10), "The doll must still be sleeping in the room after loading")
         captureUpdatedLoading(app, "loading-sleep-state-restored")
+    }
+
+    func testRightWallPhotoIsIndependentAndUndoable() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=wall-photo", "--both-wall-photos", "--room-hour=13"]
+        app.launch()
+        XCTAssertTrue(app.buttons["오른쪽 벽"].waitForExistence(timeout: 40))
+        XCTAssertTrue(app.otherElements["decorate-loading"].waitForNonExistence(timeout: 60))
+        let right = app.buttons["오른쪽 벽"]
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: right)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed)
+        right.tap()
+        XCTAssertTrue(right.isSelected)
+        XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
+        captureUpdatedLoading(app, "right-wall-photo-applied")
+        app.buttons["사진 빼기"].tap()
+        XCTAssertTrue(app.staticTexts["오른쪽 벽에서 사진을 뺄까요?"].waitForExistence(timeout: 5))
+        app.buttons["빼기"].tap()
+        XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
+        app.buttons["왼쪽 벽"].tap()
+        XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
+        app.buttons["오른쪽 벽"].tap()
+        app.buttons["되돌리기"].tap()
+        XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
+        app.buttons["컬러"].tap()
+        app.buttons["라벤더"].tap()
+        app.buttons["사진"].tap()
+        XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
+        app.buttons["왼쪽 벽"].tap()
+        XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
     }
 
     func testFurniturePhotoRemovalConfirmationAndUndo() {

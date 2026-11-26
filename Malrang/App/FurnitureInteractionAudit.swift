@@ -15,6 +15,7 @@
       let data = image.pngData()!
       let bedID = UUID()
       let frameID = UUID()
+      let wallID = UUID()
       let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
         UUID().uuidString)
       do {
@@ -33,6 +34,14 @@
           frame.photoScale = 1.8; frame.photoFit = 1; frame.photoTurns = 3; frame.photoFlipped = true
           frame.photoOffsetX = 0.2; frame.photoOffsetY = -0.1
           container.mainContext.insert(frame)
+          let wall = RoomItem(kind: .wall); wall.id = wallID
+          wall.photoData = data; wall.rightWallPhotoData = Data(data.reversed())
+          wall.rightWallColorName = "#C3B5DC"
+          let snapshot = wall.state
+          wall.rightWallPhotoData = nil
+          wall.restore(snapshot)
+          checks["right_wall_photo_undo_is_independent"] = wall.rightWallPhotoData == Data(data.reversed()) && wall.photoData == data
+          container.mainContext.insert(wall)
           try container.mainContext.save()
         }
         do {
@@ -42,6 +51,8 @@
           let dolls = try container.mainContext.fetch(FetchDescriptor<Doll>())
           checks["sleep_survives_reload"] = dolls.first?.restingBedID == bedID
           let frame = try container.mainContext.fetch(FetchDescriptor<RoomItem>()).first { $0.id == frameID }
+          let wall = try container.mainContext.fetch(FetchDescriptor<RoomItem>()).first { $0.id == wallID }
+          checks["independent_wall_photos_survive_reload"] = wall?.photoData == data && wall?.rightWallPhotoData == Data(data.reversed()) && wall?.rightWallColorName == "#C3B5DC"
           checks["frame_photo_survives_reload"] = frame?.photoData == data && frame?.photoScale == 1.8 && frame?.photoTurns == 3 && frame?.photoFlipped == true && frame?.photoOffsetX == 0.2 && frame?.photoOffsetY == -0.1
           dolls.first?.restingBedID = nil
           try container.mainContext.save()
@@ -158,7 +169,7 @@
       let couch = CouchSession(library: CouchLibrary(defaults: couchDefaults))
       let secondDoll = Doll(name: "두 번째", shape: .bear, filling: .fluffy, imageData: data)
       couch.dolls = [doll.state, secondDoll.state]
-      checks["couch_keeps_one_companion"] = couch.dolls.map(\.id) == [doll.id]
+      checks["couch_keeps_two_companions"] = couch.dolls.map(\.id) == [doll.id, secondDoll.id]
       couch.dolls = [secondDoll.state]
       checks["couch_replaces_companion"] = couch.dolls.map(\.id) == [secondDoll.id]
       couch.dolls = []

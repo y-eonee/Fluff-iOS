@@ -154,6 +154,9 @@ final class DesignPreviewData {
             for data in pictures { container.mainContext.insert(DecorPhoto(data: data)) }
             let frames = try? container.mainContext.fetch(FetchDescriptor<RoomItem>())
             frames?.first(where: { $0.kind == (route == "wall-photo" ? .wall : route == "desk-photo" ? .desk : .frame) })?.photoData = pictures[0]
+            if route == "wall-photo", ProcessInfo.processInfo.arguments.contains("--both-wall-photos") {
+                frames?.first(where: { $0.kind == .wall })?.rightWallPhotoData = pictures[1]
+            }
         }
         // The source editor frames show a separately furnished room state.
         // Reproduce that state in the isolated comparison store; never rewrite a saved room.

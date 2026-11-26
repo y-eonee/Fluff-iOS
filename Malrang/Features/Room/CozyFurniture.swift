@@ -38,7 +38,7 @@ enum CozyFurniture {
         #endif
     }
 
-    static func make(_ item: RoomItemState, photoMaterial: any Material, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false, roomOverview: Bool = false) async -> Entity {
+    static func make(_ item: RoomItemState, photoMaterial: any Material, rightWallPhotoMaterial: (any Material)? = nil, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false, roomOverview: Bool = false) async -> Entity {
         if fabricColor == nil { fabricColor = await texture("CozyFabricColor", semantic: .color) }
         if fabricNormal == nil { fabricNormal = await texture("CozyFabricNormal", semantic: .normal) }
         if contactShadow == nil { contactShadow = await shadowMaterial() }
@@ -169,7 +169,7 @@ enum CozyFurniture {
                 mesh = padded ? cushion(size, exponent: exponent, drape: drape) : .generateBox(size: size, cornerRadius: min(radius, size.min() * 0.49))
                 meshes[key] = mesh
             }
-            let wallPhoto = item.kind == .wall && item.photoData != nil && name.hasPrefix("wall.")
+            let wallPhoto = item.kind == .wall && item.photoData != nil && name == "wall.left"
             let model = ModelEntity(mesh: mesh, materials: wallPhoto ? [photoMaterial] : [material(color, part: name)])
             model.name = name
             model.position = at
@@ -637,6 +637,17 @@ enum CozyFurniture {
             root.addChild(glow)
         }
         if item.kind == .wall {
+            // Apply to both generated and bundled walls; each surface owns its photo.
+            func applyWallPhotos(_ entity: Entity) {
+                if var model = entity.components[ModelComponent.self] {
+                    if entity.name == "wall.left", item.photoData != nil { model.materials = [photoMaterial] }
+                    if entity.name == "wall.back", let rightWallPhotoMaterial { model.materials = [rightWallPhotoMaterial] }
+                    entity.components.set(model)
+                }
+                if entity.name.hasPrefix("wall.stripe."), item.photoData != nil { entity.removeFromParent(); return }
+                for child in Array(entity.children) { applyWallPhotos(child) }
+            }
+            applyWallPhotos(root)
             for child in root.children where child.name.hasPrefix("window.") {
                 let heightScale: Float = (cutaway || roomOverview) ? 0.85 : 1.14
                 child.position.y = (cutaway ? 0.42 : 0.68) + (child.position.y - 0.70) * heightScale

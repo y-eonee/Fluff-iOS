@@ -31,7 +31,7 @@ enum SceneFactory {
         // Meshes/textiles are shared by CozyFurniture's bounded set of templates.
         // Count the incremental hierarchy/materials here; reserving those shared
         // buffers again evicted all ten starter-room entries on every revisit.
-        return await furnitureCache.entity(for: key, estimatedCost: 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0)) {
+        return await furnitureCache.entity(for: key, estimatedCost: 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0) + (item.rightWallPhotoData == nil ? 0 : 12 * 1024 * 1024) + (item.rightWallPhotoData?.count ?? 0)) {
             await buildFurniture(item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
         }
     }
@@ -48,7 +48,13 @@ enum SceneFactory {
         if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
         } else if cozy {
-            entity = await CozyFurniture.make(item, photoMaterial: material(item), usesWindowLighting: !onFloor, roomOverview: cutaway)
+            var rightWall = item
+            rightWall.photoData = item.rightWallPhotoData
+            rightWall.colorName = item.rightWallColorName
+            rightWall.photoScale = 1; rightWall.photoFit = 0; rightWall.photoFlipped = false
+            rightWall.photoTurns = 0; rightWall.photoOffsetX = 0; rightWall.photoOffsetY = 0
+            let rightMaterial = item.rightWallPhotoData == nil ? nil : await material(rightWall)
+            entity = await CozyFurniture.make(item, photoMaterial: material(item), rightWallPhotoMaterial: rightMaterial, usesWindowLighting: !onFloor, roomOverview: cutaway)
         } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
             entity = illustration
         } else {
@@ -359,7 +365,9 @@ enum SceneFactory {
             let isFit = item.photoFit == 1
             var visible: SIMD2<Float> = shown > 1 ? [isFit ? 1 : 1 / shown, isFit ? shown : 1] : [isFit ? 1 / shown : 1, isFit ? 1 : shown]
             visible /= item.photoScale
-            let scale = SIMD2<Float>(item.photoFlipped ? -visible.x : visible.x, visible.y)
+            // Wall panel UVs run right-to-left when viewed from inside the room.
+            let flipsTexture = item.photoFlipped != (item.kind == .wall)
+            let scale = SIMD2<Float>(flipsTexture ? -visible.x : visible.x, visible.y)
             let angle = Float(item.photoTurns) * .pi / 2
             let half = scale * 0.5
             let rotated = SIMD2<Float>(cos(angle) * half.x - sin(angle) * half.y, sin(angle) * half.x + cos(angle) * half.y)

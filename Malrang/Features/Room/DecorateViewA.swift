@@ -160,11 +160,12 @@ extension DecorateView {
                         D1Choice(title: "오른쪽 벽", selected: selectedRightWall, fillsWidth: true) { selectedRightWall = true }
                     }.padding(.bottom, 8)
                 }
-                if kind == .wall && selectedRightWall {
-                    FurnitureColorChoices(item: surface, rightWall: true)
-                } else {
-                    FurnitureFinishEditor(item: surface, initialPhotoMode: surfacePhotoMode, requestPhotoRemoval: { photoRemovalItem = surface })
-                }
+                FurnitureFinishEditor(item: surface, rightWall: kind == .wall && selectedRightWall,
+                    initialPhotoMode: surfacePhotoMode, requestPhotoRemoval: {
+                        photoRemovalRightWall = kind == .wall && selectedRightWall
+                        photoRemovalItem = surface
+                    })
+                    .id("\(surface.id)-\(kind == .wall && selectedRightWall)")
             } else {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                     ForEach(FurnitureKind.allCases.filter { $0.category == category || (category == .decor && $0.category == .rug) }, id: \.self) { kind in

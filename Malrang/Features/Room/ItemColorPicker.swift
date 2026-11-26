@@ -35,7 +35,7 @@ struct ItemColorPicker: UIViewControllerRepresentable {
         init(item: RoomItem, rightWall: Bool) { self.item = item; self.rightWall = rightWall }
 
         func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
-            if rightWall { item.rightWallColorName = Palette.hex(Color(uiColor: color)) }
+            if rightWall { item.rightWallColorName = Palette.hex(Color(uiColor: color)); item.rightWallPhotoData = nil }
             else { item.colorName = Palette.hex(Color(uiColor: color)); item.photoData = nil }
         }
     }

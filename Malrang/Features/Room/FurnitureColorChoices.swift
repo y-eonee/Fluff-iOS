@@ -19,9 +19,9 @@ struct FurnitureColorChoices: View {
                     let (hex, defaultLabel) = colors[index]
                     let isSurface = item.kind == .wall || item.kind == .floor
                     let label = index == 0 && isSurface ? "원래 벽지" : defaultLabel
-                    let selected = (rightWall || item.photoData == nil) && paint == hex
+                    let selected = ((rightWall ? item.rightWallPhotoData : item.photoData) == nil) && paint == hex
                     Button {
-                        if rightWall { item.rightWallColorName = hex }
+                        if rightWall { item.rightWallColorName = hex; item.rightWallPhotoData = nil }
                         else { item.colorName = hex; item.photoData = nil }
                     } label: {
                         VStack(spacing: 3) {

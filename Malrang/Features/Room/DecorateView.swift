@@ -36,6 +36,7 @@ struct DecorateView: View {
     @State var editingItem: RoomItem?
     @State var photoItem: RoomItem?
     @State var photoRemovalItem: RoomItem?
+    @State var photoRemovalRightWall = false
     @State var isConfirmingDiscard = false
     @State var isFull = false
     @State var saveFailed = false
@@ -78,8 +79,9 @@ struct DecorateView: View {
         }
         .overlay {
             if let item = photoRemovalItem {
-                RoomPhotoRemovalDialog(itemName: item.kind.label, cancel: { photoRemovalItem = nil }) {
-                    item.photoData = nil; photoRemovalItem = nil
+                RoomPhotoRemovalDialog(itemName: photoRemovalRightWall ? "오른쪽 벽" : item.kind.label, cancel: { photoRemovalItem = nil }) {
+                    if photoRemovalRightWall { item.rightWallPhotoData = nil } else { item.photoData = nil }
+                    photoRemovalItem = nil
                 }
             } else if isConfirmingDiscard {
                 RepresentativeConfirmDialog(title: "꾸민 내용을 버릴까요?", message: "지금까지 만든 내용은 저장되지 않아요.", verticalOffset: 10.56, outlinesSecondary: true, onLeave: {
