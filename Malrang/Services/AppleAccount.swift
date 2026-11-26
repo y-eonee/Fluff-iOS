@@ -1,6 +1,5 @@
 import AuthenticationServices
 import CryptoKit
-import GoogleSignIn
 import Observation
 import Security
 
@@ -79,7 +78,6 @@ final class AppleAccount {
 
     static func signOut() {
         AmbientPlayer.shared.stop()
-        GIDSignIn.sharedInstance.signOut()
         UserDefaults.standard.set(false, forKey: "isSignedIn")
         // Keep the owner while their room remains on this device.
     }

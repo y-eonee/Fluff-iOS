@@ -4,7 +4,6 @@ import Observation
 @MainActor @Observable
 final class CouchSession {
     let player = YouTubePlayer()
-    let account = YouTubeAccount()
     let library: CouchLibrary
     private var selectedDolls: [DollState] = []
     var dolls: [DollState] {

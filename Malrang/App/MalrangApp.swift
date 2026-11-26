@@ -1,5 +1,4 @@
 import AuthenticationServices
-import GoogleSignIn
 import SwiftData
 import SwiftUI
 
@@ -118,7 +117,6 @@ struct MalrangApp: App {
             .onReceive(NotificationCenter.default.publisher(for: ASAuthorizationAppleIDProvider.credentialRevokedNotification)) { _ in
                 Task { await AppleAccount.validateSession() }
             }
-            .onOpenURL { url in _ = GIDSignIn.sharedInstance.handle(url) }
             .font(.custom("Pretendard-Regular", size: 17, relativeTo: .body))
             .tint(Color.app.accent)
             .preferredColorScheme(.light)

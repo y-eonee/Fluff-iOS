@@ -3,13 +3,11 @@ import SwiftUI
 struct CouchFlowView: View {
     @Bindable var session: CouchSession
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var link = ""
     @State private var selected: CouchVideo?
     @State private var tab = 0
     @State private var linkError: String?
-    @State private var accountActions = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,42 +15,23 @@ struct CouchFlowView: View {
             picker
         }.foregroundStyle(Color.rep4.c08).background(FlowDesign.canvas.ignoresSafeArea())
             .environment(\.updatedFlowDesign, true)
-
-            .onAppear { selected = session.current; session.player.pause() }
-            .task {
+            .onAppear {
+                selected = session.current; session.player.pause()
                 #if DEBUG
-                if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--design-preview=") }) {
-                    if ProcessInfo.processInfo.arguments.contains("--design-preview=couch-playlist") { selected = session.library.videos.first }
-                    return
-                }
+                if ProcessInfo.processInfo.arguments.contains("--design-preview=couch-playlist") { selected = session.library.videos.first }
                 #endif
-                await session.account.restore()
             }
             .onChange(of: scenePhase) { _, phase in if phase != .active { session.player.pause() } }
-            .confirmationDialog("YouTube 계정", isPresented: $accountActions, titleVisibility: .visible) {
-                Button("플레이리스트 다시 불러오기") { Task { await session.account.refresh() } }
-                Button("연결 해제", role: .destructive) {
-                    selected = nil
-                    Task { await session.account.disconnect() }
-                }
-                Button("취소", role: .cancel) {}
-            } message: { Text(session.account.email ?? "") }
-            .alert("YouTube 계정 연결", isPresented: Binding(get: { session.account.message != nil }, set: { if !$0 { session.account.message = nil } })) {
-                Button("확인", role: .cancel) { session.account.message = nil }
-            } message: { Text(session.account.message ?? "") }
     }
     private var candidates: [CouchVideo] {
         switch tab {
         case 1: return session.library.videos.filter { $0.lastWatched != nil && !$0.source.isPlaylist }.sorted { ($0.lastWatched ?? .distantPast) > ($1.lastWatched ?? .distantPast) }
         case 2: return session.library.videos.filter(\.favorite)
-        default:
-            let owned = Set(session.account.playlists.map(\.id))
-            return session.account.playlists + session.library.videos.filter { !owned.contains($0.id) }
+        default: return session.library.videos
         }
     }
     private var picker: some View {
         VStack(spacing: 14) {
-            accountCard.padding(.top, 10)
             VStack(spacing: 8) {
                 HStack(spacing: 0) {
                     ForEach(Array(["내 플레이리스트", "최근 본 영상", "같이 보기 좋은"].enumerated()), id: \.offset) { index, title in
@@ -64,12 +43,12 @@ struct CouchFlowView: View {
                 }
                 ScrollView {
                     if candidates.isEmpty {
-                        Text(tab == 2 ? "함께 보고 싶은 영상에 하트를 눌러 주세요" : tab == 1 ? "함께 본 영상이 여기에 모여요" : "계정을 연결하거나 유튜브 링크를 추가해 주세요")
+                        Text(tab == 2 ? "함께 보고 싶은 영상에 하트를 눌러 주세요" : tab == 1 ? "함께 본 영상이 여기에 모여요" : "아래에 유튜브 링크를 추가해 주세요")
                             .pretendard(.regular, 14).foregroundStyle(Color.rep4.c29).multilineTextAlignment(.center).padding(.vertical, 48)
                     }
                     LazyVStack(spacing: 8) { ForEach(candidates) { video in videoRow(video) } }
                 }.scrollIndicators(.hidden)
-            }.padding(6).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 21)).padding(.horizontal, 16)
+            }.padding(6).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 21)).padding(.horizontal, 16).padding(.top, 16)
             HStack(spacing: 8) {
                 Image("rep4_couch_playlist").resizable().frame(width: 18.3, height: 16.25)
                     .accessibilityHidden(true)
@@ -92,50 +71,6 @@ struct CouchFlowView: View {
                     dismiss()
                 }
             }.buttonStyle(D1PrimaryStyle()).disabled(selected == nil).padding(.horizontal, 22).padding(.top, -4).padding(.bottom, 0)
-        }
-    }
-    private var accountCard: some View {
-        HStack(spacing: 12) {
-            accountAvatar.accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.account.isConnected ? "\(session.account.displayName ?? "YouTube") · 연결됨" : "YouTube 계정 연결")
-                    .pretendard(.medium, 14, tracking: -0.4).lineLimit(1)
-                Text(session.account.isConnected ? session.account.email ?? "" : session.account.isLoading ? "계정을 연결하고 있어요" : "내 플레이리스트를 함께 볼 수 있어요")
-                    .pretendard(.regular, 12, tracking: -0.3).foregroundStyle(Color.rep4.c29)
-                    .lineLimit(1).truncationMode(.middle)
-            }.frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("youtube-account-identity")
-            if session.account.isLoading { ProgressView() }
-            else {
-                Button(session.account.isConnected ? "변경" : "연결") {
-                    if session.account.isConnected { accountActions = true }
-                    else { Task { await session.account.connect() } }
-                }.pretendard(.regular, 14, tracking: -0.7).underline().frame(minWidth: 44, minHeight: 44)
-            }
-        }.padding(.horizontal, 27).frame(height: 56)
-    }
-    @ViewBuilder private var accountAvatar: some View {
-        if session.account.isConnected {
-            AsyncImage(url: session.account.profileImageURL) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                ZStack {
-                    FlowDesign.lightBlue
-                    if let initial = (session.account.displayName ?? session.account.email)?.first {
-                        Text(String(initial).uppercased()).pretendard(.semiBold, 17)
-                    } else {
-                        Image(systemName: "person.fill").font(.system(size: 18))
-                    }
-                }
-            }.frame(width: 40, height: 40).clipShape(Circle())
-                .id(session.account.profileImageURL)
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12).fill(Color(uiColor: Palette.uiColor("#F25454")))
-                    .frame(width: 40, height: 34)
-                Image("couch_youtube_play").resizable().scaledToFit().frame(width: 16, height: 16)
-            }
         }
     }
     private func videoRow(_ video: CouchVideo) -> some View {

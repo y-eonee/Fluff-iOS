@@ -33,7 +33,6 @@ struct PrivacyPolicyView: View {
                 }
                 Link("Google 개인정보처리방침", destination: URL(string: "https://policies.google.com/privacy")!)
                 Link("YouTube 이용약관", destination: URL(string: "https://www.youtube.com/t/terms")!)
-                Link("Google 계정 연결 관리", destination: URL(string: "https://myaccount.google.com/connections")!)
                 Link("Open-Meteo 정책", destination: URL(string: "https://open-meteo.com/en/terms")!)
                 Link("Apple 로그인 연결 해제 안내", destination: URL(string: "https://support.apple.com/102571")!)
             }.padding(24).textSelection(.enabled)

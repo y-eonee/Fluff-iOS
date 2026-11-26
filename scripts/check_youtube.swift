@@ -22,11 +22,6 @@ struct YouTubeAudit {
         for input in ["https://youtube.com.evil.test/watch?v=\(video)", "https://evil.test/?list=\(playlist)", "javascript:alert(1)", "https://user@youtube.com/watch?v=\(video)", "https://youtube.com:9000/watch?v=\(video)", "https://youtu.be/short", "https://youtube.com/watch?v=bad%22id12345", "https://youtube.com/playlist?list=bad", ""] {
             precondition(YouTubeSource.parse(input) == nil, "Rejected input: \(input)")
         }
-        let pageJSON = #"{"items":[{"id":"PL1234567890abcdef","snippet":{"title":"내 플레이리스트","thumbnails":{"medium":{"url":"https://i.ytimg.com/vi/M7lc1UVf-VE/mqdefault.jpg"}}},"contentDetails":{"itemCount":12}},{"id":"PLabcdef1234567890","snippet":{"title":"빈 목록"},"contentDetails":{"itemCount":0}}],"nextPageToken":"next-page"}"#
-        let page = try! JSONDecoder().decode(YouTubePlaylistPage.self, from: Data(pageJSON.utf8))
-        precondition(page.nextPageToken == "next-page" && page.videos.count == 2)
-        precondition(page.videos[0].videoCount == 12 && page.videos[0].title == "내 플레이리스트")
-        precondition(page.videos[1].thumbnailURL == nil && page.videos[1].videoCount == 0)
         let domain = "malrang.youtube.audit.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
@@ -46,6 +41,6 @@ struct YouTubeAudit {
         precondition(!restored.favorite(first))
         restored.remove(first)
         precondition(CouchLibrary(defaults: defaults).videos.isEmpty)
-        print("YouTube URL validation, identity deduplication, history and favorites persistence, paginated playlist decoding passed")
+        print("YouTube URL validation, identity deduplication, history and favorites persistence passed")
     }
 }
