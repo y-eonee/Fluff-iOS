@@ -47,7 +47,7 @@ struct OnboardingView: View {
             Button("Apple 연결 해제 안내") { openURL(URL(string: "https://support.apple.com/102571")!) }
             Button("확인", role: .cancel) {}
         } message: {
-            Text("Apple 계정의 로그인 연결은 설정 → Apple 계정 → Apple로 로그인에서 fluff를 선택해 해제할 수 있어요. Google 연결은 Google 계정의 연결 관리에서도 해제할 수 있어요.")
+            Text("Apple 계정의 로그인 연결은 설정 → Apple 계정 → Apple로 로그인에서 fluff를 선택해 해제할 수 있어요.")
         }
         .sheet(isPresented: $showsPrivacy) {
             NavigationStack { PrivacyPolicyView().toolbar {
