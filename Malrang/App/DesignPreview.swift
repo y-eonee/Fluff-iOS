@@ -190,6 +190,24 @@ final class DesignPreviewData {
             if ["couch-watch", "couch-mini", "couch-transition"].contains(route) { couch.watch(sample) }
 
         }
+        if ProcessInfo.processInfo.arguments.contains("--home-drag-audit"),
+           let doll = (try? container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.shapeRaw == DollShape.rabbit.rawValue }) {
+            doll.position = [0.35, 0, 0.72]; doll.restingBedID = nil
+        }
+        if ProcessInfo.processInfo.arguments.contains("--arrival-doll-preview"),
+           let doll = (try? container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.name == "몽글이" }) {
+            doll.isPlaced = false; doll.restingBedID = nil
+            appState.place(doll, newlyCreated: true)
+        }
+        if ProcessInfo.processInfo.arguments.contains("--stored-doll-preview"),
+           let doll = (try? container.mainContext.fetch(FetchDescriptor<Doll>()))?.first { doll.isPlaced = false }
+        if ProcessInfo.processInfo.arguments.contains("--surface-photo-preview") {
+            let items = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>())) ?? []
+            for item in items where [.floor, .rugRound, .bed, .frame].contains(item.kind) {
+                item.photoData = Self.framePhoto(item.kind.label, first: .systemTeal, second: .systemOrange)
+                item.isMirrored = ProcessInfo.processInfo.arguments.contains("--mirror-preview")
+            }
+        }
         try? container.mainContext.save()
         if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--qa-capture-id=") }) {
             let values = ((try? container.mainContext.fetch(FetchDescriptor<Doll>())) ?? []).map { doll in

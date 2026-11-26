@@ -72,6 +72,14 @@ struct DollActionSheet: View {
                             .accessibilityAction(named: "사진 찍기") { startAR() }
                     }.frame(height: 420, alignment: .top)
                     DollHistoryCard(doll: doll) { draftName = doll.name; renaming = true }.padding(.horizontal, 20).id("history")
+                    HStack(spacing: 12) {
+                        if !doll.isPlaced {
+                            Button("방에 두기", systemImage: "house") { appState.place(doll); dismiss() }
+                                .buttonStyle(D1PrimaryStyle())
+                        }
+                        Button("삭제하기", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                    }.padding(.horizontal, 20).padding(.top, 18)
                     if isChoosingDance {
                         DancePanel(doll: doll, selected: $move) {
                             withAnimation(.spring) { isChoosingDance = false }

@@ -7,7 +7,7 @@ extension DecorateView {
             header
             RoomSceneView(
                 items: items.map(\.state), dolls: [], mode: .decorate,
-                onMoveItem: move, onDoubleTapItem: { id in editingItem = items.first { $0.id == id } },
+                onMoveItem: move, onDoubleTapItem: { id in selectedID = id; editingItem = items.first { $0.id == id } },
                 selectedItemID: selectedID, onTapItem: { selectedID = $0 }, onFeel: { feelCount += 1 },
                 isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onSceneReady: { loadingEntrance.prepareScene() }, onFurnitureScreen: { furnitureBounds = $0 }, onWallScreen: { wallPolygon = $0 }, onRightWallScreen: { rightWallPolygon = $0 },
                 onTapWall: { selectedRightWall = $0; selectedID = nil; category = .wallpaper }, entrance: entrance
@@ -92,7 +92,18 @@ extension DecorateView {
 
     private var editorPanel: some View {
         VStack(spacing: category == .wallpaper ? 13 : 17) {
-            if let item = selectedItem { selectedPanel(item).padding(.horizontal, 6).modifier(RoomReveal()).id(item.id) }
+            if let item = editingItem, item.id == selectedID {
+                VStack(spacing: 12) {
+                    HStack {
+                        Button { editingItem = nil } label: { Label("가구 편집", systemImage: "chevron.left") }
+                        Spacer()
+                        Text(item.kind.label).pretendard(.bold, 16)
+                    }.frame(height: 40)
+                    ScrollView {
+                        FurnitureFinishEditor(item: item, requestPhotoRemoval: { photoRemovalRightWall = false; photoRemovalItem = item })
+                    }.frame(height: 205).scrollIndicators(.hidden)
+                }.padding(.horizontal, 6)
+            } else if let item = selectedItem { selectedPanel(item).padding(.horizontal, 6).modifier(RoomReveal()).id(item.id) }
             else {
                 categoryTabs.padding(.horizontal, 6)
                 catalogPanel.frame(height: 200, alignment: .top)
@@ -168,7 +179,7 @@ extension DecorateView {
                     .id("\(surface.id)-\(kind == .wall && selectedRightWall)")
             } else {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                    ForEach(FurnitureKind.allCases.filter { $0.category == category || (category == .decor && $0.category == .rug) }, id: \.self) { kind in
+                    ForEach(FurnitureKind.catalog.filter { $0.category == category || (category == .decor && $0.category == .rug) }, id: \.self) { kind in
                         Button { add(kind) } label: {
                             VStack(spacing: 4) {
                                 FurnitureThumbnail(kind: kind).frame(height: 51.16)

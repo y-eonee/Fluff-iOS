@@ -22,7 +22,7 @@ struct DollListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 FlowHeader(title: "내 인형")
                 HStack {
-                    Text("\(dolls.count)개").pretendard(.medium, 14)
+                    Text("\(dolls.count)/30").pretendard(.medium, 14)
                     Spacer()
                     Button { withAnimation(.easeOut(duration: 0.18)) { sorting.toggle() } } label: {
                         HStack(spacing: 6) {
@@ -72,7 +72,7 @@ struct DollListView: View {
             }.foregroundStyle(Color.rep4.c08).background(FlowDesign.canvas.ignoresSafeArea())
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     VStack(spacing: 16) {
-                        Button("인형 만들기") { isCreating = true }.buttonStyle(CreationPrimaryButton()).padding(.horizontal, 22)
+                        Button(dolls.count >= 30 ? "인형은 30개까지 만들 수 있어요" : "인형 만들기") { isCreating = true }.disabled(dolls.count >= 30).buttonStyle(CreationPrimaryButton()).padding(.horizontal, 22)
                     // TabView overlays the outer tab inset; reserve its height plus the reference's 35pt CTA gap.
                     }.padding(.top, 16).padding(.bottom, 112).background(FlowDesign.canvas)
                 }
@@ -85,7 +85,7 @@ struct DollListView: View {
                 }
                 #endif
                 .navigationDestination(item: $selectedDoll) { DollActionSheet(doll: $0, isPushed: true) }
-                .fullScreenCover(isPresented: $isCreating) { CreateFlowView { doll in appState.place(doll) } }
+                .fullScreenCover(isPresented: $isCreating) { CreateFlowView { doll in appState.place(doll, newlyCreated: true) } }
         }
 
         .preference(key: AppTabBarHiddenPreference.self, value: selectedDoll != nil)

@@ -36,6 +36,24 @@ struct FurnitureFinishEditor: View {
                         .background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.rep4.c07))
                         .padding(.leading, 5.34).padding(.trailing, 10.35)
+                    if !rightWall {
+                        HStack(spacing: 12) {
+                            Button("사진 반전") { item.photoFlipped.toggle() }
+                            Button("90도 회전") { item.photoTurns = (item.photoTurns + 1) % 4 }
+                        }.pretendard(.medium, 13).frame(minHeight: 44)
+                        HStack {
+                            Text("확대").pretendard(.medium, 13)
+                            Slider(value: $item.photoScale, in: 1...3)
+                        }
+                        HStack {
+                            Text("가로").pretendard(.medium, 13)
+                            Slider(value: $item.photoOffsetX, in: -1...1)
+                        }
+                        HStack {
+                            Text("세로").pretendard(.medium, 13)
+                            Slider(value: $item.photoOffsetY, in: -1...1)
+                        }
+                    }
                     PhotosPicker(selection: $selection, matching: .images) { Text("사진 바꾸기") }.buttonStyle(D1PrimaryStyle()).padding(.top, 8)
                 } else {
                     PhotosPicker(selection: $selection, matching: .images) {

@@ -60,7 +60,7 @@ struct FurnitureCustomView: View {
                 Button(action: saveAndDismiss) { Image("rep4_edit_confirm").resizable().frame(width: 40.755, height: 40.755) }.accessibilityLabel("꾸미기 완료")
             }.buttonStyle(.plain).padding(.horizontal, 22).padding(.top, 2).frame(height: 60, alignment: .top)
                 .background(FlowDesign.header.ignoresSafeArea(edges: .top))
-            RoomSceneView(items: roomItems.map(\.state), dolls: dolls.filter(\.isPlaced).map(\.state), mode: .decorate,
+            RoomSceneView(items: roomItems.map(\.state), dolls: [], mode: .decorate,
                           isPhotoEditing: isEditingPhoto, onPinch: pinch, onPan: pan,
                           selectedItemID: item.id, isTransparent: true, illustrationTargetY: 0.7, isCozyRoom: true, onFurnitureScreen: { furnitureBounds = $0 })
                 .renderedOnlyWhileVisible(background: .clear)

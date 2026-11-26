@@ -323,6 +323,29 @@ enum PresetDollModel {
             }
             root.addChild(group); groups[part] = group
         }
+        let torsoPart = configuration.part(.torso)
+        let torsoScale = SIMD3<Float>(torsoPart.size * torsoPart.width, torsoPart.size * torsoPart.length, torsoPart.size)
+        let torsoOrigin = origins[.torso]! * bodyScale
+        for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
+            let group = groups[part]!
+            let side: Float = part == .leftArm || part == .leftLeg ? -1 : 1
+            let joint: SIMD3<Float> = part == .leftArm || part == .rightArm ? [-side * 0.025, 0.038, -0.020] : [0, 0.025, -0.005]
+            let defaultPosition = origins[part]! * bodyScale
+            let attachment = defaultPosition + joint * bodyScale
+            group.position = torsoOrigin + (attachment - torsoOrigin) * torsoScale
+                + SIMD3<Float>(0, torsoPart.offset * 0.05 + configuration.part(part).offset * 0.05, 0)
+                - joint * group.scale
+        }
+        let headGroup = groups[.head]!, ears = groups[.ears]!
+        let headPart = configuration.part(.head)
+        let headScale = SIMD3<Float>(headPart.size * headPart.width, headPart.size * headPart.length, headPart.size)
+        let neck: SIMD3<Float> = [0, -0.083, 0]
+        let defaultHead = SIMD3<Float>(0, headCenter, 0)
+        let attachment = defaultHead + neck
+        headGroup.position += (attachment - torsoOrigin) * (torsoScale - SIMD3<Float>(repeating: 1))
+            + SIMD3<Float>(0, torsoPart.offset * 0.05, 0) + neck * (SIMD3<Float>(repeating: 1) - headScale)
+        ears.position = headGroup.position + (ears.position - defaultHead) * headScale
+        ears.scale *= headScale
         func ball(_ name: String, _ part: DollPart, _ size: SIMD3<Float>, _ position: SIMD3<Float>, _ color: String, cloth: Bool = true) -> ModelEntity {
             let mesh: MeshResource = name == "foot"
                 ? footMesh()
@@ -421,18 +444,19 @@ enum PresetDollModel {
                                                 offsetX: configuration.faceOffsetX ?? 0,
                                                 offsetY: configuration.faceOffsetY ?? 0,
                                                 radiusX: 0.081 * configuration.openingScale,
-                                                radiusY: 0.072 * configuration.openingScale)
+                                                radiusY: 0.072 * configuration.openingScale, headWidth: headWidth)
             let backing = ModelEntity(mesh: photoMesh, materials: [material("#FFF4E7")])
             backing.name = "face.lining"; backing.position.z = -0.001; groups[.head]!.addChild(backing)
             let face = ModelEntity(mesh: photoMesh, materials: [faceMaterial])
             face.name = "face.user-photo"; groups[.head]!.addChild(face)
-            let rim = ModelEntity(mesh: PresetFaceMesh.rim(scale: configuration.openingScale), materials: [material(color(.head, fur))])
+            let rim = ModelEntity(mesh: PresetFaceMesh.rim(scale: configuration.openingScale, headWidth: headWidth), materials: [material(color(.head, fur))])
             rim.name = "face.padded-opening"; groups[.head]!.addChild(rim)
             if detail == .full {
             for i in 0..<80 {
                 let a = Float(i) / 80 * 2 * Float.pi
                 let stitch = ball("face.seam", .head, [0.0014, 0.0025, 0.0015],
                                   [cos(a) * 0.086 * configuration.openingScale, -0.008 + sin(a) * 0.077 * configuration.openingScale, 0.104], "#F1DEC8")
+                stitch.position.z = PresetHeadSurface.front(x: stitch.position.x, y: stitch.position.y, width: headWidth) + 0.005
                 stitch.orientation = simd_quatf(angle: a, axis: [0, 0, 1])
             }
             }

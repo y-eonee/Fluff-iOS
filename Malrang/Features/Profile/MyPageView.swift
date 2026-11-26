@@ -10,7 +10,7 @@ struct MyPageView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 20) {
             FlowHeader(title: "마이페이지")
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {

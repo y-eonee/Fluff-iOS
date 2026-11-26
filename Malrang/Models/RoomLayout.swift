@@ -13,7 +13,6 @@ enum RoomLayout {
     }
     private static func bounds(for kind: FurnitureKind, mirrored: Bool = false) -> (min: SIMD3<Float>, max: SIMD3<Float>) {
         if let bounds = measured[kind.rawValue + (mirrored ? ":mirror" : "")] { return bounds }
-        if kind == .bed, let bounds = measured[kind.rawValue] { return bounds }
         if mirrored, let bounds = measured[kind.rawValue] {
             return ([-bounds.max.x, bounds.min.y, bounds.min.z], [-bounds.min.x, bounds.max.y, bounds.max.z])
         }
@@ -39,9 +38,23 @@ enum RoomLayout {
     static func constrained(_ item: RoomItemState, snap: Bool = false) -> SIMD2<Float> {
         let point = SIMD2(item.x, item.z)
         if item.kind.hangsOnWall {
-            let b = bounds(for: item.kind)
-            let width = abs(cos(item.yaw)) * (b.max.x - b.min.x) + abs(sin(item.yaw)) * (b.max.y - b.min.y)
-            return wallSpot(near: point, width: width, depth: max(abs(b.min.z), abs(b.max.z)) * 2)
+            let b = bounds(for: item.kind, mirrored: item.isMirrored)
+            // Rotate around the same centered pivot as SceneFactory. A shelf's
+            // hanging vine and a scaled frame are not symmetric about that pivot.
+            let scale: SIMD2<Float> = item.kind == .frame ? [1.4, 1.55] : [1, 1]
+            let pivotY = item.kind.size.y / 2 * scale.y
+            let xs = [b.min.x, b.max.x].flatMap { x in
+                [b.min.y, b.max.y].map { y in cos(item.yaw) * x - sin(item.yaw) * (y - pivotY) * scale.x / scale.y }
+            }
+            let left = wall(of: item) == .left
+            let lo = left ? -xs.max()! : xs.min()!
+            let hi = left ? -xs.min()! : xs.max()!
+            let along = left ? point.y : point.x
+            let lower = -half + 0.05 - lo, upper = half - 0.05 - hi
+            let target = snap ? (along / grid).rounded() * grid : along
+            let value = simd_clamp(target, min(lower, upper), max(lower, upper))
+            let normal = -half - b.min.z + 0.01
+            return left ? [normal, value] : [value, normal]
         }
         var local = item; local.x = 0; local.z = 0
         let b = placementFootprint(local)
@@ -115,20 +128,17 @@ enum RoomLayout {
         case .desk:
             let top = kind.seatHeight ?? 0.47
             var parts: [(SIMD3<Float>, SIMD3<Float>)] = [([s.x, 0.075, s.z], [0, top - 0.0375, 0])]
-            for x: Float in [-s.x * 0.39, s.x * 0.39] {
-                for z: Float in [-s.z * 0.32, s.z * 0.32] {
-                    parts.append(([0.064, top - 0.06, 0.064], [x, (top - 0.06) / 2, z]))
-                }
+            for x: Float in [-s.x * 0.43, s.x * 0.43] {
+                parts.append(([s.x * 0.10, top - 0.055, s.z * 0.90], [x, (top - 0.055) / 2, 0]))
             }
             return parts
         case .bed:
             return [([s.x, 0.39, s.z], [0, 0.195, 0]),
-                    ([s.x + 0.35, 0.58, 0.065], [0.175, 0.415, -s.z / 2 + 0.04]),
                     ([s.x * 0.83, 0.15, 0.26], [0, 0.43, -s.z * 0.30]),
                     ([s.x * 1.02, 0.10, 0.20], [0, 0.375, -s.z * 0.14])]
         case .chair:
             return [([s.x, 0.227, s.z * 0.94], [0, 0.1135, 0]),
-                    ([s.x * 0.95, s.y - 0.227, 0.085], [0, (s.y + 0.227) / 2, -s.z * 0.36])]
+                    ([s.x * 0.95, s.y - 0.227, 0.085], [0, (s.y + 0.227) / 2 + 0.04, -s.z * 0.36])]
         default:
             let b = bounds(for: kind)
             return [(b.max - b.min, (b.max + b.min) / 2)]
@@ -140,7 +150,7 @@ enum RoomLayout {
             let c = cos(item.yaw), s = sin(item.yaw)
             let half = part.size / 2
             let extent = SIMD3(abs(c) * half.x + abs(s) * half.z, half.y, abs(s) * half.x + abs(c) * half.z)
-            let centerX = item.isMirrored && item.kind != .bed ? -part.center.x : part.center.x
+            let centerX = item.isMirrored ? -part.center.x : part.center.x
             let center = SIMD3(item.x + c * centerX + s * part.center.z,
                                furnitureHeight(item, in: items) + part.center.y,
                                item.z - s * centerX + c * part.center.z)
@@ -150,6 +160,7 @@ enum RoomLayout {
 
     static func overlaps(_ item: RoomItemState, in items: [RoomItemState]) -> Bool {
         guard item.kind.blocksFloor else { return false }
+        let items = items.map { $0.id == item.id ? item : $0 }
         let parts = collisionBounds(item, in: items)
         return items.contains { other in
             guard other.id != item.id, other.kind.blocksFloor else { return false }
@@ -249,29 +260,58 @@ enum RoomLayout {
         }
     }
 
-    /// 새 가구를 겹치지 않게 놓을 첫 빈자리
-    static func freeSpot(for kind: FurnitureKind, among items: [RoomItemState], yaw: Float = 0) -> SIMD2<Float>? {
-        if kind.hangsOnWall {
-            let hung = items.filter { $0.kind.hangsOnWall }
-            let gap = kind.size.z / 2 + 0.01
-            let spots = stride(from: -0.7 as Float, through: 0.7, by: 0.35).flatMap { along in
-                [SIMD2<Float>(along, -half + gap), SIMD2<Float>(-half + gap, along)]
-            }
-            let valid = spots.map { point in
-                constrained(RoomItemState(id: UUID(), kind: kind, x: point.x, z: point.y, yaw: yaw))
-            }
-            let width = bounds(for: kind).max.x - bounds(for: kind).min.x
-            return valid.first { spot in hung.allSatisfy { simd_distance(SIMD2($0.x, $0.z), spot) > (width + bounds(for: $0.kind).max.x - bounds(for: $0.kind).min.x) / 2 + 0.03 } }
-        }
-        let steps = stride(from: -half, through: half, by: grid * 2)
-        for z in steps.reversed() {
-            for x in steps {
+    /// New pieces appear in visible free space, including rugs and nearby dolls.
+    static func freeSpot(for kind: FurnitureKind, among items: [RoomItemState], yaw: Float = 0, dolls: [SIMD3<Float>] = []) -> SIMD2<Float>? {
+        var candidates: [SIMD2<Float>] = []
+        for z in stride(from: -half, through: half, by: grid) {
+            for x in stride(from: -half, through: half, by: grid) {
                 let point = snapped([x, z], for: kind, yaw: yaw)
                 let candidate = RoomItemState(id: UUID(), kind: kind, x: point.x, z: point.y, yaw: yaw)
-                if !overlaps(candidate, in: items) { return point }
+                guard !overlaps(candidate, in: items) else { continue }
+                if kind.hangsOnWall {
+                    let wall = wall(of: candidate)
+                    let width = kind.size.x * (kind == .frame ? 1.4 : 1)
+                    guard items.filter({ $0.kind.hangsOnWall && self.wall(of: $0) == wall }).allSatisfy({ other in
+                        let spacing = wall == .left ? abs(point.y - other.z) : abs(point.x - other.x)
+                        return spacing >= (width + other.kind.size.x * (other.kind == .frame ? 1.4 : 1)) / 2 + 0.04
+                    }) else { continue }
+                } else {
+                    let b = placementFootprint(candidate)
+                    guard items.filter({ $0.kind.isMovable && !$0.kind.hangsOnWall }).allSatisfy({ other in
+                        let a = placementFootprint(other)
+                        return b.max.x <= a.min.x || b.min.x >= a.max.x || b.max.y <= a.min.y || b.min.y >= a.max.y
+                    }), dolls.allSatisfy({ p in
+                        p.x < b.min.x - 0.1 || p.x > b.max.x + 0.1 || p.z < b.min.y - 0.1 || p.z > b.max.y + 0.1
+                    }) else { continue }
+                }
+                candidates.append(point)
             }
         }
-        return nil
+        return candidates.min { simd_distance_squared($0, [0, 0.4]) < simd_distance_squared($1, [0, 0.4]) }
+    }
+
+    /// Saved rooms may already overlap. Allow a drag to reduce that overlap so
+    /// the user can separate existing furniture instead of being trapped.
+    static func canMove(_ from: RoomItemState, to candidate: RoomItemState, among items: [RoomItemState]) -> Bool {
+        if !overlaps(candidate, in: items) { return true }
+        func volumes(_ item: RoomItemState) -> [UUID: Float] {
+            let current = items.map { $0.id == item.id ? item : $0 }
+            var result: [UUID: Float] = [:]
+            for other in current where other.id != item.id && other.kind.blocksFloor {
+                if lampSupport(for: item, in: current)?.id == other.id || lampSupport(for: other, in: current)?.id == item.id { continue }
+                var total: Float = 0
+                for a in collisionBounds(item, in: current) { for b in collisionBounds(other, in: current) {
+                    let size = simd_max(.zero, simd_min(a.max, b.max) - simd_max(a.min, b.min))
+                    total += size.x * size.y * size.z
+                } }
+                result[other.id] = total
+            }
+            return result
+        }
+        let old = volumes(from), next = volumes(candidate)
+        // Escaping an old overlap must not push into a different piece.
+        return old.values.contains { $0 > 0.000001 }
+            && next.allSatisfy { $0.value <= old[$0.key, default: 0] + 0.000001 }
     }
 
     /// 새 인형을 둘 기본 위치: 가구와 다른 인형에서 떨어진 앞쪽 바닥의 빈 곳

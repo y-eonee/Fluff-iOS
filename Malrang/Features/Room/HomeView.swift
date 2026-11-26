@@ -10,6 +10,9 @@ struct HomeView: View {
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var isCreating = false
+    #if DEBUG
+    @State private var dragAuditResult = ""
+    #endif
     @State private var isConfirmingPlacementExit = false
     @State private var isFocusing = false
     @State private var deskPoint: CGPoint?
@@ -174,6 +177,7 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $isCreating, onDismiss: {
                 if let doll = pendingDoll {
                     pendingDoll = nil
+                    appState.newlyCreatedDollID = doll.id
                     place(doll)
                 }
             }) {
@@ -224,6 +228,7 @@ struct HomeView: View {
                         report.append(dolls.allSatisfy(\.isPlaced) ? "PASS: undo restores room membership" : "FAIL: undo")
                     }
                     let text = report.joined(separator: "\n")
+                    dragAuditResult = text
                     print(text)
                     try? text.write(to: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("home-drag-audit.txt"), atomically: true, encoding: .utf8)
                 }
@@ -405,6 +410,11 @@ struct HomeView: View {
                 }.ignoresSafeArea()
             }
         }
+        #if DEBUG
+        .overlay(alignment: .topLeading) {
+            if !dragAuditResult.isEmpty { Text("동작 검사 완료").font(.caption2).accessibilityIdentifier("home-drag-result").accessibilityValue(dragAuditResult) }
+        }
+        #endif
         .allowsHitTesting(!isConfirmingPlacementExit)
         .accessibilityHidden(isConfirmingPlacementExit)
         .overlay {
@@ -547,7 +557,7 @@ struct HomeView: View {
 
     private var roomActions: some View {
         VStack(alignment: .trailing, spacing: 12) {
-            roomAction("인형 만들기", icon: "doll") { isCreating = true }
+            roomAction("인형 만들기", icon: "doll") { if dolls.count < 30 { isCreating = true } else { interactionMessage = "인형은 30개까지 만들 수 있어요" } }
             roomAction("방 꾸미기", icon: "bed") { isDecorating = true }
             roomAction("ASMR", icon: nil) { showingSound = true }
         }.modifier(RoomReveal())
@@ -760,6 +770,10 @@ struct HomeView: View {
             doll.position = spot
             doll.isPlaced = true
         }
+        if appState.newlyCreatedDollID == doll.id {
+            appState.roomEntrance.beginArrival(of: doll.state)
+            appState.newlyCreatedDollID = nil
+        }
         placementPositions[doll.id] = doll.position
         lastMovedID = doll.id
     }
@@ -901,7 +915,7 @@ extension HomeView {
                             sofaMenuRow("유튜브 같이 보기", selected: false) { beginCouch(resting: false, sofa: item) }
                             sofaMenuRow(couch.resting && couch.sofaID == item.id ? "일어나기" : "앉아서 쉬기", selected: false) { beginCouch(resting: true, sofa: item) }
                         } else {
-                            NavigationLink { FurnitureCustomView(item:item) } label: {
+                            NavigationLink { DecorateView(selectedID: item.id, editingItem: item) } label: {
                                 HomePopupLabel(title: "사진 꾸미기", primary: false) { D1Icon(name: "paint") }
                             }.buttonStyle(.plain).accessibilityLabel("사진 넣기 · 크기 조절")
                                 .simultaneousGesture(TapGesture().onEnded{furnitureMenu=nil})
@@ -965,7 +979,7 @@ extension HomeView {
 
     private func openDollMenu(_ id: UUID) {
         guard placementStart == nil, hold == nil, !showGuide, appState.roomEntrance.finished,
-              let doll = placedDolls.first(where: { $0.id == id }) else { return }
+              let doll = placedDolls.first(where: { $0.id == id }), doll.restingBedID == nil else { return }
         furnitureMenu = nil
         appState.roomToolsOpen = false
         showFurnitureHint = false

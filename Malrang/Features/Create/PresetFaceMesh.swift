@@ -6,7 +6,7 @@ enum PresetFaceMesh {
         point.z > 0 && pow(point.x / (0.082 * scale), 2) + pow((point.y + 0.008) / (0.073 * scale), 2) < 1
     }
 
-    static func photo(aspect: Float, zoom: Float, offsetX: Float, offsetY: Float, radiusX: Float = 0.081, radiusY: Float = 0.072) -> MeshResource {
+    static func photo(aspect: Float, zoom: Float, offsetX: Float, offsetY: Float, radiusX: Float = 0.081, radiusY: Float = 0.072, headWidth: Float = 0.128) -> MeshResource {
         var points: [SIMD3<Float>] = []
         var uv: [SIMD2<Float>] = []
         var triangles: [UInt32] = []
@@ -19,7 +19,8 @@ enum PresetFaceMesh {
             for segment in 0...segments {
                 let a = Float(segment) / Float(segments) * 2 * Float.pi
                 let x = cos(a) * r, y = sin(a) * r
-                points.append([x * radiusX, -0.008 + y * radiusY, 0.095 + 0.004 * (1 - r * r)])
+                let px = x * radiusX, py = -0.008 + y * radiusY
+                points.append([px, py, PresetHeadSurface.front(x: px, y: py, width: headWidth) - 0.002])
                 uv.append(center + SIMD2<Float>(x * 0.5, y * 0.5) * visible)
                 if ring < rings && segment < segments {
                     let i = UInt32(ring * (segments + 1) + segment), j = i + UInt32(segments + 1)
@@ -32,7 +33,7 @@ enum PresetFaceMesh {
         return try! MeshResource.generate(from: [mesh])
     }
 
-    static func rim(scale: Float = 1) -> MeshResource {
+    static func rim(scale: Float = 1, headWidth: Float = 0.128) -> MeshResource {
         var points: [SIMD3<Float>] = []
         var uv: [SIMD2<Float>] = []
         var triangles: [UInt32] = []
@@ -41,9 +42,9 @@ enum PresetFaceMesh {
             let u = Float(segment) / Float(segments), a = u * 2 * Float.pi
             for side in 0...sides {
                 let v = Float(side) / Float(sides), b = v * 2 * Float.pi
-                points.append([cos(a) * (0.085 * scale + cos(b) * 0.009),
-                               -0.008 + sin(a) * (0.076 * scale + cos(b) * 0.009),
-                               0.094 + sin(b) * 0.010])
+                let x = cos(a) * (0.085 * scale + cos(b) * 0.009)
+                let y = -0.008 + sin(a) * (0.076 * scale + cos(b) * 0.009)
+                points.append([x, y, PresetHeadSurface.front(x: x, y: y, width: headWidth) + sin(b) * 0.006])
                 uv.append([u, v])
                 if segment < segments && side < sides {
                     let i = UInt32(segment * (sides + 1) + side), j = i + UInt32(sides + 1)

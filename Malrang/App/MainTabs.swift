@@ -76,9 +76,12 @@ struct MainTabs: View {
     private func destination(_ tab: AppTab, title: String, icon: String) -> some View {
         Button { selection.wrappedValue = tab } label: {
             VStack(spacing: 3.48) {
-                Image(tab == .dolls && appState.tab != .dolls ? "fluff_feedback_tab_cloud" :
+                Group {
+                if tab == .mypage && appState.tab == .mypage { Image(systemName: "person.fill").resizable().scaledToFit() }
+                else { Image(tab == .dolls && appState.tab != .dolls ? "fluff_feedback_tab_cloud" :
                       tab == .home && appState.tab == .home ? "fluff_feedback_tab_home" : tab == .mypage ? "fluff_feedback_tab_user" : "fluff_tab_" + icon)
-                    .renderingMode(.template).resizable().scaledToFit()
+                    .renderingMode(.template).resizable().scaledToFit() }
+                }
                     .frame(width: 20.883, height: 20.883)
                     .foregroundStyle(appState.tab == tab ? Color.rep4.c08 : Color.rep4.c25.opacity(0.6))
                 Text(title).pretendard(.medium, 12)

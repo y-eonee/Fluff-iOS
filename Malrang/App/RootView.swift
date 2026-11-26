@@ -11,6 +11,8 @@ struct RootView: View {
         if isSignedIn {
             MainTabs().environment(appState)
                 .task {
+                    for item in items where item.kind == .flowerCushion { modelContext.delete(item) }
+                    try? modelContext.save()
                     if items.isEmpty {
                         RoomItem.starterRoom.forEach(modelContext.insert)
                         try? modelContext.save()

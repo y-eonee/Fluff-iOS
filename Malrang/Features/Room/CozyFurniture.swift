@@ -675,22 +675,57 @@ enum CozyFurniture {
             }
             removeArtwork(root)
         }
-        if item.photoData != nil, item.kind != .wall {
-            let isWall = item.kind.hangsOnWall
-            let size: SIMD2<Float> = item.kind == .floor ? [(cutaway || roomOverview) ? s.x : 8, (cutaway || roomOverview) ? s.z : 8]
-                : isWall ? [s.x * 0.76, s.y * 0.77] : [s.x * 0.9, s.z * 0.85]
-            let photo = ModelEntity(mesh: .generatePlane(width: size.x, height: size.y), materials: [photoMaterial])
+        if item.kind == .bed {
+            box("bed.base", [s.x * 0.96, 0.20, s.z * 0.96], [0, 0.12, 0], CozyRoomPalette.surface, radius: 0.06)
+            // Keep the upholstered mattress, pillow and quilt; remove wooden rails.
+            for name in ["headboard", "headboard.pile", "frame", "frame.pile", "footboard", "leg", "leg.foot"] {
+                for child in Array(root.children) where child.name == name { child.removeFromParent() }
+            }
+        }
+        if let data = item.photoData, item.kind != .wall && item.kind != .frame {
+            let names: Set<String>
+            switch item.kind {
+            case .bed: names = ["duvet", "duvet.fold", "duvet.fold.drape"]
+            case .floor: names = ["floor"]
+            case .rugRound, .rugSquare: names = ["rug"]
+            case .desk: names = ["desktop"]
+            case .chair, .sofa: names = ["seat", "seat.base", "backrest", "armrest"]
+            case .shelf: names = ["shelf"]
+            case .plant: names = ["pot"]
+            case .lamp: names = ["shade"]
+            default: names = []
+            }
+            let imageAspect = ImageDownsampling.aspectRatio(data)
+            func applySurface(_ entity: Entity) {
+                for child in Array(entity.children) {
+                    if child.name.hasSuffix(".pile"), names.contains(String(child.name.dropLast(5))) { child.removeFromParent(); continue }
+                    if item.kind == .floor && child.name.hasPrefix("floor.tile") { child.removeFromParent(); continue }
+                    if names.contains(child.name), var model = child.components[ModelComponent.self] {
+                        let vertical = ["backrest", "pot", "shade"].contains(child.name)
+                        let native = [.floor, .desk, .shelf].contains(item.kind)
+                        let bounds = child.visualBounds(relativeTo: child)
+                        let size = bounds.extents * child.scale
+                        let aspect = item.kind == .rugRound ? 1 : size.x / max(0.0001, vertical ? size.y : size.z)
+                        model.mesh = FurnitureSurfaceGeometry.mesh(model.mesh,
+                            planarPhoto: !native && !vertical, verticalPhoto: vertical, singleMaterial: true)
+                        var finish = photoMaterial
+                        if var photo = finish as? UnlitMaterial {
+                            photo.textureCoordinateTransform = FurniturePhotoTransform.make(item, imageAspect: imageAspect, surfaceAspect: aspect)
+                            finish = photo
+                        }
+                        model.materials = [finish]
+                        child.components.set(model)
+                    }
+                    applySurface(child)
+                }
+            }
+            applySurface(root)
+        }
+        if item.photoData != nil, item.kind == .frame {
+            let photo = ModelEntity(mesh: .generatePlane(width: s.x * 0.76, height: s.y * 0.77), materials: [photoMaterial])
             photo.name = "custom-photo"
-            if isWall {
-                let front = item.kind == .frame
-                    ? (root.findEntity(named: "mat")?.visualBounds(relativeTo: root).max.z ?? 0.0355) + 0.001
-                    : s.z / 2 + 0.015
-                photo.position = [0, s.y / 2, front]
-            }
-            else {
-                photo.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
-                photo.position = [0, item.kind == .floor ? 0.003 : (item.kind.seatHeight ?? 0.01) + 0.002, 0]
-            }
+            let front = (root.findEntity(named: "mat")?.visualBounds(relativeTo: root).max.z ?? 0.0355) + 0.001
+            photo.position = [0, s.y / 2, front]
             root.addChild(photo)
         }
         return root

@@ -6,6 +6,74 @@ final class VisualSmokeTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
     }
 
+    func testInlineFurnitureFinishesAndPhotoSurfaces() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        for mirrored in [false, true] {
+            app.launchArguments = ["--design-preview=decorate-selected", "--surface-photo-preview"] + (mirrored ? ["--mirror-preview"] : [])
+            app.launch()
+            XCTAssertTrue(app.otherElements["decorate-loading"].waitForNonExistence(timeout: 45))
+            XCTAssertTrue(app.buttons["꾸미기"].waitForExistence(timeout: 10))
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: app.buttons["꾸미기"])], timeout: 10), .completed)
+            app.buttons["꾸미기"].tap()
+            XCTAssertTrue(app.buttons["컬러"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["꾸미기 완료"].exists)
+            XCTAssertFalse(app.buttons["삭제"].exists)
+            captureUpdatedLoading(app, mirrored ? "inline-finishes-mirrored-photos" : "inline-finishes-surface-photos")
+            app.buttons["가구 편집"].tap()
+            XCTAssertTrue(app.buttons["좌우반전"].waitForExistence(timeout: 5))
+            app.terminate()
+        }
+    }
+
+    func testDollCountAndStoredDollReturnAction() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--stored-doll-preview"]
+        app.launch()
+        waitForHomeControls(app)
+        app.buttons["내 인형"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label MATCHES %@", "[0-9]+/30")).firstMatch.waitForExistence(timeout: 10))
+        let stored = app.buttons.matching(NSPredicate(format: "value == %@", "보관 중")).firstMatch
+        XCTAssertTrue(stored.exists)
+        stored.tap()
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["방에 두기"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["삭제하기"].exists)
+        captureUpdatedLoading(app, "stored-doll-return-next-to-delete")
+        app.buttons["방에 두기"].tap()
+        XCTAssertTrue(app.otherElements["room-loading"].waitForNonExistence(timeout: 30))
+    }
+
+    func testNewDollArrivalAndOrdinaryLoading() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--arrival-doll-preview", "--ui-testing"]
+        app.launch()
+        let loading = app.otherElements["room-loading"]
+        XCTAssertTrue(loading.waitForExistence(timeout: 20))
+        XCTAssertEqual(loading.value as? String, "몽글이")
+        XCTAssertTrue(loading.waitForNonExistence(timeout: 30))
+        captureUpdatedLoading(app, "newly-created-doll-arrived")
+        app.terminate()
+        app.launchArguments = ["--design-preview=tabs-ui", "--ui-testing"]
+        app.launch()
+        XCTAssertTrue(loading.waitForExistence(timeout: 20))
+        XCTAssertEqual(loading.value as? String, "솜뭉치")
+        XCTAssertTrue(loading.waitForNonExistence(timeout: 30))
+        waitForHomeControls(app)
+    }
+
+    func testHomeLongPressPositionAndFacingAudit() {
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--home-drag-audit", "--bed-occupied", "--ui-testing"]
+        app.launch()
+        waitForHomeControls(app)
+        let result = app.staticTexts["home-drag-result"]
+        XCTAssertTrue(result.waitForExistence(timeout: 90))
+        XCTAssertFalse((result.value as? String ?? result.label).contains("FAIL"))
+    }
+
     func testPreloginSplashHandsOffToAppleSignIn() {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")

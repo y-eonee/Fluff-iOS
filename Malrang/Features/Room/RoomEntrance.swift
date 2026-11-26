@@ -30,7 +30,12 @@ final class RoomEntrance {
             return
         }
         #endif
-        loadingDoll = placed.randomElement()?.state
+        loadingDoll = nil
+    }
+    func beginArrival(of doll: DollState) {
+        loadingDoll = doll
+        selectedLoadingDoll = true
+        finished = false; start = nil; sceneReady = false; presentsSceneDoll = false
     }
     var time: Double {
         #if DEBUG

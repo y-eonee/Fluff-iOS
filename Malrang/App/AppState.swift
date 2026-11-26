@@ -18,7 +18,10 @@ final class AppState {
         roomToolsOpen.toggle()
     }
 
-    func place(_ doll: Doll) {
+    var newlyCreatedDollID: UUID?
+
+    func place(_ doll: Doll, newlyCreated: Bool = false) {
+        newlyCreatedDollID = newlyCreated ? doll.id : nil
         dollToPlace = doll
         tab = .home
     }

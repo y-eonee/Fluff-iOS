@@ -33,7 +33,9 @@ struct MalrangApp: App {
 
     @ViewBuilder private var appContent: some View {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--export-motion-review") {
+        if ProcessInfo.processInfo.arguments.contains("--furniture-appearance-audit") {
+            FurnitureAppearanceAudit().frame(width: 320, height: 320)
+        } else if ProcessInfo.processInfo.arguments.contains("--export-motion-review") {
             MotionReviewExporter().frame(width: 720, height: 480)
         } else if ProcessInfo.processInfo.arguments.contains("--export-furniture-thumbnails") {
             FurnitureThumbnailExporter().frame(width: 512, height: 384)
@@ -81,6 +83,7 @@ struct MalrangApp: App {
                 if ProcessInfo.processInfo.arguments.contains("--activity-audit") { DollActivityAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--render-resource-audit") { await RenderResourceAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--furniture-audit") { await FurnitureInteractionAudit.run() }
+                if ProcessInfo.processInfo.arguments.contains("--furniture-matrix-audit") { await FurnitureMatrixAudit.run() }
                 await PresetModelExporter.exportIfRequested()
                 await CozyModelExporter.exportIfRequested()
                 await CozyModelExporter.auditIfRequested()

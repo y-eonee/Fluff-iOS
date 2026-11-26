@@ -143,6 +143,97 @@
         let a = home.visualBounds(relativeTo: home), b = editor.visualBounds(relativeTo: editor)
         checks["same_geometry_\(kind.rawValue)"] = simd_distance(a.min, b.min) < 0.001 && simd_distance(a.max, b.max) < 0.001 && home.position == editor.position && home.scale == editor.scale
       }
+      for kind in [FurnitureKind.bed, .sofa, .desk, .chair, .frame, .rugRound] {
+        let item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+        let model = await SceneFactory.furniture(item, onFloor: true, cozy: true, cutaway: true)
+        func signature(_ root: Entity) -> [SIMD3<Float>] {
+          var values: [SIMD3<Float>] = []
+          func visit(_ node: Entity) {
+            values.append(node.position)
+            if let mesh = node.components[ModelComponent.self]?.mesh {
+              for part in mesh.contents.models.flatMap({ Array($0.parts) }) {
+                let points = part.positions.elements
+                // Mesh generation may merge duplicate vertices; face count and
+                // occupied shape must survive, not the internal vertex layout.
+                values.append(SIMD3(Float(part.triangleIndices?.count ?? 0), 0, 0))
+                values.append(points.reduce(SIMD3<Float>(repeating: .infinity), simd_min))
+                values.append(points.reduce(SIMD3<Float>(repeating: -.infinity), simd_max))
+              }
+            }
+            for child in node.children { visit(child) }
+          }
+          visit(root); return values
+        }
+        let before = signature(model)
+        FurnitureSurfaceGeometry.reflect(model)
+        FurnitureSurfaceGeometry.reflect(model)
+        let after = signature(model)
+        checks["mirror_twice_preserves_every_part_\(kind)"] = before.count == after.count && zip(before, after).allSatisfy { simd_distance($0, $1) < 0.0001 }
+      }
+      for aspect in [0.4, 1.0, 2.5] {
+        let photo = UIGraphicsImageRenderer(size: CGSize(width: 120 * aspect, height: 120)).image { context in
+          UIColor.systemTeal.setFill(); context.fill(CGRect(x: 0, y: 0, width: 120 * aspect, height: 120))
+        }.pngData()!
+        for mirrored in [false, true] { for flipped in [false, true] { for turns in 0..<4 { for zoom: Float in [1, 2] {
+          var item = RoomItemState(id: UUID(), kind: .rugRound, x: 0, z: 0)
+          item.photoData = photo; item.isMirrored = mirrored; item.photoFlipped = flipped; item.photoTurns = turns
+          item.photoScale = zoom; item.photoFit = 1; item.photoOffsetX = 0.9; item.photoOffsetY = -0.9
+          let model = await SceneFactory.furniture(item, onFloor: true, cozy: true, cutaway: true)
+          let key = "rug_photo_\(aspect)_\(mirrored)_\(flipped)_\(turns)_\(zoom)"
+          guard let rug = model.findEntity(named: "rug"), let mesh = rug.components[ModelComponent.self],
+                let material = mesh.materials.first as? UnlitMaterial else { checks[key] = false; continue }
+          let parts = mesh.mesh.contents.models.flatMap { Array($0.parts) }
+          let t = material.textureCoordinateTransform
+          let c = cos(t.rotation), sinA = sin(t.rotation)
+          let uvs = parts.flatMap { $0.textureCoordinates?.elements ?? [] }
+          let filled = uvs.allSatisfy { uv in
+            let p = uv * t.scale
+            let transformed = SIMD2(c * p.x - sinA * p.y, sinA * p.x + c * p.y) + t.offset
+            return transformed.min() >= -0.0001 && transformed.max() <= 1.0001
+          }
+          let topFaces = parts.contains { part in
+            guard let indices = part.triangleIndices?.elements else { return false }
+            let points = part.positions.elements
+            return stride(from: 0, to: indices.count, by: 3).contains { i in
+              let a = points[Int(indices[i])], b = points[Int(indices[i+1])], c = points[Int(indices[i+2])]
+              return simd_cross(b - a, c - a).y > 0.000001
+            }
+          }
+          checks[key] = material.color.texture != nil && !uvs.isEmpty && filled && topFaces
+            && rug.scale.min() > 0 && model.findEntity(named: "custom-photo") == nil
+        } } } }
+      }
+      for kind in [FurnitureKind.bed, .floor] {
+        var item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0); item.photoData = data
+        let model = await SceneFactory.furniture(item, onFloor: true, cozy: true, cutaway: true)
+        checks["\(kind)_photo_has_no_floating_plane"] = model.findEntity(named: "custom-photo") == nil
+        let name = kind == .bed ? "duvet" : "floor"
+        checks["\(kind)_surface_has_photo"] = (model.findEntity(named: name)?.components[ModelComponent.self]?.materials.first as? UnlitMaterial)?.color.texture != nil
+        if kind == .bed { checks["bed_no_wood_frame"] = model.findEntity(named: "frame") == nil && model.findEntity(named: "headboard") == nil }
+      }
+      for shape in [DollShape.cat, .bear, .rabbit] {
+        var configuration = PresetConfiguration(); configuration.shape = shape
+        let baseline = await PresetDollModel.make(configuration, detail: .room)
+        let head0 = baseline.findEntity(named: "head")!, ears0 = baseline.findEntity(named: "ears")!
+        let relativeEars = (ears0.position - head0.position) / head0.scale
+        for size: Float in [0.6, 1.4] {
+          configuration.parts["head"] = .init(width: size, size: size, length: size, offset: 0.2)
+          configuration.parts["torso"] = .init(width: 2 - size, size: 2 - size, length: 2 - size)
+          for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
+            configuration.parts[part.rawValue] = .init(width: size, size: size, length: size)
+          }
+          let model = await PresetDollModel.make(configuration, detail: .room)
+          let head = model.findEntity(named: "head")!, ears = model.findEntity(named: "ears")!
+          checks["ears_follow_head_\(shape)_\(size)"] = simd_distance(relativeEars, (ears.position - head.position) / head.scale) < 0.0001
+          let torso = model.findEntity(named: "torso")!.visualBounds(relativeTo: model)
+          for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
+            let limb = model.findEntity(named: part.rawValue)!.visualBounds(relativeTo: model)
+            let overlap = simd_min(torso.max, limb.max) - simd_max(torso.min, limb.min)
+            checks["limb_attached_\(shape)_\(part)_\(size)"] = overlap.min() > 0
+          }
+        }
+      }
+      checks["catalog_excludes_flower_cushion"] = !FurnitureKind.catalog.contains(.flowerCushion)
       let day = RoomDaylight.at(hour: 12)
       let night = RoomDaylight.at(hour: 23)
       let sunset = RoomDaylight.at(hour: 18)

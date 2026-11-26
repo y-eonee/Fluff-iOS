@@ -34,7 +34,6 @@ struct DecorateView: View {
     @State var selectedID: UUID?
     @State var rotationFailCount = 0
     @State var editingItem: RoomItem?
-    @State var photoItem: RoomItem?
     @State var photoRemovalItem: RoomItem?
     @State var photoRemovalRightWall = false
     @State var isConfirmingDiscard = false
@@ -90,11 +89,8 @@ struct DecorateView: View {
             }
         }
         .environment(\.roomFlowDesign, true)
-        .navigationDestination(item: $editingItem) { item in
-            FurnitureCustomView(item: item)
-        }
-        .navigationDestination(item: $photoItem) { item in
-            FurnitureCustomView(item: item, initialStyle: .photo)
+        .onChange(of: selectedID) { _, id in
+            if editingItem?.id != id { editingItem = nil }
         }
         .task(id: startupPresentationFinished) {
             guard startupPresentationFinished else { return }
@@ -103,7 +99,7 @@ struct DecorateView: View {
                     original = items.map(\.state)
                     originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
                 }
-                for kind in FurnitureKind.allCases where kind.isMovable {
+                for kind in FurnitureKind.catalog where kind.isMovable {
                     _ = await SceneFactory.furniture(RoomItemState(id: UUID(), kind: kind, x: 0, z: 0), cozy: true, cutaway: true)
                 }
                 guard !Task.isCancelled else { return }
@@ -176,7 +172,7 @@ struct DecorateView: View {
         rotated.yaw = (rotated.yaw + .pi / 2).truncatingRemainder(dividingBy: 2 * .pi)
         let spot = RoomLayout.snapped([rotated.x, rotated.z], for: rotated.kind, yaw: rotated.yaw, isMirrored: rotated.isMirrored)
         (rotated.x, rotated.z) = (spot.x, spot.y)
-        guard !RoomLayout.overlaps(rotated, in: items.map(\.state)) else {
+        guard RoomLayout.canMove(item.state, to: rotated, among: items.map(\.state)) else {
             rotationFailCount += 1
             isBlocked = true
             return
@@ -192,7 +188,7 @@ struct DecorateView: View {
         var mirrored = item.state; mirrored.isMirrored.toggle()
         let spot = RoomLayout.constrained(mirrored)
         mirrored.x = spot.x; mirrored.z = spot.y
-        guard !RoomLayout.overlaps(mirrored, in: items.map(\.state)) else {
+        guard RoomLayout.canMove(item.state, to: mirrored, among: items.map(\.state)) else {
             rotationFailCount += 1; isBlocked = true; return
         }
         move(item.id, to: spot)
@@ -214,7 +210,7 @@ struct DecorateView: View {
     }
 
     func add(_ kind: FurnitureKind) {
-        guard let spot = RoomLayout.freeSpot(for: kind, among: items.map(\.state)) else {
+        guard let spot = RoomLayout.freeSpot(for: kind, among: items.map(\.state), dolls: dolls.filter(\.isPlaced).map(\.position)) else {
             isFull = true
             return
         }

@@ -177,6 +177,8 @@ struct RoomSceneView: UIViewRepresentable {
             let id: UUID
             let isDoll: Bool
             let start: SIMD3<Float>
+            let orientation: simd_quatf
+            let scale: SIMD3<Float>
             var floorOffset = SIMD2<Float>.zero
         }
 
@@ -485,6 +487,14 @@ struct RoomSceneView: UIViewRepresentable {
                         DollRestPose.bedding(content.findEntity(named: "item|\(bed.id)"), pose: .covered, animated: false)
                         returningBeds[doll.id] = bedID
                         waking.append((model, bed, destination))
+                    }
+                    if !showsLoadingDoll, support.height < 0.05, doll.restingBedID == nil, doll.couchCompanionScale == nil,
+                       let old = previous?.dolls.first(where: { $0.id == doll.id }),
+                       old.restingBedID == nil, old.couchCompanionScale == nil, old.dance == doll.dance,
+                       let live = root.findEntity(named: "doll|\(doll.id)") {
+                        model.orientation = live.orientation
+                        if old.position == state.dolls.first(where: { $0.id == doll.id })?.position,
+                           previous?.items == state.items { model.position = live.position }
                     }
                     content.addChild(model)
                 }
@@ -881,9 +891,9 @@ struct RoomSceneView: UIViewRepresentable {
 
         @objc private func handleZoom(_ gesture: UIPinchGestureRecognizer) {
             guard drag == nil else { return }
-            zoom = min(2.5, max(1, zoom * Float(gesture.scale)))
+            zoom = min(2.5, max(0.65, zoom * Float(gesture.scale)))
             gesture.scale = 1
-            if zoom == 1 { shift = .zero }
+            if zoom <= 1 { shift = .zero }
             placeCamera()
         }
 
@@ -1052,15 +1062,18 @@ struct RoomSceneView: UIViewRepresentable {
             hit.entity.stopAllAnimations(recursive: true)
             parent.onFeel()
             dragPoint = point; dropBlocked = false
-            drag = Drag(entity: hit.entity, id: hit.id, isDoll: hit.isDoll, start: hit.entity.position)
+            drag = Drag(entity: hit.entity, id: hit.id, isDoll: hit.isDoll, start: hit.entity.position, orientation: hit.entity.orientation, scale: hit.entity.scale)
             if hit.isDoll {
                 hit.entity.position.y += lift
                 holdOut(hit.entity)
+                hit.entity.orientation = simd_quatf(angle: atan2(cameraDirection.x, cameraDirection.z) - orbitYaw, axis: [0, 1, 0])
                 if let floor = floorPoint(at: point) {
                     drag?.floorOffset = SIMD2(hit.entity.position.x, hit.entity.position.z) - floor
                 }
                 parent.onPickDoll(hit.id)
                 report(hit.entity)
+            } else if let moving = item(hit.id), let floor = furniturePoint(at: point, for: moving) {
+                drag?.floorOffset = SIMD2(hit.entity.position.x, hit.entity.position.z) - floor
             }
         }
 
@@ -1083,7 +1096,7 @@ struct RoomSceneView: UIViewRepresentable {
                 // Always report pointer changes, even over furniture that rejects placement.
                 report(drag.entity)
             } else if let moving = item(drag.id), let floor = furniturePoint(at: point, for: moving) {
-                let snapped = RoomLayout.snapped(floor, for: moving.kind, yaw: moving.yaw, isMirrored: moving.isMirrored)
+                let snapped = RoomLayout.snapped(floor + drag.floorOffset, for: moving.kind, yaw: moving.yaw, isMirrored: moving.isMirrored)
                 if moving.kind.hangsOnWall {
                     var hung = moving; (hung.x, hung.z) = (snapped.x, snapped.y)
                     drag.entity.position = [snapped.x, moving.kind.hangingHeight + (parent.isCozyRoom ? (moving.kind == .shelf ? 0.64 : 0.23) : 0), snapped.y]
@@ -1101,6 +1114,8 @@ struct RoomSceneView: UIViewRepresentable {
             let action = DollDropAction.resolve(ended: ended, overStorage: overRemovalTarget, blocked: dropBlocked)
             self.drag = nil
             drag.entity.isEnabled = true
+            drag.entity.scale = drag.scale
+            drag.entity.orientation = drag.orientation
             parent.onFeel()
             highlights.forEach { $0.removeFromParent() }; highlights = []
             if drag.isDoll, parent.mode == .home, !parent.canMoveDolls {
@@ -1122,11 +1137,15 @@ struct RoomSceneView: UIViewRepresentable {
                 if drag.isDoll { parent.onHoldDoll(nil) }
             } else if drag.isDoll {
                 parent.onHoldDoll(nil)
-                recordDollMove(drag.id, to: drag.entity.position - [0, lift, 0])
+                drag.entity.position.y -= lift
+                recordDollMove(drag.id, to: drag.entity.position)
             } else if var moved = item(drag.id) {
                 (moved.x, moved.z) = (drag.entity.position.x, drag.entity.position.z)
-                if RoomLayout.overlaps(moved, in: rendered?.items ?? []) { drag.entity.position = drag.start }
-                else { parent.onMoveItem(drag.id, [moved.x, moved.z]) }
+                if let original = item(drag.id), !RoomLayout.canMove(original, to: moved, among: rendered?.items ?? []) { drag.entity.position = drag.start }
+                else {
+                    if let index = latest?.items.firstIndex(where: { $0.id == drag.id }) { latest?.items[index] = moved }
+                    parent.onMoveItem(drag.id, [moved.x, moved.z])
+                }
             }
             rendered = nil
             if let latest { render(latest) }
@@ -1146,8 +1165,14 @@ struct RoomSceneView: UIViewRepresentable {
                 let bounds = model.visualBounds(relativeTo: nil)
                 return view.project(bounds.center)
             }
+            guard let live = root.findEntity(named: "doll|\(doll.id)") else { return ["FAIL: missing live doll"] }
+            live.position.x += 0.02
+            live.orientation = simd_quatf(angle: 0.8, axis: [0, 1, 0])
+            let originalPosition = live.position, originalOrientation = live.orientation, originalScale = live.scale
             guard let start = pick() else { return ["FAIL: project doll"] }
             beginDrag(at: start)
+            let front = simd_quatf(angle: atan2(cameraDirection.x, cameraDirection.z) - orbitYaw, axis: [0,1,0])
+            check(abs(simd_dot(live.orientation.vector, front.vector)) > 0.999, "held doll faces camera")
             check(drag?.id == doll.id, "long press picks awake doll")
             await settle()
             check(!parent.dollRemovalTarget.isEmpty, "home exposes trash target")
@@ -1157,6 +1182,11 @@ struct RoomSceneView: UIViewRepresentable {
             endDrag(at: target, ended: false)
             await settle()
             check(latest?.dolls.contains(where: { $0.id == doll.id }) == true, "cancel over trash keeps doll")
+            if let restored = root.findEntity(named: "doll|\(doll.id)") {
+                check(simd_distance(restored.position, originalPosition) < 0.001, "release preserves live wandering position")
+                check(abs(simd_dot(restored.orientation.vector, originalOrientation.vector)) > 0.999, "release restores gaze")
+                check(simd_distance(restored.scale, originalScale) < 0.001, "release restores size")
+            }
             for furniture in state.items where [.bed, .chair, .sofa, .desk].contains(furniture.kind) {
                 guard let point = pick() else { continue }
                 let original = latest?.dolls.first(where: { $0.id == doll.id })?.position
@@ -1265,6 +1295,16 @@ struct RoomSceneView: UIViewRepresentable {
         }
 
         private func furniturePoint(at point: CGPoint, for moving: RoomItemState) -> SIMD2<Float>? {
+            if moving.kind.hangsOnWall, let ray = view?.ray(through: point) {
+                var intersections: [(Float, SIMD2<Float>)] = []
+                for axis in [0, 2] where abs(ray.direction[axis]) > 0.0001 {
+                    let t = (-0.98 - ray.origin[axis]) / ray.direction[axis]
+                    let p = ray.origin + ray.direction * t
+                    let along = axis == 0 ? p.z : p.x
+                    if t > 0, abs(along) <= 1.05 { intersections.append((t, [p.x, p.z])) }
+                }
+                return intersections.min { $0.0 < $1.0 }?.1
+            }
             if moving.kind == .lamp {
                 for hit in hits(at: point) {
                     var entity: Entity? = hit.entity
@@ -1305,7 +1345,7 @@ struct RoomSceneView: UIViewRepresentable {
         /// 든 인형은 키우고 발밑에 원을 깔고, 나머지 인형은 흐리게 해서 어느 인형을 잡았는지 보이게 한다.
         /// 인형 재질은 투명도 0.5 아래를 그리지 않으므로 그보다 높게 흐린다.
         private func holdOut(_ entity: Entity) {
-            entity.scale = [1.12, 1.12, 1.12]
+            entity.scale *= 1.12
             entity.addChild(SceneFactory.heldRing(below: lift))
             guard let content = root.children.first else { return }
             for other in content.children where other !== entity && other.name.hasPrefix("doll|") {

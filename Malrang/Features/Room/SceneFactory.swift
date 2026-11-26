@@ -69,6 +69,7 @@ enum SceneFactory {
             ? (item.kind == .shelf ? 0.64 : 0.23) : 0
         if cozy && item.kind == .frame { entity.scale = [1.4, 1.55, 1.4] }
         entity.position = [item.x, hangs ? item.kind.hangingHeight + interiorLift : elevation, item.z]
+        if item.isMirrored { FurnitureSurfaceGeometry.reflect(entity) }
         if item.kind.hangsOnWall {
             let pivot = Entity()
             for child in Array(entity.children) { pivot.addChild(child) }
@@ -80,18 +81,6 @@ enum SceneFactory {
             entity.addChild(centered)
         }
         entity.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : (item.kind.hangsOnWall ? 0 : item.yaw), axis: [0, 1, 0])
-        if item.isMirrored {
-            if cozy, item.kind == .bed, (models[item.kind] ?? nil) == nil {
-                // The procedural bed is symmetric. Reflect only its user artwork;
-                // negative scale on the fleece reverses its lighting handedness.
-                entity.findEntity(named: "custom-photo")?.scale.x = -1
-            } else {
-                let visual = Entity()
-                for child in Array(entity.children) { visual.addChild(child) }
-                visual.scale.x = -1
-                entity.addChild(visual)
-            }
-        }
         if cozy && item.kind.isMovable && (item.yaw == 0 || item.kind.category == .rug) {
             let shadow = entity.findEntity(named: "contact-shadow")
             let shadowParent = shadow?.parent
@@ -118,8 +107,13 @@ enum SceneFactory {
         } else if item.kind == .floor {
             shapes = [ShapeResource.generateBox(size: [2, 0.145, 2]).offsetBy(translation: [0, -0.0725, 0])]
         } else {
-            let size = item.kind.size
-            shapes = [ShapeResource.generateBox(size: size).offsetBy(translation: [0, size.y / 2, 0])]
+            let shadow = entity.findEntity(named: "contact-shadow")
+            let shadowParent = shadow?.parent
+            shadow?.removeFromParent()
+            let bounds = entity.visualBounds(relativeTo: entity)
+            if let shadow, let shadowParent { shadowParent.addChild(shadow) }
+            shapes = [ShapeResource.generateBox(size: simd_max(bounds.extents, SIMD3<Float>(repeating: 0.015)))
+                .offsetBy(translation: bounds.center)]
         }
         entity.components.set(CollisionComponent(shapes: shapes))
         return entity
@@ -342,11 +336,23 @@ enum SceneFactory {
         return outline
     }
 
+    static func photoImage(_ image: CGImage, flipped: Bool) -> CGImage? {
+        guard flipped else { return image }
+        let size = CGSize(width: image.width, height: image.height)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { renderer in
+            renderer.cgContext.translateBy(x: size.width, y: 0)
+            renderer.cgContext.scaleBy(x: -1, y: 1)
+            UIImage(cgImage: image).draw(in: CGRect(origin: .zero, size: size))
+        }.cgImage
+    }
+
     private static func material(_ item: RoomItemState, withPhoto: Bool = true) async -> RealityKit.Material {
         var material = UnlitMaterial(applyPostProcessToneMap: false)
         material.faceCulling = .none
         material.color = .init(tint: Palette.uiColor(item.colorName ?? item.kind.defaultColorName))
-        if withPhoto, let data = item.photoData, let cgImage = ImageDownsampling.image(data, maxPixel: 1024)?.cgImage,
+        if withPhoto, let data = item.photoData, let source = ImageDownsampling.image(data, maxPixel: 1024)?.cgImage,
+           let cgImage = photoImage(source, flipped: item.photoFlipped != (item.kind == .wall)),
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
             // 맞추기에서 사진 밖으로 나가는 부분은 흰 여백으로 보인다.
             let sampler = MTLSamplerDescriptor()
@@ -357,21 +363,8 @@ enum SceneFactory {
             sampler.magFilter = .linear
             material.color = .init(tint: .white, texture: .init(texture, sampler: .init(sampler)))
 
-            // 면의 가운데를 기준으로, 사진이 보이는 비율을 정한다. 90도로 돌리면 사진의 가로세로가 바뀐다.
-            let turned = item.photoTurns % 2 == 1
-            let aspect = item.kind.photoAspect
-            let ratio = Float(cgImage.width) / Float(cgImage.height) / aspect
-            let shown = turned ? 1 / ratio : ratio
-            let isFit = item.photoFit == 1
-            var visible: SIMD2<Float> = shown > 1 ? [isFit ? 1 : 1 / shown, isFit ? shown : 1] : [isFit ? 1 / shown : 1, isFit ? 1 : shown]
-            visible /= item.photoScale
-            // Wall panel UVs run right-to-left when viewed from inside the room.
-            let flipsTexture = item.photoFlipped != (item.kind == .wall)
-            let scale = SIMD2<Float>(flipsTexture ? -visible.x : visible.x, visible.y)
-            let angle = Float(item.photoTurns) * .pi / 2
-            let half = scale * 0.5
-            let rotated = SIMD2<Float>(cos(angle) * half.x - sin(angle) * half.y, sin(angle) * half.x + cos(angle) * half.y)
-            material.textureCoordinateTransform = .init(offset: SIMD2(0.5 + item.photoOffsetX, 0.5 + item.photoOffsetY) - rotated, scale: scale, rotation: angle)
+            material.textureCoordinateTransform = FurniturePhotoTransform.make(
+                item, imageAspect: Float(cgImage.width) / Float(cgImage.height))
         }
         return material
     }
