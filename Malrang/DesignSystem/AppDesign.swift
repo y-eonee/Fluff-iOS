@@ -91,11 +91,10 @@ extension View {
 
 }
 
-/// 모눈종이 화면 바탕.
+/// 회색 화면 바탕.
 struct AppBackground: View {
     var body: some View {
-        Color.rep4.c11
-            .overlay { RepresentativeGradientFill(definition: RepresentativeGradients.screenOverlay) }
+        FlowDesign.canvas
             .ignoresSafeArea()
     }
 }

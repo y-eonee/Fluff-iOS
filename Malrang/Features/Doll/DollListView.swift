@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DollListView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.hasNoTopInset) private var hasNoTopInset
     @Query(sort: \Doll.createdAt, order: .reverse) private var dolls: [Doll]
     @State private var selectedDoll: Doll?
     @State private var isCreating = false
@@ -74,7 +75,8 @@ struct DollListView: View {
                     VStack(spacing: 16) {
                         Button(dolls.count >= 30 ? "인형은 30개까지 만들 수 있어요" : "인형 만들기") { isCreating = true }.disabled(dolls.count >= 30).buttonStyle(CreationPrimaryButton()).padding(.horizontal, 22)
                     // TabView overlays the outer tab inset; reserve its height plus the reference's 35pt CTA gap.
-                    }.padding(.top, 16).padding(.bottom, 112).background(FlowDesign.canvas)
+                    // 낮은 화면(iPhone Duo)에서는 간격을 줄여 버튼을 탭바 가까이 둔다.
+                    }.padding(.top, 16).padding(.bottom, hasNoTopInset ? 90 : 112).background(FlowDesign.canvas)
                 }
                 .toolbar(.hidden, for: .navigationBar).toolbar(.hidden, for: .tabBar)
                 #if DEBUG

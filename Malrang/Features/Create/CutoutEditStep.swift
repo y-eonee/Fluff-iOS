@@ -82,9 +82,9 @@ struct CutoutEditStep: View {
     }
 
     private var editor: some View {
-        VStack(spacing: 0) {
+        SplitStack { wide in
             canvas
-                .frame(maxHeight: 338)
+                .frame(maxHeight: wide ? .infinity : 338)
                 .overlay(alignment: .top) {
                     if let hint {
                         HintCapsule(text: hint)
@@ -93,6 +93,9 @@ struct CutoutEditStep: View {
                     }
                 }
                 .animation(.spring, value: hint)
+                .padding(.trailing, wide ? 16 : 0)
+        } secondary: { _ in
+         VStack(spacing: 0) {
             HStack {
                 Button(action: clearAll) {
                     HStack(spacing: 2.05) {
@@ -142,6 +145,7 @@ struct CutoutEditStep: View {
                 }
                     .buttonStyle(CreationPrimaryButton())
             }.padding(.horizontal, 2)
+         }
         }
         .onAppear { hint = "자동으로 영역을 찾았어요" }
         .task(id: hint) {

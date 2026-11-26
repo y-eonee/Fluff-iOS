@@ -2,7 +2,9 @@ import SwiftUI
 
 extension FocusFlowView {
     var selectionScreen: some View {
-        ZStack(alignment: .bottom) {
+        GeometryReader { geometry in
+        let wide = geometry.size.width > max(600, geometry.size.height)
+        ZStack(alignment: wide ? .bottomTrailing : .bottom) {
                 Color.clear.contentShape(Rectangle()).ignoresSafeArea().onTapGesture { dismiss() }
                 VStack(spacing: 0) {
                     Text("함께 집중할 인형 선택").pretendard(.bold, 17, tracking: -0.85)
@@ -26,12 +28,17 @@ extension FocusFlowView {
                     }.buttonStyle(D1PrimaryStyle())
                         .disabled(selection == nil || !dolls.contains { $0.id == selection })
                         .padding(.top, 25).padding(.bottom, 32)
-                }.padding(.horizontal, 22).frame(height: dolls.count <= 2 ? 327 : 467)
-                    .background(Color.white, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+                }.padding(.horizontal, 22)
+                    .frame(width: wide ? (geometry.size.width - geometry.safeAreaInsets.trailing) / 2 : nil, height: dolls.count <= 2 ? 327 : 467)
+                    .background {
+                        UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: wide ? 0 : 22)
+                            .fill(Color.white).ignoresSafeArea(edges: .horizontal)
+                    }
                     .overlay(alignment: .top) {
                         Capsule().fill(Color(uiColor: Palette.uiColor("#FFFDF8"))).frame(width: 40, height: 4).offset(y: -10)
                     }
                     .accessibilityAction(.escape) { dismiss() }
+        }
         }.ignoresSafeArea(edges: .bottom)
         .overlay(alignment: .topLeading) {
             HStack(spacing: 8) {
@@ -60,10 +67,14 @@ extension FocusFlowView {
     func main(_ doll: Doll) -> some View {
         VStack(spacing: 0) {
             header { showMain = false }
+            SplitStack { wide in
+                if wide { companionPreview(doll, wide: true).padding(16) }
+            } secondary: { wide in
+            VStack(spacing: 0) {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    companionPreview(doll)
+                    if !wide { companionPreview(doll, wide: false) }
                     VStack(alignment: .leading, spacing: 12) {
                         Text("오늘 \(doll.name.josa("이랑", "랑")) 함께할 활동").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
                         HStack(spacing: 10) {
@@ -99,12 +110,13 @@ extension FocusFlowView {
             }
             Button("집중 시작하기") { session.start() }.buttonStyle(D1PrimaryStyle())
                 .disabled(!session.canStart)
-                .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 16)
-                .background(Color.white).padding(.bottom, -18)
+                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 16)
+            }
+            }
         }
     }
 
-    private func companionPreview(_ doll: Doll) -> some View {
+    private func companionPreview(_ doll: Doll, wide: Bool) -> some View {
         ZStack {
             Color.white
             Image("flow_focus_glow").resizable().frame(width: 277.26, height: 201.95).offset(x: -3.15, y: 10)
@@ -113,8 +125,8 @@ extension FocusFlowView {
                     PresetDollView(configuration: configuration, cameraDistance: 0.88, cameraTarget: 0.19, fitsModel: true, fitMargin: 0.90)
                         .renderedOnlyWhileVisible(background: .clear)
                 } else { Image(uiImage: doll.image).resizable().scaledToFit() }
-            }.frame(width: 170, height: 190)
-        }.frame(height: 208).clipShape(RoundedRectangle(cornerRadius: 22))
+            }.frame(width: wide ? 300 : 170, height: wide ? 340 : 190)
+        }.frame(height: wide ? nil : 208).clipShape(RoundedRectangle(cornerRadius: 22))
     }
 
     private func activityCard(_ activity: StudyActivity) -> some View {

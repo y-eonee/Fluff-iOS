@@ -60,8 +60,11 @@ struct DollChoiceSheet: View {
       Color.mib.text.primary
     )
     .environment(\.updatedFlowDesign, sourceLayout)
+    // 오른쪽 상태 표시 아래에 뜨는 시트라 좌우 여백을 같게 둔다.
+    .ignoresSafeArea(.container, edges: .horizontal)
     .presentationDetents([.height(489), .large]).presentationDragIndicator(.hidden)
       .presentationCornerRadius(22)
+      .trailingSheetPlacement()
 
   }
 }
@@ -73,11 +76,16 @@ struct CouchChoicePresentation<Content: View>: View {
 
   var body: some View {
     GeometryReader { geometry in
-      ZStack(alignment: .bottom) {
+      let wide = geometry.size.width > max(600, geometry.size.height)
+      ZStack(alignment: wide ? .bottomTrailing : .bottom) {
         Color.black.opacity(0.12).ignoresSafeArea().onTapGesture { dismiss() }
-        content.frame(height: min(489, geometry.size.height + geometry.safeAreaInsets.bottom))
-          .background(Color.mib.bg.surface)
-          .clipShape(UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
+        content.frame(width: wide ? (geometry.size.width - geometry.safeAreaInsets.trailing) / 2 : nil,
+                      height: min(489, geometry.size.height + geometry.safeAreaInsets.bottom))
+          .clipShape(UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: wide ? 0 : 22))
+          .background {
+            UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: wide ? 0 : 22)
+              .fill(Color.mib.bg.surface).ignoresSafeArea(edges: .horizontal)
+          }
           .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
             if value.startLocation.y < 100 && value.translation.height > 60 { dismiss() }
           })

@@ -49,7 +49,8 @@ extension FocusFlowView {
                         studyProgress.padding(.horizontal, 32)
                         Spacer(minLength: 24)
                         timerPanel.padding(.horizontal, 33)
-                    }.padding(.top, geometry.size.height * 0.148)
+                    }.padding(.leading, geometry.safeAreaInsets.leading).padding(.trailing, geometry.safeAreaInsets.trailing)
+                        .padding(.top, geometry.size.height * 0.148)
                         .padding(.bottom, max(geometry.safeAreaInsets.bottom + 38, geometry.size.height * 0.083))
                         .frame(width: geometry.size.width, height: geometry.size.height)
                 }

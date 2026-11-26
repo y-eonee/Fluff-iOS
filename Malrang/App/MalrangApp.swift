@@ -20,6 +20,7 @@ struct MalrangApp: App {
         #endif
     }
     @Environment(\.scenePhase) private var scenePhase
+    @State private var hasNoTopInset = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init() {
@@ -62,6 +63,8 @@ struct MalrangApp: App {
     var body: some Scene {
         WindowGroup {
             startupContent
+                .environment(\.hasNoTopInset, hasNoTopInset)
+                .onGeometryChange(for: Bool.self) { $0.safeAreaInsets.top < 20 } action: { hasNoTopInset = $0 }
                 .allowsHitTesting(isStartupReady)
                 .accessibilityHidden(!isStartupReady)
                 .overlay {

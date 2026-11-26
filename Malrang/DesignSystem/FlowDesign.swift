@@ -3,9 +3,7 @@ import SwiftUI
 /// November flow revisions: 1727:21870 / 1727:24810 / 1727:22870.
 /// Kept separate from the original four-screen tokens used by room editing.
 enum FlowDesign {
-    static let canvas = Color(uiColor: Palette.uiColor("#ECEEEF"))
-    static let makingCanvas = Color(uiColor: Palette.uiColor("#E5E5E4"))
-    static let profileCanvas = Color(uiColor: Palette.uiColor("#EDF0F0"))
+    static let canvas = Color(uiColor: Palette.uiColor("#E5E5E4"))
     // Figma 2019:9651 / 1727:22610 share the room gradient's diagonal axis.
     static let profileBackground = RepresentativeGradient(
         stops: [.init(color: Color(uiColor: Palette.uiColor("#FEFEFE")), location: 0),
@@ -51,8 +49,7 @@ private struct FlowPageTitle: ViewModifier {
         content
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(FlowDesign.header, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(title).pretendard(.semiBold, 19, tracking: -0.76)
@@ -65,6 +62,7 @@ private struct FlowPageTitle: ViewModifier {
                 if isVisible {
                     FlowDesign.header
                         .frame(height: max(0, FlowDesign.headerHeight - navigationBarHeight))
+                        .background(FlowDesign.header.ignoresSafeArea(edges: [.top, .horizontal]))
                         .accessibilityHidden(true)
                 }
             }
@@ -115,6 +113,7 @@ struct FlowHeader: View {
     let title: String
     var backLabel = "뒤로"
     var onBack: (() -> Void)? = nil
+    @Environment(\.hasNoTopInset) private var hasNoTopInset
     var body: some View {
         Text(title).pretendard(.semiBold, 19, tracking: -0.76)
             .foregroundStyle(Color.rep4.c10)
@@ -127,6 +126,7 @@ struct FlowHeader: View {
                 }
             }
             .padding(.top, 2).frame(height: FlowDesign.headerHeight, alignment: .top)
-            .background(FlowDesign.header.ignoresSafeArea(edges: .top))
+            .padding(.top, hasNoTopInset ? Spacing.l : 0)
+            .background(FlowDesign.header.ignoresSafeArea(edges: [.top, .horizontal]))
     }
 }

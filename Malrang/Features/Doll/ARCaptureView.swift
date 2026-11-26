@@ -129,6 +129,7 @@ struct ARCaptureView: View {
                     DancePanel(doll: doll, selected: $move) {
                         withAnimation(.spring) { isChoosingDance = false }
                     }
+                    .frame(maxWidth: 480).frame(maxWidth: .infinity, alignment: .trailing)
                     .transition(.move(edge: .bottom))
                 } else {
                     controls

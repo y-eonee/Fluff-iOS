@@ -53,24 +53,13 @@ struct DollActionSheet: View {
     }
 
     private var content: some View {
+        SplitStack { wide in
+            if wide { dollStage }
+        } secondary: { wide in
         ScrollViewReader { reader in
             ScrollView {
                 VStack(spacing: 0) {
-                    ZStack(alignment: .top) {
-                        Image("flow_profile_glow").resizable().scaledToFit()
-                            .frame(width: 371, height: 259).offset(y: 140)
-                            .accessibilityHidden(true)
-                        Group {
-                            if isChoosingDance, let move {
-                                DancingDoll(image: doll.image, move: move, preset: doll.presetConfiguration).padding(24)
-                                    .accessibilityLabel("\(doll.name), \(move.label) 춤")
-                            } else {
-                                SquishyDoll(doll: doll.state, usesProfileLayout: true)
-                            }
-                        }.frame(height: 390).padding(.horizontal, 34).padding(.top, 22)
-                            .accessibilityAction(named: "춤추기") { startDance() }
-                            .accessibilityAction(named: "사진 찍기") { startAR() }
-                    }.frame(height: 420, alignment: .top)
+                    if !wide { dollStage }
                     DollHistoryCard(doll: doll) { draftName = doll.name; renaming = true }.padding(.horizontal, 20).id("history")
                     HStack(spacing: 12) {
                         if !doll.isPlaced {
@@ -89,6 +78,7 @@ struct DollActionSheet: View {
             }.scrollIndicators(.hidden)
                 .onAppear { if initiallyShowsHistory { reader.scrollTo("history", anchor: .top) } }
         }
+        }
         .alert("인형 이름", isPresented: $renaming) {
             TextField("이름", text: $draftName)
             Button("취소", role: .cancel) {}
@@ -105,6 +95,24 @@ struct DollActionSheet: View {
         .fullScreenCover(isPresented: $isShowingAR) {
             ARCaptureView(doll: doll)
         }
+    }
+
+    private var dollStage: some View {
+        ZStack(alignment: .top) {
+            Image("flow_profile_glow").resizable().scaledToFit()
+                .frame(width: 371, height: 259).offset(y: 140)
+                .accessibilityHidden(true)
+            Group {
+                if isChoosingDance, let move {
+                    DancingDoll(image: doll.image, move: move, preset: doll.presetConfiguration).padding(24)
+                        .accessibilityLabel("\(doll.name), \(move.label) 춤")
+                } else {
+                    SquishyDoll(doll: doll.state, usesProfileLayout: true)
+                }
+            }.frame(height: 390).padding(.horizontal, 34).padding(.top, 22)
+                .accessibilityAction(named: "춤추기") { startDance() }
+                .accessibilityAction(named: "사진 찍기") { startAR() }
+        }.frame(height: 420, alignment: .top)
     }
 
     @ViewBuilder private var profileActions: some View {
