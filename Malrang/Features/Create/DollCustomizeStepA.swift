@@ -81,10 +81,7 @@ struct DollCustomizeStepA: View {
             #endif
             .navigationBarBackButtonHidden().navigationBarTitleDisplayMode(.inline)
             .flowPageTitle("인형 만들기")
-        }.background {
-            if page == 1 { FlowDesign.makingCanvas.ignoresSafeArea() }
-            else { AppBackground() }
-        }.environment(\.updatedFlowDesign, true)
+        }.background(FlowDesign.canvas.ignoresSafeArea()).environment(\.updatedFlowDesign, true)
     }
     private var previewGuide: String {
         switch page {

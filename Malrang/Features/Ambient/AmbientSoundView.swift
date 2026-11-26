@@ -54,7 +54,7 @@ struct AmbientSoundView: View {
         bottomButton.padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 6)
       }
     }.background {
-      Color(uiColor: Palette.uiColor("#F0F0F0")).overlay { RepresentativeGradientFill(definition: RepresentativeGradients.screenOverlay) }.ignoresSafeArea()
+      FlowDesign.canvas.ignoresSafeArea()
     }.foregroundStyle(Color.rep4.c08)
       .environment(\.roomFlowDesign, true)
       .onAppear {

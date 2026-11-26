@@ -49,7 +49,7 @@ struct CreateMethodStep: View {
                     }
                 }.padding(.horizontal, 18).padding(.top, 8).padding(.bottom, 20)
             }.scrollIndicators(.hidden)
-        }.background(FlowDesign.makingCanvas.ignoresSafeArea()).foregroundStyle(Color.rep4.c08)
+        }.background(FlowDesign.canvas.ignoresSafeArea()).foregroundStyle(Color.rep4.c08)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 HStack(spacing: 12) {
                     Button("다시 선택") { if let onPrevious { onPrevious() } else { dismiss() } }.buttonStyle(CreationSecondaryButton())

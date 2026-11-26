@@ -3,9 +3,7 @@ import SwiftUI
 /// November flow revisions: 1727:21870 / 1727:24810 / 1727:22870.
 /// Kept separate from the original four-screen tokens used by room editing.
 enum FlowDesign {
-    static let canvas = Color(uiColor: Palette.uiColor("#ECEEEF"))
-    static let makingCanvas = Color(uiColor: Palette.uiColor("#E5E5E4"))
-    static let profileCanvas = Color(uiColor: Palette.uiColor("#EDF0F0"))
+    static let canvas = Color(uiColor: Palette.uiColor("#E5E5E4"))
     // Figma 2019:9651 / 1727:22610 share the room gradient's diagonal axis.
     static let profileBackground = RepresentativeGradient(
         stops: [.init(color: Color(uiColor: Palette.uiColor("#FEFEFE")), location: 0),
