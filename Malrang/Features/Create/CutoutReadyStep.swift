@@ -37,8 +37,9 @@ struct CutoutReadyStep: View {
                 Button("모양 선택하기", action: onNext).buttonStyle(CreationPrimaryButton())
             }.padding(.horizontal, 18).padding(.top, 25).padding(.bottom, 16)
         }
-        .background { AppBackground() }
-        .cozyPageTitle("making fluff")
+        .background(FlowDesign.makingCanvas.ignoresSafeArea())
+        .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 1) }
+        .flowPageTitle("인형 만들기")
     }
 }
 

@@ -10,8 +10,8 @@ struct MyPageView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("my page").notCliche(28, relativeTo: .title).tracking(-1.12).frame(height: 44)
+        VStack(spacing: 20) {
+            FlowHeader(title: "마이페이지")
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     NavigationLink { ProfileEditView() } label: {
@@ -23,7 +23,7 @@ struct MyPageView: View {
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium)).accessibilityHidden(true)
-                        }.padding(16).d1Surface(radius: 14)
+                        }.padding(.horizontal, 20).padding(.vertical, 26).d1Surface(radius: 14)
                     }.buttonStyle(.plain)
                     VStack(alignment: .leading, spacing: 12) {
                         Text("앱 설정").pretendard(.bold, 17)
@@ -43,6 +43,22 @@ struct MyPageView: View {
                                 }.frame(minHeight: 52).contentShape(Rectangle())
                             }.buttonStyle(.plain)
                             separator
+                            NavigationLink { PrivacyPolicyView() } label: {
+                                HStack {
+                                    Text("개인정보처리방침")
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium))
+                                }.frame(minHeight: 52).contentShape(Rectangle())
+                            }.buttonStyle(.plain)
+                            separator
+                            Link(destination: URL(string: "https://fluff-privacy-support.workspace-945891.chatgpt.site/support/")!) {
+                                HStack {
+                                    Text("문의하기")
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium))
+                                }.frame(minHeight: 52).contentShape(Rectangle())
+                            }.buttonStyle(.plain)
+                            separator
                             HStack {
                                 Text("앱 버전")
                                 Spacer()
@@ -50,9 +66,9 @@ struct MyPageView: View {
                             }.frame(minHeight: 52)
                         }.pretendard(.regular, 16).padding(.horizontal, 16).d1Surface(radius: 14)
                     }
-                }.padding(.horizontal, 22).padding(.bottom, 24)
+                }.padding(.horizontal, 16).padding(.bottom, 24)
             }.scrollIndicators(.hidden)
-        }.foregroundStyle(Color.mib.text.primary).tint(Color.mib.action.primary).background(Color.mib.bg.screen)
+        }.foregroundStyle(Color.mib.text.primary).tint(Color.mib.action.primary).background(FlowDesign.canvas.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
     }
 

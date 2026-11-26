@@ -11,6 +11,7 @@ struct MakingStep: View {
     @State private var progress = 0.0
     @State private var saveFailed = false
     @State private var saved = false
+    @State private var limitReached = false
     @State private var finalSnapshot: UIImage?
 
     @ViewBuilder private var artwork: some View {
@@ -43,6 +44,9 @@ struct MakingStep: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .task { if draft.shape == .pillow { await make() } }
+        .alert("인형은 30개까지 만들 수 있어요", isPresented: $limitReached) {
+            Button("돌아가기", action: onLeave)
+        }
         .alert("인형을 저장하지 못했어요", isPresented: $saveFailed) {
             Button("다시 저장") { Task { await make() } }
             Button("돌아가기", role: .cancel, action: onLeave)
@@ -51,6 +55,9 @@ struct MakingStep: View {
 
     private func make() async {
         guard !saved else { return }
+        do {
+            guard try modelContext.fetchCount(FetchDescriptor<Doll>()) < 30 else { limitReached = true; return }
+        } catch { saveFailed = true; return }
         let data: Data?
         if draft.shape != .pillow {
             guard let finalSnapshot else { return }

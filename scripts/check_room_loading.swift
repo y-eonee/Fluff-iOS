@@ -39,6 +39,31 @@ struct CheckRoomLoading {
             close(editor.value(node, "opacity", at: delay), 0, "card waits")
             close(editor.value(node, "opacity", at: delay + 0.2), 1, "card arrives")
         }
+        let cottonData = try Data(contentsOf: URL(fileURLWithPath: "Malrang/Resources/CottonLoadingMotion.json"))
+        let cotton = try JSONDecoder().decode(RoomLoadingTimeline.self, from: cottonData)
+        close(cotton.duration, 8.4, "cotton duration")
+        close(cotton.value("1932:6465", "opacity", at: 7.8), 1, "cotton veil holds")
+        close(cotton.value("1932:6465", "opacity", at: 8.3), 0, "cotton veil clears")
+        close(RoomLoadingTimeline.Curve("step-end").value(at: 0.9), 0, "hold before boundary")
+        close(RoomLoadingTimeline.Curve("step-end").value(at: 1), 1, "snap at boundary")
+        let splash = try JSONDecoder().decode(RoomLoadingTimeline.self, from:
+            Data(contentsOf: URL(fileURLWithPath: "Malrang/Resources/PreloginSplashMotion.json")))
+        let icons = ["2031:4", "2031:12", "2031:20", "2031:28", "2031:36"]
+        for cycle in 0..<3 {
+            for (index, node) in icons.enumerated() {
+                let apex = 0.35 + Double(index) * 0.46 + Double(cycle) * 2.5
+                close(splash.value(node, "--translateY-transform", at: apex), -24, "sequential jump apex")
+                for other in icons where other != node {
+                    close(splash.value(other, "--translateY-transform", at: apex), 0, "only one icon jumps")
+                }
+            }
+        }
+        for node in icons {
+            close(splash.value(node, "--translateY-transform", at: 7.8), 0, "all icons land before sign-in")
+            close(splash.value(node, "--scaleY-transform", at: 7.8), 1, "all icons restore their shape")
+        }
+        close(splash.value("2028:9194", "opacity", at: 8.4), 0, "login is revealed")
         print("PASS: home keyframes, spring samples, editor order, card stagger and landing restoration")
+        print("PASS: prelogin splash order, three rounds, isolated jumps and sign-in reveal")
     }
 }

@@ -38,7 +38,7 @@ enum CozyFurniture {
         #endif
     }
 
-    static func make(_ item: RoomItemState, photoMaterial: any Material, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false) async -> Entity {
+    static func make(_ item: RoomItemState, photoMaterial: any Material, rightWallPhotoMaterial: (any Material)? = nil, usesWindowLighting: Bool = true, useBakedModels: Bool = true, cutaway: Bool = false, roomOverview: Bool = false) async -> Entity {
         if fabricColor == nil { fabricColor = await texture("CozyFabricColor", semantic: .color) }
         if fabricNormal == nil { fabricNormal = await texture("CozyFabricNormal", semantic: .normal) }
         if contactShadow == nil { contactShadow = await shadowMaterial() }
@@ -52,7 +52,10 @@ enum CozyFurniture {
         var materials: [MaterialKey: any Material] = [:]
         func material(_ hex: String, part: String = "") -> any Material {
             let surfacePart = part.replacingOccurrences(of: ".pile", with: "")
-            if part == "floor", let woodFloor { return woodFloor }
+            if part == "floor", var woodFloor {
+                if roomOverview { woodFloor.textureCoordinateTransform.scale = [1, 1] }
+                return woodFloor
+            }
             let scale: Float
             let softness: Float
             switch item.kind {
@@ -122,6 +125,10 @@ enum CozyFurniture {
                     if surfacePart == "book.cover" || surfacePart == "book.spine" { color = "#B9C7D1" }
                 }
             }
+            // Resolve each wall independently, after the room palette overrides.
+            if item.kind == .wall, surfacePart == "wall.back" {
+                color = item.rightWallColorName ?? (cutaway ? CozyRoomPalette.ivory : "#F2F2F4")
+            }
             let glow: Float = part.hasPrefix("window") ? (cutaway ? 0.75 : 0.20) : (item.kind == .lamp && part == "shade" ? -0.65 : (item.kind == .bed && (part == "headboard" || part == "frame") ? 0.12 : (cutaway && item.kind == .chair && !["leg", "leg.foot"].contains(surfacePart) ? 0.75 : 0)))
             // These cushion meshes are closed with outward winding. Threads and
             // open wall/lamp geometry still need both sides of their triangles.
@@ -162,7 +169,7 @@ enum CozyFurniture {
                 mesh = padded ? cushion(size, exponent: exponent, drape: drape) : .generateBox(size: size, cornerRadius: min(radius, size.min() * 0.49))
                 meshes[key] = mesh
             }
-            let wallPhoto = item.kind == .wall && item.photoData != nil && name.hasPrefix("wall.")
+            let wallPhoto = item.kind == .wall && item.photoData != nil && name == "wall.left"
             let model = ModelEntity(mesh: mesh, materials: wallPhoto ? [photoMaterial] : [material(color, part: name)])
             model.name = name
             model.position = at
@@ -219,7 +226,7 @@ enum CozyFurniture {
             root.addChild(model)
             ball("leg.foot", [0.064, 0.05, 0.064], [x, 0.025, z], color)
         }
-        let baked = useBakedModels && item.kind != .lamp && !(item.kind == .sofa && !cutaway) ? await bakedModel(for: item.kind) : nil
+        let baked = useBakedModels && item.kind != .wall && item.kind != .lamp && !(item.kind == .sofa && !cutaway) ? await bakedModel(for: item.kind) : nil
         if let baked {
             func restoreMaterials(_ entity: Entity) {
                 if var model = entity.components[ModelComponent.self], let source = model.materials.first as? PhysicallyBasedMaterial {
@@ -245,7 +252,7 @@ enum CozyFurniture {
             ball("flower.center", [0.08, 0.09, 0.08], [0, 0.055, 0], CozyRoomPalette.mint)
         case .wall:
             func wallPanel(_ name: String, _ size: SIMD2<Float>, _ center: SIMD2<Float>, _ color: String) {
-                let mesh = CozyRoomShell.panel(size: size, center: center, cutaway: cutaway)
+                let mesh = CozyRoomShell.panel(size: size, center: center, cutaway: cutaway, overview: roomOverview)
                 let model = ModelEntity(mesh: mesh, materials: item.photoData != nil && name == "wall.left" ? [photoMaterial] : [material(color, part: name)])
                 model.name = name
                 model.components.set(DynamicLightShadowComponent(castsShadow: false))
@@ -261,7 +268,7 @@ enum CozyFurniture {
             }
             box("skirting.left", [0.075, 0.13, 2], [-0.976, 0.065, 0], CozyRoomPalette.mint)
             box("skirting.back", [2, 0.13, 0.075], [0, 0.065, -0.976], CozyRoomPalette.mint)
-            if !cutaway {
+            if !cutaway && !roomOverview {
             for isLeft in [true, false] {
                 let slope = isLeft ? CozyRoomShell.riseZ : CozyRoomShell.riseX
                 let center: SIMD2<Float> = isLeft ? [-0.97, 0] : [0, -0.97]
@@ -294,7 +301,7 @@ enum CozyFurniture {
             box("window.mullion", [0.07, 0.96, 0.035], [-0.93, 1.19, 0.16], CozyRoomPalette.mint)
         case .floor:
             // 홈에서는 바닥 가장자리가 드러나지 않게 화면 밖까지 이어진다.
-            box("floor", [cutaway ? 2 : 8, cutaway ? 0.23 : 0.145, cutaway ? 2 : 8], [0, cutaway ? -0.115 : -0.0725, 0], main)
+            box("floor", [(cutaway || roomOverview) ? 2 : 8, cutaway ? 0.23 : 0.145, (cutaway || roomOverview) ? 2 : 8], [0, cutaway ? -0.115 : -0.0725, 0], main)
             if cutaway, item.colorName == nil, item.photoData == nil {
                 for x in 0..<8 { for z in 0..<8 {
                     box("floor.tile", [0.25, 0.002, 0.25], [-0.875 + Float(x) * 0.25, 0.002, -0.875 + Float(z) * 0.25], (x + z).isMultiple(of: 2) ? CozyRoomPalette.softMint : CozyRoomPalette.floorMint, radius: 0.001)
@@ -630,8 +637,19 @@ enum CozyFurniture {
             root.addChild(glow)
         }
         if item.kind == .wall {
+            // Apply to both generated and bundled walls; each surface owns its photo.
+            func applyWallPhotos(_ entity: Entity) {
+                if var model = entity.components[ModelComponent.self] {
+                    if entity.name == "wall.left", item.photoData != nil { model.materials = [photoMaterial] }
+                    if entity.name == "wall.back", let rightWallPhotoMaterial { model.materials = [rightWallPhotoMaterial] }
+                    entity.components.set(model)
+                }
+                if entity.name.hasPrefix("wall.stripe."), item.photoData != nil { entity.removeFromParent(); return }
+                for child in Array(entity.children) { applyWallPhotos(child) }
+            }
+            applyWallPhotos(root)
             for child in root.children where child.name.hasPrefix("window.") {
-                let heightScale: Float = cutaway ? 0.85 : 1.14
+                let heightScale: Float = (cutaway || roomOverview) ? 0.85 : 1.14
                 child.position.y = (cutaway ? 0.42 : 0.68) + (child.position.y - 0.70) * heightScale
                 child.scale.y *= heightScale
                 child.position.z += cutaway ? 0.11 : -0.11
@@ -657,22 +675,57 @@ enum CozyFurniture {
             }
             removeArtwork(root)
         }
-        if item.photoData != nil, item.kind != .wall {
-            let isWall = item.kind.hangsOnWall
-            let size: SIMD2<Float> = item.kind == .floor ? [cutaway ? s.x : 8, cutaway ? s.z : 8]
-                : isWall ? [s.x * 0.76, s.y * 0.77] : [s.x * 0.9, s.z * 0.85]
-            let photo = ModelEntity(mesh: .generatePlane(width: size.x, height: size.y), materials: [photoMaterial])
+        if item.kind == .bed {
+            box("bed.base", [s.x * 0.96, 0.20, s.z * 0.96], [0, 0.12, 0], CozyRoomPalette.surface, radius: 0.06)
+            // Keep the upholstered mattress, pillow and quilt; remove wooden rails.
+            for name in ["headboard", "headboard.pile", "frame", "frame.pile", "footboard", "leg", "leg.foot"] {
+                for child in Array(root.children) where child.name == name { child.removeFromParent() }
+            }
+        }
+        if let data = item.photoData, item.kind != .wall && item.kind != .frame {
+            let names: Set<String>
+            switch item.kind {
+            case .bed: names = ["duvet", "duvet.fold", "duvet.fold.drape"]
+            case .floor: names = ["floor"]
+            case .rugRound, .rugSquare: names = ["rug"]
+            case .desk: names = ["desktop"]
+            case .chair, .sofa: names = ["seat", "seat.base", "backrest", "armrest"]
+            case .shelf: names = ["shelf"]
+            case .plant: names = ["pot"]
+            case .lamp: names = ["shade"]
+            default: names = []
+            }
+            let imageAspect = ImageDownsampling.aspectRatio(data)
+            func applySurface(_ entity: Entity) {
+                for child in Array(entity.children) {
+                    if child.name.hasSuffix(".pile"), names.contains(String(child.name.dropLast(5))) { child.removeFromParent(); continue }
+                    if item.kind == .floor && child.name.hasPrefix("floor.tile") { child.removeFromParent(); continue }
+                    if names.contains(child.name), var model = child.components[ModelComponent.self] {
+                        let vertical = ["backrest", "pot", "shade"].contains(child.name)
+                        let native = [.floor, .desk, .shelf].contains(item.kind)
+                        let bounds = child.visualBounds(relativeTo: child)
+                        let size = bounds.extents * child.scale
+                        let aspect = item.kind == .rugRound ? 1 : size.x / max(0.0001, vertical ? size.y : size.z)
+                        model.mesh = FurnitureSurfaceGeometry.mesh(model.mesh,
+                            planarPhoto: !native && !vertical, verticalPhoto: vertical, singleMaterial: true)
+                        var finish = photoMaterial
+                        if var photo = finish as? UnlitMaterial {
+                            photo.textureCoordinateTransform = FurniturePhotoTransform.make(item, imageAspect: imageAspect, surfaceAspect: aspect)
+                            finish = photo
+                        }
+                        model.materials = [finish]
+                        child.components.set(model)
+                    }
+                    applySurface(child)
+                }
+            }
+            applySurface(root)
+        }
+        if item.photoData != nil, item.kind == .frame {
+            let photo = ModelEntity(mesh: .generatePlane(width: s.x * 0.76, height: s.y * 0.77), materials: [photoMaterial])
             photo.name = "custom-photo"
-            if isWall {
-                let front = item.kind == .frame
-                    ? (root.findEntity(named: "mat")?.visualBounds(relativeTo: root).max.z ?? 0.0355) + 0.001
-                    : s.z / 2 + 0.015
-                photo.position = [0, s.y / 2, front]
-            }
-            else {
-                photo.orientation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
-                photo.position = [0, item.kind == .floor ? 0.003 : (item.kind.seatHeight ?? 0.01) + 0.002, 0]
-            }
+            let front = (root.findEntity(named: "mat")?.visualBounds(relativeTo: root).max.z ?? 0.0355) + 0.001
+            photo.position = [0, s.y / 2, front]
             root.addChild(photo)
         }
         return root
@@ -746,7 +799,7 @@ enum CozyFurniture {
         return material
     }
 
-    static func defaultColor(for kind: FurnitureKind, cutaway: Bool = true) -> String {
+    static func defaultColor(for kind: FurnitureKind, cutaway: Bool = false) -> String {
         if cutaway, kind == .bed { return "#A2C6F1" }
         return cutaway ? kind.defaultColorName : interiorColor(for: kind)
     }

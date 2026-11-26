@@ -1254,7 +1254,6 @@
   "compatibilityAssets": {
     "Focus/focus_room.imageset/image.png": "rep4_focus_background",
     "Couch/couch_backdrop.imageset/image.png": "rep4_couch_sofa",
-    "DesignA/a_room_edit.imageset/a_room_edit.png": "rep4_room_background",
     "D1/d1_back.imageset/icon.svg": "rep4_back",
     "D1/d1_backLight.imageset/icon.svg": "rep4_back_light",
     "D1/d1_undo.imageset/icon.svg": "rep4_room_undo",

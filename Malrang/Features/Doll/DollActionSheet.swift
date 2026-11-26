@@ -13,7 +13,10 @@ struct DollActionSheet: View {
     @State private var isChoosingDance = false
     @State private var isConfirmingDelete = false
     @State private var isRemoved = false
-    @State private var move = DanceMove.bounce
+    @State private var move: DanceMove?
+    @State private var renaming = false
+    @State private var draftName = ""
+    @State private var renameFailed = false
 
     var body: some View {
         Group {
@@ -25,20 +28,15 @@ struct DollActionSheet: View {
             Group {
                 if !isRemoved {
                     VStack(spacing: 0) {
-                        Text("my fluff").notCliche(28, relativeTo: .title).tracking(-1.96)
-                            .foregroundStyle(Color.rep4.c03).accessibilityAddTraits(.isHeader)
-                            .frame(maxWidth: .infinity).frame(height: 44)
-                            .overlay(alignment: .leading) {
-                                Button { dismiss() } label: {
-                                    Image("rep4_edit_back").resizable().frame(width: 26.425, height: 26.425)
-                                        .frame(width: 44, height: 44, alignment: .leading)
-                                }.buttonStyle(.plain).padding(.leading, 26.25).accessibilityLabel("뒤로")
-                            }.offset(y: 3.47)
+                        FlowHeader(title: "내 인형") { dismiss() }
                         content
                     }
                 }
             }
-            .background { AppBackground() }
+            .background {
+                RepresentativeGradientFill(definition: FlowDesign.profileBackground).ignoresSafeArea()
+            }
+            .environment(\.updatedFlowDesign, true)
             .toolbar(.hidden, for: .tabBar)
             .preference(key: AppTabBarHiddenPreference.self, value: true)
             .toolbar(.hidden, for: .navigationBar)
@@ -54,46 +52,56 @@ struct DollActionSheet: View {
             }
     }
 
-    private var firstMetDate: String {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .current
-        let parts = calendar.dateComponents([.year, .month, .day], from: doll.createdAt)
-        return String(format: "%04d.%02d.%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
-    }
-
     private var content: some View {
         ScrollViewReader { reader in
             ScrollView {
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: 38)
-                        .overlay(alignment: .topTrailing) {
-                            VStack(spacing: 3) {
-                                Text("처음 만난 날").pretendard(.medium, 12)
-                                Text(firstMetDate).pretendard(.regular, 14, tracking: -0.7)
-                            }.frame(width: 96.21, height: 50.28).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 6))
-                        }.padding(.horizontal, 24)
-                    Group {
-                        if isChoosingDance {
-                            DancingDoll(image: doll.image, move: move)
-                                .accessibilityLabel("\(doll.name), \(move.label) 춤")
-                                .padding(24)
-                        } else {
-                            SquishyDoll(doll: doll.state, usesProfileLayout: true)
+                    ZStack(alignment: .top) {
+                        Image("flow_profile_glow").resizable().scaledToFit()
+                            .frame(width: 371, height: 259).offset(y: 140)
+                            .accessibilityHidden(true)
+                        Group {
+                            if isChoosingDance, let move {
+                                DancingDoll(image: doll.image, move: move, preset: doll.presetConfiguration).padding(24)
+                                    .accessibilityLabel("\(doll.name), \(move.label) 춤")
+                            } else {
+                                SquishyDoll(doll: doll.state, usesProfileLayout: true)
+                            }
+                        }.frame(height: 390).padding(.horizontal, 34).padding(.top, 22)
+                            .accessibilityAction(named: "춤추기") { startDance() }
+                            .accessibilityAction(named: "사진 찍기") { startAR() }
+                    }.frame(height: 420, alignment: .top)
+                    DollHistoryCard(doll: doll) { draftName = doll.name; renaming = true }.padding(.horizontal, 20).id("history")
+                    HStack(spacing: 12) {
+                        if !doll.isPlaced {
+                            Button("방에 두기", systemImage: "house") { appState.place(doll); dismiss() }
+                                .buttonStyle(D1PrimaryStyle())
                         }
-                    }.frame(height: 400).padding(.horizontal, 34)
-                        .contextMenu { profileActions }
-                        .accessibilityAction(named: "춤추기") { startDance() }
-                        .accessibilityAction(named: "예절샷 찍기") { startAR() }
-                    DollHistoryCard(doll: doll).padding(.horizontal, 18).id("history")
+                        Button("삭제하기", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                    }.padding(.horizontal, 20).padding(.top, 18)
                     if isChoosingDance {
                         DancePanel(doll: doll, selected: $move) {
                             withAnimation(.spring) { isChoosingDance = false }
                         }
                     }
-                }.padding(.top, 25).padding(.bottom, 24)
+                }.padding(.bottom, 24)
             }.scrollIndicators(.hidden)
                 .onAppear { if initiallyShowsHistory { reader.scrollTo("history", anchor: .top) } }
         }
+        .alert("인형 이름", isPresented: $renaming) {
+            TextField("이름", text: $draftName)
+            Button("취소", role: .cancel) {}
+            Button("저장") {
+                let name = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty else { return }
+                let previous = doll.name
+                doll.name = name
+                do { try modelContext.save() }
+                catch { doll.name = previous; renameFailed = true }
+            }.disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .alert("이름을 저장하지 못했어요", isPresented: $renameFailed) { Button("확인", role: .cancel) {} }
         .fullScreenCover(isPresented: $isShowingAR) {
             ARCaptureView(doll: doll)
         }
@@ -101,7 +109,7 @@ struct DollActionSheet: View {
 
     @ViewBuilder private var profileActions: some View {
         Button("춤추기", systemImage: "music.note", action: startDance)
-        Button("예절샷 찍기", systemImage: "camera.viewfinder", action: startAR)
+        Button("사진 찍기", systemImage: "camera.viewfinder", action: startAR)
         if !doll.isPlaced {
             Button("방에 두기", systemImage: "house") { appState.place(doll); dismiss() }
         }
@@ -109,7 +117,7 @@ struct DollActionSheet: View {
     }
 
     private func startDance() {
-        move = doll.dance ?? .bounce
+        move = doll.dance.flatMap { DanceMove.selectable.contains($0) ? $0 : nil }
         withAnimation(.spring) { isChoosingDance = true }
     }
 

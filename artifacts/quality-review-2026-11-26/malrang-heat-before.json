@@ -1,0 +1,178 @@
+{
+  "configuration" : "Debug",
+  "durationRequested" : 60,
+  "finished" : true,
+  "legacyRenderer" : false,
+  "samples" : [
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 86.779032602500436,
+      "dolls" : 3,
+      "footprintMiB" : 188.1275634765625,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 13.515691754066234,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3.75
+      ],
+      "requestedFPS" : [
+        60
+      ],
+      "seconds" : 10.432318416671478,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 33.781422549091445,
+      "dolls" : 3,
+      "footprintMiB" : 237.01821136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 41.11317018608208,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3.75
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 20.988546458334895,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 27.044866220991054,
+      "dolls" : 3,
+      "footprintMiB" : 238.33071136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 20.69403214693947,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3.75
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 31.329692083338159,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 28.545036898082156,
+      "dolls" : 3,
+      "footprintMiB" : 238.23696136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 21.785092872729415,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3.75
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 41.428340791666415,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 28.048032946435185,
+      "dolls" : 3,
+      "footprintMiB" : 238.20571136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 22.066616186255661,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3.75
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 51.987277333333623,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 26.033597577039785,
+      "dolls" : 3,
+      "footprintMiB" : 238.19008636474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 18.186316757239069,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3.75
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 62.434692416674807,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    }
+  ],
+  "scenario" : "Saved room, first 10 seconds of each minute camera pan at 60 FPS, remaining time idle at 30 FPS; no saved data changes.",
+  "unbatchedFurniture" : false
+}

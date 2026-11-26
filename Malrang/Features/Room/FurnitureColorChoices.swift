@@ -3,6 +3,8 @@ import SwiftUI
 /// Swatches represent the furniture paint, while all controls use the UI tokens.
 struct FurnitureColorChoices: View {
     @Bindable var item: RoomItem
+    var rightWall = false
+    private var paint: String? { rightWall ? item.rightWallColorName : item.colorName }
     var onPhoto: (() -> Void)? = nil
     @State private var showingPicker = false
     private let colors: [(String?, String)] = [
@@ -17,9 +19,10 @@ struct FurnitureColorChoices: View {
                     let (hex, defaultLabel) = colors[index]
                     let isSurface = item.kind == .wall || item.kind == .floor
                     let label = index == 0 && isSurface ? "원래 벽지" : defaultLabel
-                    let selected = item.photoData == nil && item.colorName == hex
+                    let selected = ((rightWall ? item.rightWallPhotoData : item.photoData) == nil) && paint == hex
                     Button {
-                        item.colorName = hex; item.photoData = nil
+                        if rightWall { item.rightWallColorName = hex; item.rightWallPhotoData = nil }
+                        else { item.colorName = hex; item.photoData = nil }
                     } label: {
                         VStack(spacing: 3) {
                             Group {
@@ -31,6 +34,8 @@ struct FurnitureColorChoices: View {
                                     Circle().fill(Color(uiColor: Palette.uiColor(CozyFurniture.defaultColor(for: item.kind))))
                                 }
                             }.frame(width: 30, height: 30)
+                                .padding(3)
+                                .overlay { Circle().stroke(selected ? Color.rep4.c08 : .clear, lineWidth: 1.5) }
                             Text(label).pretendard(.regular, 12)
                         }.padding(.top, 6).frame(maxWidth: .infinity).frame(height: 60, alignment: .top)
                             .contentShape(Rectangle())
@@ -46,7 +51,7 @@ struct FurnitureColorChoices: View {
             HStack(spacing: 10) {
                 if let onPhoto { Button("사진으로 꾸미기", action: onPhoto).buttonStyle(FocusCompactButton()) }
             }
-            if item.kind == .wall {
+            if item.kind == .wall && !rightWall {
                 ColorPicker("창틀 색상", selection: Binding(
                     get: { Color(uiColor: Palette.uiColor(item.windowFrameColor ?? CozyRoomPalette.wood)) },
                     set: { item.windowFrameColor = Palette.hex($0) }
@@ -55,7 +60,7 @@ struct FurnitureColorChoices: View {
             }
         }.foregroundStyle(Color.mib.text.primary)
             .sheet(isPresented: $showingPicker) {
-                ItemColorPicker(item: item).presentationDetents([.medium, .large]).presentationDragIndicator(.visible).presentationCornerRadius(22)
+                ItemColorPicker(item: item, rightWall: rightWall).presentationDetents([.medium, .large]).presentationDragIndicator(.visible).presentationCornerRadius(22)
             }
     }
 }

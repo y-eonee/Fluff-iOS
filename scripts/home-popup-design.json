@@ -1,0 +1,58 @@
+{
+  "figmaFile": "y50EtliLp7YMR80gHuJRLb",
+  "section": "1949:13795",
+  "frames": [
+    "1949:13664",
+    "1949:13732",
+    "1949:13760"
+  ],
+  "assets": [
+    {
+      "name": "home_popup_camera",
+      "sourceNode": "1949:13726",
+      "sourceFile": "4fd21.svg",
+      "sourceSHA256": "85ee5f8417319207ca216cc0ff42bed0c5857acba353229ce37fe4e45a82c2fe",
+      "renderSizePoints": [
+        20,
+        20
+      ],
+      "slot": "28 × 28 icon area in a 178 × 44 action row"
+    },
+    {
+      "name": "home_popup_star",
+      "sourceNode": "1949:13729",
+      "sourceFile": "67537.svg",
+      "sourceSHA256": "7b06f002c77aecdf25f337e47aea3f6286bf4792b57731184377f9aa5be76429",
+      "renderSizePoints": [
+        18,
+        18
+      ],
+      "slot": "28 × 28 icon area in a 178 × 44 action row"
+    }
+  ],
+  "popup": {
+    "width": 204,
+    "heightWithTwoActions": 150,
+    "radius": 14,
+    "inset": 13,
+    "rowHeight": 44,
+    "gap": 8
+  },
+  "notes": [
+    "Home room and doll imagery remains live 3D content, per DESIGN.md.",
+    "Popup anchors are projected from the selected doll; clamped to the screen.",
+    "Photo action presents the existing ARCaptureView with the selected Doll.",
+    "Dance selection uses existing live 3D animation types and is temporary.",
+    "Floating room-tools button and its individual pill actions retain their prior design, per user correction."
+  ],
+  "verification": {
+    "build": "passed (iOS Simulator, Debug)",
+    "interactionTests": [
+      "sofa selection flow",
+      "home tools placement and dismissal",
+      "doll menu → selected doll photo screen → home",
+      "four dance choices and popup dismissal"
+    ],
+    "camera": "Simulator verified navigation and unsupported-device notice; live AR capture requires a supported physical iPhone."
+  }
+}

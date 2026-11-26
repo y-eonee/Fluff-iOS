@@ -15,6 +15,7 @@ struct PresetDollView: UIViewRepresentable {
     var working = false
     var happy = false
     var animating = true
+    var dance: DanceMove? = nil
     var onPart: ((DollPart) -> Void)?
     var onSnapshot: ((UIImage) -> Void)?
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -22,6 +23,11 @@ struct PresetDollView: UIViewRepresentable {
         let view = PresetRenderView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
         view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
         view.environment.background = .color(.clear); view.isOpaque = false
+        view.isAccessibilityElement = true
+        view.accessibilityIdentifier = "preset-doll-preview"
+        view.accessibilityLabel = "인형 미리보기"
+        view.accessibilityTraits = .image
+        view.accessibilityValue = "인형 불러오는 중"
         view.environment.lighting.intensityExponent = -1.0
         view.configureBloom(preset: true)
         let anchor = AnchorEntity(world: .zero)
@@ -52,7 +58,7 @@ struct PresetDollView: UIViewRepresentable {
         context.coordinator.fitMargin = fitMargin
         context.coordinator.cameraYaw = cameraYaw
         context.coordinator.cameraPitch = cameraPitch
-        context.coordinator.update(configuration, focusScene: focusScene, showsStudyDesk: showsStudyDesk, working: working, happy: happy, animating: animating, snapshot: onSnapshot)
+        context.coordinator.update(configuration, focusScene: focusScene, showsStudyDesk: showsStudyDesk, working: working, happy: happy, animating: animating, dance: dance, snapshot: onSnapshot)
     }
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
         (view as? PresetRenderView)?.onLayout = nil
@@ -96,10 +102,11 @@ struct PresetDollView: UIViewRepresentable {
         var working = false
         var happy = false
         var animating = true
+        var dance: DanceMove?
         var onPart: ((DollPart) -> Void)?
         var task: Task<Void, Never>?
-        func update(_ value: PresetConfiguration, focusScene: Bool, showsStudyDesk: Bool, working: Bool, happy: Bool, animating: Bool, snapshot: ((UIImage) -> Void)?) {
-            guard configuration != value || self.focusScene != focusScene || self.showsStudyDesk != showsStudyDesk || self.working != working || self.happy != happy || self.animating != animating else { return }
+        func update(_ value: PresetConfiguration, focusScene: Bool, showsStudyDesk: Bool, working: Bool, happy: Bool, animating: Bool, dance: DanceMove?, snapshot: ((UIImage) -> Void)?) {
+            guard configuration != value || self.focusScene != focusScene || self.showsStudyDesk != showsStudyDesk || self.working != working || self.happy != happy || self.animating != animating || self.dance != dance else { return }
             if focusScene, self.focusScene, self.showsStudyDesk == showsStudyDesk, renderedConfiguration == value, let motion {
                 self.working = working; self.happy = happy; self.animating = animating
                 motion.update(working: working, happy: happy, animating: animating)
@@ -107,7 +114,7 @@ struct PresetDollView: UIViewRepresentable {
             }
             // Photo gestures only change UVs. Keep the dense plush model and its lighting alive.
             if var previous = renderedConfiguration, let model, value.isPhotoSuit != true,
-               self.working == working, self.happy == happy, self.animating == animating {
+               self.working == working, self.happy == happy, self.animating == animating, self.dance == dance {
                 previous.faceScale = value.faceScale
                 previous.faceOffsetX = value.faceOffsetX
                 previous.faceOffsetY = value.faceOffsetY
@@ -131,7 +138,7 @@ struct PresetDollView: UIViewRepresentable {
                     return
                 }
             }
-            configuration = value; self.focusScene = focusScene; self.showsStudyDesk = showsStudyDesk; self.working = working; self.happy = happy; self.animating = animating
+            configuration = value; self.focusScene = focusScene; self.showsStudyDesk = showsStudyDesk; self.working = working; self.happy = happy; self.animating = animating; self.dance = dance
             task?.cancel()
             task = Task { @MainActor in
                 if model != nil {
@@ -142,7 +149,9 @@ struct PresetDollView: UIViewRepresentable {
                 guard !Task.isCancelled else { return }
                 model?.removeFromParent(); model = entity; anchor?.addChild(entity)
                 renderedConfiguration = value
+                view?.accessibilityValue = "인형 표시 완료"
                 fitCamera()
+                if let dance { SceneFactory.play(dance, on: entity) }
                 if let data = value.face { photoAspect = ImageDownsampling.aspectRatio(data) }
                 if focusScene {
                     let motion = FocusDollMotion(doll: entity, configuration: value, showsDesk: showsStudyDesk)

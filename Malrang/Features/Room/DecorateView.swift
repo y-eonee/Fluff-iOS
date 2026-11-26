@@ -9,6 +9,7 @@ struct DecorateView: View {
     @Namespace var categoryIndicator
     @State var editFeedbackCount = 0
     @State var entrance = RoomEntrance(.editor)
+    @State var loadingEntrance = RoomEntrance(.home)
     @Environment(\.startupPresentationFinished) var startupPresentationFinished
     @Query(sort: \RoomItem.createdAt) var items: [RoomItem]
     @Query(sort: \Doll.createdAt) var dolls: [Doll]
@@ -18,11 +19,14 @@ struct DecorateView: View {
     @State var dollPoint: CGPoint?
     @State var furnitureBounds: [String: CGRect] = [:]
     @State var wallPolygon: [CGPoint] = []
+    @State var rightWallPolygon: [CGPoint] = []
+    @State var selectedRightWall = false
     @State var undoStack: [[RoomItemState]] = []
     @State var redoStack: [[RoomItemState]] = []
     @State var isApplyingHistory = false
     @State var lastEdit = Date.distantPast
     @State var original: [RoomItemState]?
+    @State var furniturePrepared = false
     @State var originalDolls: [UUID: SIMD3<Float>] = [:]
     @State var hold: RoomSceneView.Hold?
     @AppStorage("hapticOn") var hapticOn = true
@@ -30,7 +34,8 @@ struct DecorateView: View {
     @State var selectedID: UUID?
     @State var rotationFailCount = 0
     @State var editingItem: RoomItem?
-    @State var photoItem: RoomItem?
+    @State var photoRemovalItem: RoomItem?
+    @State var photoRemovalRightWall = false
     @State var isConfirmingDiscard = false
     @State var isFull = false
     @State var saveFailed = false
@@ -43,6 +48,14 @@ struct DecorateView: View {
     var body: some View {
         contentA
         .background(Color.mib.bg.screen)
+        .allowsHitTesting(loadingEntrance.finished && entrance.finished)
+        .accessibilityHidden(!loadingEntrance.finished || !entrance.finished)
+        .overlay {
+            if !loadingEntrance.finished {
+                RoomLoadingView(entrance: loadingEntrance)
+                    .accessibilityIdentifier("decorate-loading")
+            }
+        }
         .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         .sensoryFeedback(trigger: category) { _, _ in hapticOn ? .selection : nil }
         .sensoryFeedback(trigger: selectedID) { _, new in hapticOn && new != nil ? .selection : nil }
@@ -64,20 +77,46 @@ struct DecorateView: View {
             lastEdit = .now
         }
         .overlay {
-            if isConfirmingDiscard {
-                RepresentativeConfirmDialog(title: "꾸민 내용을 버릴까요?", message: "지금까지 만든 내용은 저장되지 않아요.", verticalOffset: 10.56, onLeave: {
+            if let item = photoRemovalItem {
+                RoomPhotoRemovalDialog(itemName: photoRemovalRightWall ? "오른쪽 벽" : item.kind.label, cancel: { photoRemovalItem = nil }) {
+                    if photoRemovalRightWall { item.rightWallPhotoData = nil } else { item.photoData = nil }
+                    photoRemovalItem = nil
+                }
+            } else if isConfirmingDiscard {
+                RepresentativeConfirmDialog(title: "꾸민 내용을 버릴까요?", message: "지금까지 만든 내용은 저장되지 않아요.", verticalOffset: 10.56, outlinesSecondary: true, onLeave: {
                     restoreOriginal(); dismiss()
                 }, onStay: { isConfirmingDiscard = false })
             }
         }
-        .navigationDestination(item: $editingItem) { item in
-            FurnitureCustomView(item: item)
-        }
-        .navigationDestination(item: $photoItem) { item in
-            FurnitureCustomView(item: item, initialStyle: .photo)
+        .environment(\.roomFlowDesign, true)
+        .onChange(of: selectedID) { _, id in
+            if editingItem?.id != id { editingItem = nil }
         }
         .task(id: startupPresentationFinished) {
-            if startupPresentationFinished { entrance.present() }
+            guard startupPresentationFinished else { return }
+            if !furniturePrepared {
+                if original == nil {
+                    original = items.map(\.state)
+                    originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
+                }
+                for kind in FurnitureKind.catalog where kind.isMovable {
+                    _ = await SceneFactory.furniture(RoomItemState(id: UUID(), kind: kind, x: 0, z: 0), cozy: true, cutaway: true)
+                }
+                guard !Task.isCancelled else { return }
+                // Opening the editor must not relocate the saved home layout.
+                // Placement constraints apply only to explicit user edits.
+                furniturePrepared = true
+            }
+            loadingEntrance.present()
+            while !loadingEntrance.finished && !Task.isCancelled {
+                do { try await Task.sleep(for: .milliseconds(33)) } catch { return }
+                loadingEntrance.finishIfNeeded()
+            }
+            // The cotton veil remains opaque until 7.8s. Starting the 2s room
+            // motion underneath it hid the furniture rise and chair arrival.
+            // Play the existing source motion only after the loading handoff.
+            guard !Task.isCancelled else { return }
+            entrance.present()
         }
         .onAppear {
             if original == nil {
@@ -85,6 +124,17 @@ struct DecorateView: View {
                 originalDolls = Dictionary(uniqueKeysWithValues: dolls.map { ($0.id, $0.position) })
             }
         }
+        #if DEBUG
+        .onChange(of: entrance.finished) { _, finished in
+            guard finished, ProcessInfo.processInfo.arguments.contains("--editor-entrance-audit"),
+                  let loadedAt = loadingEntrance.start, let animatedAt = entrance.start else { return }
+            let checks = ["starts_after_loading": animatedAt >= loadedAt + loadingEntrance.timeline.duration,
+                          "saved_furniture_unchanged": original == items.map(\.state)]
+            if let data = try? JSONSerialization.data(withJSONObject: checks, options: .sortedKeys) {
+                try? data.write(to: URL.documentsDirectory.appending(path: "editor-handoff-audit.json"))
+            }
+        }
+        #endif
         .task(id: isBlocked) {
             guard isBlocked else { return }
             do { try await Task.sleep(for: .seconds(3)) } catch { return }
@@ -120,18 +170,35 @@ struct DecorateView: View {
     func rotate(_ item: RoomItem) {
         var rotated = item.state
         rotated.yaw = (rotated.yaw + .pi / 2).truncatingRemainder(dividingBy: 2 * .pi)
-        let spot = RoomLayout.snapped([rotated.x, rotated.z], for: rotated.kind, yaw: rotated.yaw)
+        let spot = RoomLayout.snapped([rotated.x, rotated.z], for: rotated.kind, yaw: rotated.yaw, isMirrored: rotated.isMirrored)
         (rotated.x, rotated.z) = (spot.x, spot.y)
-        guard !RoomLayout.overlaps(rotated, in: items.map(\.state)) else {
+        let carried = RoomLayout.carriedItems(from: item.state, to: rotated, in: items.map(\.state))
+        let candidate = items.map(\.state).map { value in carried.first { $0.id == value.id } ?? (value.id == rotated.id ? rotated : value) }
+        guard RoomLayout.canMove(item.state, to: rotated, among: candidate) else {
             rotationFailCount += 1
             isBlocked = true
             return
         }
         withAnimation(reduceMotion ? nil : .spring) {
+            for value in carried { items.first { $0.id == value.id }?.restore(value) }
             item.yaw = Double(rotated.yaw)
             item.x = Double(spot.x)
             item.z = Double(spot.y)
         }
+    }
+
+    func mirror(_ item: RoomItem) {
+        var mirrored = item.state; mirrored.isMirrored.toggle()
+        let spot = RoomLayout.constrained(mirrored)
+        mirrored.x = spot.x; mirrored.z = spot.y
+        let carried = RoomLayout.carriedItems(from: item.state, to: mirrored, in: items.map(\.state))
+        let candidate = items.map(\.state).map { value in carried.first { $0.id == value.id } ?? (value.id == mirrored.id ? mirrored : value) }
+        guard RoomLayout.canMove(item.state, to: mirrored, among: candidate) else {
+            rotationFailCount += 1; isBlocked = true; return
+        }
+        move(item.id, to: spot)
+        item.isMirrored = mirrored.isMirrored
+        for value in carried { items.first { $0.id == value.id }?.restore(value) }
     }
 
     func remove(_ item: RoomItem) {
@@ -149,7 +216,7 @@ struct DecorateView: View {
     }
 
     func add(_ kind: FurnitureKind) {
-        guard let spot = RoomLayout.freeSpot(for: kind, among: items.map(\.state)) else {
+        guard let spot = RoomLayout.freeSpot(for: kind, among: items.map(\.state), dolls: dolls.filter(\.isPlaced).map(\.position)) else {
             isFull = true
             return
         }

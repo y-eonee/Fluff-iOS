@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-26",
+  "builds": {
+    "Debug simulator": "passed",
+    "Release iPhone": "passed",
+    "device_families": [
+      1
+    ],
+    "compiler_warning_free": false
+  },
+  "ui_tests": {
+    "passed": [
+      "testCouchMiniOpensFullPlayer",
+      "testCouchStopAndSofaPopupSuppression",
+      "testDollPartSlider",
+      "testPreloginSplashHandsOffToAppleSignIn",
+      "testProductionHomeStartupAndTabReturns",
+      "testDollAttachmentExtremePreviews",
+      "testFurniturePhotoRemovalConfirmationAndUndo",
+      "testPlaylistPromptAndPrivacyAccess"
+    ],
+    "result_bundles": [
+      "/tmp/MalrangQualityUI2.xcresult",
+      "/tmp/MalrangQualityFinalUI.xcresult",
+      "/tmp/MalrangQualityResolvedUI.xcresult"
+    ],
+    "note": "Initial runs found premature editor accessibility, a missing preview readiness assertion, an incorrect fixture tab, history clearing selection, and a missing full-row hit area. Corrected and reran affected tests; all eight selected tests now pass."
+  },
+  "doll_attachments": {
+    "checks": 551181,
+    "pairwise_configurations": 236196,
+    "passed": true,
+    "visual_extremes": 6
+  },
+  "furniture_regression": {
+    "checks": 565,
+    "passed": true
+  },
+  "render_resources": {
+    "checks": 10,
+    "passed": true
+  },
+  "heat": {
+    "pixel_workload_reduction_per_frame": 0.36,
+    "simulator_idle_fps_before": 20.7,
+    "simulator_idle_fps_after": 30.0,
+    "physical_temperature_measured": false,
+    "note": "FPS and pixel workload are simulator measurements/calculations, not a real-device power or temperature result."
+  },
+  "privacy": {
+    "operator": "이나연",
+    "email": "leenayeon@sookmyung.ac.kr",
+    "url": "https://fluff-privacy-support.workspace-945891.chatgpt.site",
+    "support": "https://fluff-privacy-support.workspace-945891.chatgpt.site/support/",
+    "public_http_status": 200,
+    "bundled_in_debug_and_release": true
+  },
+  "review_readiness": "See docs/app-review-audit.json; external authentication and App Store settings and real-device checks remain."
+}

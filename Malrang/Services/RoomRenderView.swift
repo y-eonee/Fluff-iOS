@@ -25,6 +25,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     private var captures: [(UIImage?) -> Void] = []
     private(set) var root: AnchorEntity?
     private weak var camera: PerspectiveCamera?
+    var onNextPresentedFrame: (() -> Void)?
     private(set) var completedFrames = 0
     private(set) var requestedFPS = 30
     private(set) var lastRenderError: String?
@@ -65,6 +66,7 @@ final class RoomRenderView: UIView, MTKViewDelegate {
             metalView = view
             addSubview(view)
             renderer.cameraSettings.isToneMappingEnabled = true
+            renderer.cameraSettings.antialiasing = .multisample4X
         } else {
             let view = EfficientARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
             view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
@@ -107,6 +109,10 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         }
     }
     func attach(_ root: AnchorEntity, camera: PerspectiveCamera) {
+        if let previous = self.root {
+            renderer?.entities.removeAll { $0 === previous }
+            legacy?.scene.removeAnchor(previous)
+        }
         self.root = root; self.camera = camera
         if let renderer { renderer.entities.append(root); renderer.activeCamera = camera }
         else { legacy?.scene.addAnchor(root) }
@@ -119,6 +125,9 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         return legacy!.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in
             MainActor.assumeIsolated {
                 self?.completedFrames += 1
+                let ready = self?.onNextPresentedFrame
+                self?.onNextPresentedFrame = nil
+                if let ready { DispatchQueue.main.async(execute: ready) }
                 self?.runPerformanceInteraction()
             }
             update(event.deltaTime)
@@ -127,12 +136,15 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     func configureBloom() { wantsBloom = true; legacy?.configureBloom(); applyBudget() }
 
     private var constrained: Bool {
-        ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+        ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.fair.rawValue
     }
     private func applyBudget() {
         guard let view = metalView else { return }
-        let constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-        contentScaleFactor = min(max(1, traitCollection.displayScale), constrained ? 1 : 1.5)
+        let constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.fair.rawValue
+        // Native resolution plus 4x MSAA preserves edges without continuously
+        // shading 56% more pixels. Reduce work at the first thermal warning.
+        contentScaleFactor = constrained ? min(max(1, traitCollection.displayScale), 1.5)
+            : min(3, max(1, traitCollection.displayScale))
         view.drawableSize = CGSize(width: max(1, bounds.width * contentScaleFactor), height: max(1, bounds.height * contentScaleFactor))
         view.isPaused = window == nil || UIApplication.shared.applicationState != .active
         if wantsBloom && !constrained, bloom == nil, let device = view.device { bloom = CozyBloom(device: device) }
@@ -183,6 +195,8 @@ final class RoomRenderView: UIView, MTKViewDelegate {
                       destinationOffset: 0, destinationBytesPerRow: bytesPerRow, destinationBytesPerImage: bytesPerRow * target.height)
             blit.endEncoding(); pixels = buffer
         }
+        let framePresented = onNextPresentedFrame
+        onNextPresentedFrame = nil
         let capturedPixels = pixels
         let width = target.width, height = target.height
         command.present(drawable)
@@ -191,8 +205,13 @@ final class RoomRenderView: UIView, MTKViewDelegate {
         command.addCompletedHandler { [self] buffer in
             Task { @MainActor [self] in
                 self.inFlight.remove(slot)
-                if buffer.status == .completed { self.completedFrames += 1 }
-                else { self.lastRenderError = buffer.error?.localizedDescription ?? "Metal frame failed" }
+                if buffer.status == .completed {
+                    self.completedFrames += 1
+                    if !self.shuttingDown { framePresented?() }
+                } else {
+                    self.lastRenderError = buffer.error?.localizedDescription ?? "Metal frame failed"
+                    if self.onNextPresentedFrame == nil { self.onNextPresentedFrame = framePresented }
+                }
                 if !pending.isEmpty {
                     var image: UIImage?
                     if buffer.status == .completed, let capturedPixels {

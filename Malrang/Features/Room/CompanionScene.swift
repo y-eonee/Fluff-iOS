@@ -4,7 +4,7 @@ import SwiftUI
 
 struct CompanionScene: UIViewRepresentable {
   enum Kind: Equatable {
-    case window(hour: Int, weather: Int)
+    case window(hour: Double, weather: Int)
     case couch
     case radio(playing: Bool)
     case radioArtwork(playing: Bool)
@@ -12,25 +12,27 @@ struct CompanionScene: UIViewRepresentable {
   let dolls: [DollState]
   let kind: Kind
   var windowFrameColor: String? = nil
+  var onSpeechAnchor: ((CGPoint) -> Void)? = nil
   func makeCoordinator() -> Coordinator { Coordinator() }
-  func makeUIView(context: Context) -> ARView {
-    let view = EfficientARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
-    view.renderOptions = [.disableMotionBlur, .disableDepthOfField]
-    view.environment.background = .color(Palette.uiColor("#FFFDF8"))
+  func makeUIView(context: Context) -> RoomRenderView {
+    let view = RoomRenderView(adaptive: true)
+    view.sceneBackground = (Palette.uiColor("#FFFDF8"))
     context.coordinator.view = view
     return view
   }
-  func updateUIView(_ view: ARView, context: Context) {
+  func updateUIView(_ view: RoomRenderView, context: Context) {
+    context.coordinator.onSpeechAnchor = onSpeechAnchor
     context.coordinator.render(dolls: dolls, kind: kind, frameColor: windowFrameColor)
   }
-  static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+  static func dismantleUIView(_ view: RoomRenderView, coordinator: Coordinator) {
     coordinator.stop()
-    view.scene.anchors.removeAll()
-    view.environment.lighting.resource = nil
+    view.shutdown()
   }
 
   @MainActor final class Coordinator {
-    weak var view: ARView?
+    weak var view: RoomRenderView?
+    var onSpeechAnchor: ((CGPoint) -> Void)?
+    private var lastSpeechAnchor: CGPoint?
     private var task: Task<Void, Never>?
     private var subscription: (any Cancellable)?
     private var currentDolls: [DollState] = []
@@ -41,6 +43,9 @@ struct CompanionScene: UIViewRepresentable {
     private var birds: [Entity] = []
     private var companions: [Entity] = []
     private var rain: [Entity] = []
+    private var windowLighting: WindowSceneLighting?
+    private var timeSinceLighting: Float = 0
+    private var windowStartHour: Double = 0
     func stop() {
       task?.cancel()
       subscription?.cancel()
@@ -50,9 +55,17 @@ struct CompanionScene: UIViewRepresentable {
       birds = []
       companions = []
       rain = []
+      windowLighting = nil
+      lastSpeechAnchor = nil
     }
     func render(dolls: [DollState], kind: Kind, frameColor: String?) {
       guard currentDolls != dolls || currentKind != kind || currentFrameColor != frameColor else { return }
+      if currentDolls == dolls, currentFrameColor == frameColor,
+         case .window(_, let oldWeather) = currentKind,
+         case .window(_, let newWeather) = kind, oldWeather == newWeather {
+        currentKind = kind
+        return // Time updates reuse all meshes, poses and the cloud animation subscription.
+      }
       currentDolls = dolls
       currentKind = kind
       currentFrameColor = frameColor
@@ -97,22 +110,21 @@ struct CompanionScene: UIViewRepresentable {
       light.light.intensity = 1400
       light.look(at: [0, 0, 0], from: [-2, 4, 3], relativeTo: nil)
       if case .window(let hour, let weather) = kind {
-        let night = hour < 6 || hour >= 20
-        let sunset = (17..<20).contains(hour)
-        view.environment.background = .color(
-          Palette.uiColor(night ? "#263450" : sunset ? "#EDB6A4" : "#ABD9E8"))
-        light.light.color = Palette.uiColor(night ? "#B5C6EE" : "#FFE5B8")
-        light.light.intensity = night ? 500 : 1600
-        for i in 0..<5 {
-          let x = Float(i) - 2
-          _ = ball(
-            [2.2, 0.8, 1.5], [x * 0.8, -0.22, -2.7 - Float(i % 2)], night ? "#354D4B" : "#91B67E")
-          _ = ball([0.20, 0.48, 0.20], [x * 0.58, 0.16, -2.4], night ? "#3F6152" : "#82A567")
-        }
-        let sky = await WindowSkyModel.make(hour: hour)
+        view.sceneBackground = Palette.uiColor("#97C9E9")
+        windowStartHour = hour
+        root.addChild(await WindowLandscapeModel.make(hour: hour, weather: weather, frameColor: frameColor))
+        var shadow = DirectionalLightComponent.Shadow()
+        shadow.shadowProjection = .automatic(maximumDistance: 8)
+        shadow.depthBias = 1.5
+        light.shadow = shadow
+        let fill = DirectionalLight()
+        fill.look(at: [0, 0.3, -1], from: [2, 2, 3], relativeTo: nil)
+        root.addChild(fill)
+        let sky = await WindowSkyModel.make(hour: hour, weather: weather)
         root.addChild(sky.root)
         clouds = sky.clouds
-        if !night && weather < 51 { birds = WindowSkyModel.addBirds(to: sky.root) }
+        if weather < 51 { birds = WindowSkyModel.addBirds(to: sky.root) }
+        windowLighting = WindowSceneLighting(sky: sky, key: light, fill: fill, birds: birds, weather: weather)
         if weather >= 51 {
           let snow = (71...77).contains(weather) || weather == 85 || weather == 86
           for i in 0..<55 {
@@ -136,7 +148,7 @@ struct CompanionScene: UIViewRepresentable {
         }
         camera.look(at: [0, 0.77, -1.0], from: [0, 0.68, 2.15], relativeTo: nil)
       } else if case .couch = kind {
-        view.environment.background = .color(.clear)
+        view.sceneBackground = (.clear)
         view.isOpaque = false
         light.light.intensity = 2300
         light.light.color = Palette.uiColor("#FFF3E4")
@@ -145,13 +157,13 @@ struct CompanionScene: UIViewRepresentable {
         shadow.shadowProjection = .automatic(maximumDistance: 2)
         shadow.depthBias = 0.5
         light.shadow = shadow
-        view.environment.lighting.intensityExponent = -0.7
+        view.lightingExponent = -0.7
         let fill = DirectionalLight()
         fill.light.intensity = 1600
         fill.light.color = Palette.uiColor("#FFF4E7")
         fill.look(at: [0, 0.2, 0], from: [0, 0.7, 3], relativeTo: nil)
         root.addChild(fill)
-        let chosen = Array(dolls.prefix(1))
+        let chosen = Array(dolls.prefix(2))
         for (index, doll) in chosen.enumerated() {
           let model = await model(doll)
           DollRestPose.sitting(model)
@@ -167,7 +179,7 @@ struct CompanionScene: UIViewRepresentable {
       } else if case .radioArtwork(let playing) = kind {
         light.light.intensity = 2300
         light.light.color = Palette.uiColor("#FFF3E4")
-        view.environment.lighting.intensityExponent = -0.7
+        view.lightingExponent = -0.7
         var radioShadow = DirectionalLightComponent.Shadow()
         radioShadow.shadowProjection = .automatic(maximumDistance: 2)
         radioShadow.depthBias = 0.5
@@ -177,7 +189,7 @@ struct CompanionScene: UIViewRepresentable {
         fill.light.color = Palette.uiColor("#FFF4E7")
         fill.look(at: [0, 0.2, 0], from: [0, 0.7, 3], relativeTo: nil)
         root.addChild(fill)
-        view.environment.background = .color(.clear)
+        view.sceneBackground = (.clear)
         view.isOpaque = false
         if let doll = dolls.first {
           let model = await model(doll)
@@ -192,7 +204,7 @@ struct CompanionScene: UIViewRepresentable {
           camera.look(at: bounds.center, from: bounds.center + [0, 0.015, distance], relativeTo: nil)
         }
       } else {
-        view.environment.background = .color(Palette.uiColor("#FFFDF8"))
+        view.sceneBackground = (Palette.uiColor("#FFFDF8"))
         _ = box([2.0, 0.08, 1.5], [0, -0.05, 0], "#F4E7CF")
         _ = box([2.0, 1.5, 0.025], [0, 0.65, -0.48], "#F3D1C7", radius: 0.005)
         for i in 0..<16 {
@@ -221,26 +233,51 @@ struct CompanionScene: UIViewRepresentable {
       guard !Task.isCancelled else { return }
       root.addChild(camera)
       root.addChild(light)
+      let environmentProfile: RoomDaylight
+      if case .window = kind { environmentProfile = .editor }
+      else { environmentProfile = RoomDaylight.at(.now) }
+      if let env = await CozyRoomLighting.environmentResource(profile: environmentProfile) {
+        view.environmentResource = env
+      }
+      guard !Task.isCancelled else { return }
+      windowLighting?.apply(hour: windowStartHour, view: view)
+      view.attach(root, camera: camera)
       #if DEBUG
       DesignPreviewSignal.sceneReady()
       #endif
-      if let env = await CozyRoomLighting.environmentResource() {
-        view.environment.lighting.resource = env
-      }
-      guard !Task.isCancelled else { return }
-      view.scene.anchors.removeAll()
-      view.scene.addAnchor(root)
       elapsed = 0
-      subscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] event in
+      subscription = view.subscribe { [weak self] deltaTime in
         MainActor.assumeIsolated {
-          guard let self, !UIAccessibility.isReduceMotionEnabled else { return }
-          self.elapsed += Float(min(event.deltaTime, 0.05))
+          guard let self else { return }
+          self.timeSinceLighting += Float(deltaTime)
+          self.elapsed += Float(min(deltaTime, 0.05))
+          if self.timeSinceLighting >= 0.20, let lighting = self.windowLighting, let view = self.view {
+            var hour = RoomDaylight.at(RoomDaylight.currentDate).hour
+            #if DEBUG
+            if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--sky-time-lapse=") }),
+               let speed = Double(argument.split(separator: "=").last ?? "") {
+              hour = self.windowStartHour + Double(self.elapsed) * speed / 3600
+            }
+            #endif
+            lighting.apply(hour: hour, view: view)
+            if let report = self.onSpeechAnchor, !self.companions.isEmpty {
+              let speaker = self.companions[self.companions.count / 2]
+              let bounds = speaker.visualBounds(relativeTo: nil)
+              if let point = view.project([bounds.center.x, bounds.max.y, bounds.center.z]),
+                 self.lastSpeechAnchor.map({ hypot($0.x-point.x,$0.y-point.y) >= 0.75 }) ?? true {
+                self.lastSpeechAnchor = point
+                report(point)
+              }
+            }
+            self.timeSinceLighting = 0
+          }
+          guard !UIAccessibility.isReduceMotionEnabled else { return }
           for cloud in self.clouds {
-            cloud.position.x += Float(event.deltaTime) * 0.015
+            cloud.position.x += Float(deltaTime) * 0.015
             if cloud.position.x > 2.6 { cloud.position.x = -2.6 }
           }
           for (index, bird) in self.birds.enumerated() {
-            bird.position.x += Float(min(event.deltaTime, 0.05)) * 0.13
+            bird.position.x += Float(min(deltaTime, 0.05)) * 0.13
             if bird.position.x > 2.8 { bird.position.x = -2.8 }
             bird.position.y += sin(self.elapsed * 1.4 + Float(index)) * 0.0004
             for (side, name) in [(Float(-1), "wing.left"), (Float(1), "wing.right")] {
@@ -248,7 +285,7 @@ struct CompanionScene: UIViewRepresentable {
             }
           }
           for drop in self.rain {
-            drop.position.y -= Float(event.deltaTime) * 0.7
+            drop.position.y -= Float(deltaTime) * 0.7
             if drop.position.y < 0.1 { drop.position.y = 2.4 }
           }
           for doll in self.companions {
@@ -258,7 +295,7 @@ struct CompanionScene: UIViewRepresentable {
       }
     }
     private func model(_ doll: DollState) async -> Entity {
-      if let config = doll.preset { return await PresetDollModel.make(config, detail: .room) }
+      if let config = doll.preset { return await PresetDollModel.make(config, detail: .full) }
       return await PlushCutoutModel.make(doll.imageData)
     }
   }

@@ -151,7 +151,7 @@ enum PresetDollModel {
         var uv: [SIMD2<Float>] = []
         var normals: [SIMD3<Float>] = []
         var triangles: [UInt32] = []
-        let rows = 48, columns = 64
+        let rows = 72, columns = 128
         for row in 0...rows {
             let v = Float(row) / Float(rows), a = v * Float.pi
             let y = cos(a)
@@ -296,31 +296,10 @@ enum PresetDollModel {
         }
         let limbPile = detail == .full ? roundPile() : nil
         var groups: [DollPart: Entity] = [:]
-        let armX: Float = configuration.shape == .cat ? 0.062 : 0.075
-        let armY: Float = configuration.shape == .cat ? 0.087 : 0.112
-        let bodyScale = configuration.shape == .bear ? SIMD3<Float>(0.64, 0.64, 0.64) : SIMD3<Float>(repeating: 0.70)
-        let headCenter: Float = configuration.shape == .cat ? 0.199 : configuration.shape == .bear ? 0.193 : 0.210
-        let previousHead: Float = configuration.shape == .cat ? 0.228 : configuration.shape == .bear ? 0.251 : 0.248
-        let origins: [DollPart: SIMD3<Float>] = [.head: [0, configuration.shape == .cat ? 0.228 : configuration.shape == .bear ? 0.251 : 0.248, 0], .torso: [0, configuration.shape == .cat ? 0.112 : 0.122, 0], .leftArm: [-armX, armY, 0.045], .rightArm: [armX, armY, 0.045], .leftLeg: [-0.042, 0.037, 0.020], .rightLeg: [0.042, 0.037, 0.020], .ears: [0, 0.245, 0]]
+        let transforms = PresetAttachmentLayout.transforms(configuration, happy: happy)
         for part in DollPart.allCases {
-            let p = configuration.part(part)
             let group = Entity(); group.name = part.rawValue
-            var origin = origins[part]!
-            if part == .head { origin.y = headCenter }
-            else if part == .ears { origin.y -= previousHead - headCenter }
-            else { origin *= bodyScale }
-            group.position = origin + SIMD3<Float>(0, p.offset * 0.05, 0)
-            group.scale = [p.size * p.width, p.size * p.length, p.size]
-            if part != .head && part != .ears { group.scale *= bodyScale }
-            if part == .head && configuration.shape == .rabbit { group.scale.y *= 0.97 }
-            if configuration.shape == .bear {
-                if part == .head { group.scale.y *= 1.06 }
-                if part == .ears { group.position.y += 0.010 }
-            }
-            if part == .torso { group.scale.x *= configuration.shape == .cat ? 0.88 : 1.08 }
-            if configuration.shape == .cat && (part == .head || part == .ears) {
-                group.orientation = simd_quatf(angle: -0.045, axis: [0, 0, 1])
-            }
+            group.transform = transforms[part]!
             root.addChild(group); groups[part] = group
         }
         func ball(_ name: String, _ part: DollPart, _ size: SIMD3<Float>, _ position: SIMD3<Float>, _ color: String, cloth: Bool = true) -> ModelEntity {
@@ -394,19 +373,26 @@ enum PresetDollModel {
         for part in [DollPart.leftArm, .rightArm] {
             let arm = PresetArmMesh.make(side: part == .leftArm ? -1 : 1, material: material(color(part, fur)), includePile: detail == .full)
             groups[part]!.addChild(arm)
-            if happy { groups[part]!.position.y += 0.06 }
         }
         for part in [DollPart.leftLeg, .rightLeg] { _ = ball("foot", part, [0.083, 0.065, 0.092], .zero, color(part, fur)) }
         for side: Float in [-1, 1] {
+            let ear = Entity(); ear.name = side < 0 ? "ear.left" : "ear.right"
+            ear.transform = PresetAttachmentLayout.earTransform(configuration, side: side)
+            let container = groups[.ears]!
+            // ball() writes to the current part; collect each ear under its own
+            // seam pivot so changing ear width never pushes it off the head.
+            groups[.ears] = ear
             if configuration.shape == .bear {
                 _ = ball("round-ear", .ears, [0.087, 0.09, 0.065], [side * 0.104, 0.083, -0.018], color(.ears, fur))
                 _ = ball("ear-lining", .ears, [0.039, 0.044, 0.012], [side * 0.104, 0.083, 0.015], "#CCA5A5")
             } else {
-                for ear in PresetEarMesh.make(shape: configuration.shape, side: side,
+                for mesh in PresetEarMesh.make(shape: configuration.shape, side: side,
                                                fur: material(color(.ears, fur)), lining: material("#E8B4B5")) {
-                    groups[.ears]!.addChild(ear)
+                    ear.addChild(mesh)
                 }
             }
+            groups[.ears] = container
+            container.addChild(ear)
         }
         if let data = configuration.face, let uiImage = ImageDownsampling.image(data, maxPixel: detail == .full ? 1024 : 512), let image = uiImage.cgImage,
            let texture = try? await TextureResource(image: image, options: .init(semantic: .color)) {
@@ -421,18 +407,19 @@ enum PresetDollModel {
                                                 offsetX: configuration.faceOffsetX ?? 0,
                                                 offsetY: configuration.faceOffsetY ?? 0,
                                                 radiusX: 0.081 * configuration.openingScale,
-                                                radiusY: 0.072 * configuration.openingScale)
+                                                radiusY: 0.072 * configuration.openingScale, headWidth: headWidth)
             let backing = ModelEntity(mesh: photoMesh, materials: [material("#FFF4E7")])
             backing.name = "face.lining"; backing.position.z = -0.001; groups[.head]!.addChild(backing)
             let face = ModelEntity(mesh: photoMesh, materials: [faceMaterial])
             face.name = "face.user-photo"; groups[.head]!.addChild(face)
-            let rim = ModelEntity(mesh: PresetFaceMesh.rim(scale: configuration.openingScale), materials: [material(color(.head, fur))])
+            let rim = ModelEntity(mesh: PresetFaceMesh.rim(scale: configuration.openingScale, headWidth: headWidth), materials: [material(color(.head, fur))])
             rim.name = "face.padded-opening"; groups[.head]!.addChild(rim)
             if detail == .full {
             for i in 0..<80 {
                 let a = Float(i) / 80 * 2 * Float.pi
                 let stitch = ball("face.seam", .head, [0.0014, 0.0025, 0.0015],
                                   [cos(a) * 0.086 * configuration.openingScale, -0.008 + sin(a) * 0.077 * configuration.openingScale, 0.104], "#F1DEC8")
+                stitch.position.z = PresetHeadSurface.front(x: stitch.position.x, y: stitch.position.y, width: headWidth) + 0.005
                 stitch.orientation = simd_quatf(angle: a, axis: [0, 0, 1])
             }
             }

@@ -7,6 +7,8 @@ import UIKit
 final class YouTubeAccount {
     private(set) var playlists: [CouchVideo] = []
     private(set) var email: String?
+    private(set) var displayName: String?
+    private(set) var profileImageURL: URL?
     private(set) var isLoading = false
     var message: String?
     private var restored = false
@@ -30,7 +32,7 @@ final class YouTubeAccount {
         restored = true
         guard let user = try? await GIDSignIn.sharedInstance.restorePreviousSignIn(),
               user.grantedScopes?.contains(scope) == true else { return }
-        email = user.profile?.email ?? "YouTube"
+        updateProfile(from: user)
         await refresh()
     }
     func connect() async {
@@ -49,7 +51,7 @@ final class YouTubeAccount {
                 message = "플레이리스트를 불러오려면 YouTube 읽기 권한을 허용해 주세요."
                 isLoading = false; return
             }
-            email = result.user.profile?.email ?? "YouTube"
+            updateProfile(from: result.user)
             isLoading = false
             await refresh()
         } catch {
@@ -62,7 +64,7 @@ final class YouTubeAccount {
     func refresh() async {
         guard !isLoading else { return }
         guard let current = GIDSignIn.sharedInstance.currentUser else {
-            email = nil; playlists = []
+            clearAccount()
             return
         }
         isLoading = true; message = nil
@@ -70,10 +72,11 @@ final class YouTubeAccount {
         do {
             let user = try await current.refreshTokensIfNeeded()
             guard user.grantedScopes?.contains(scope) == true else {
-                email = nil; playlists = []
+                clearAccount()
                 message = "YouTube 읽기 권한이 없어요. 계정을 다시 연결해 주세요."
                 return
             }
+            updateProfile(from: user)
             var results: [CouchVideo] = [], page: String?
             var seen = Set<String>()
             repeat {
@@ -87,7 +90,7 @@ final class YouTubeAccount {
                     let status = (response as? HTTPURLResponse)?.statusCode
                     if status == 401 {
                         GIDSignIn.sharedInstance.signOut()
-                        email = nil; playlists = []
+                        clearAccount()
                     }
                     message = status == 401 ? "로그인이 만료됐어요. 계정을 다시 연결해 주세요." : "플레이리스트를 불러오지 못했어요. YouTube 접근 권한을 확인하고 다시 시도해 주세요."
                     return
@@ -106,8 +109,22 @@ final class YouTubeAccount {
         isLoading = true
         do {
             try await GIDSignIn.sharedInstance.disconnect()
-            email = nil; playlists = []; message = nil
+            clearAccount(); message = nil
         } catch { message = "연결 해제에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요." }
         isLoading = false
+    }
+
+    private func updateProfile(from user: GIDGoogleUser) {
+        email = user.profile?.email ?? "YouTube"
+        let name = user.profile?.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        displayName = name?.isEmpty == false ? name : nil
+        profileImageURL = user.profile?.hasImage == true ? user.profile?.imageURL(withDimension: 120) : nil
+    }
+
+    private func clearAccount() {
+        email = nil
+        displayName = nil
+        profileImageURL = nil
+        playlists = []
     }
 }

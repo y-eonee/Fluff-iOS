@@ -20,6 +20,8 @@ enum FurnitureKind: String, CaseIterable {
     case rugRound, rugSquare
     case plant, frame, lamp, flowerCushion
 
+    static var catalog: [Self] { allCases.filter { $0 != .flowerCushion } }
+
     var label: String {
         switch self {
         case .wall: "벽지"

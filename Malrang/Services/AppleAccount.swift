@@ -20,8 +20,8 @@ final class AppleAccount {
         request.state = state
         request.nonce = SHA256.hash(data: Data(UUID().uuidString.utf8))
             .map { String(format: "%02x", $0) }.joined()
-        // Nickname/photo are chosen inside the app; email is not needed.
-        request.requestedScopes = []
+        // Apple shares the name on the first authorization; persist it locally.
+        request.requestedScopes = [.fullName]
     }
 
     func complete(_ result: Result<ASAuthorization, Error>) -> Bool {
@@ -40,12 +40,21 @@ final class AppleAccount {
                 return false
             }
             try Self.saveOwner(credential.user)
+            Self.setInitialNickname(credential.fullName)
             return true
         } catch {
             if let authError = error as? ASAuthorizationError, authError.code == .canceled { return false }
             message = "Apple 로그인에 실패했어요. 연결 상태를 확인한 뒤 다시 시도해 주세요."
             return false
         }
+    }
+
+    static func setInitialNickname(_ name: PersonNameComponents?, defaults: UserDefaults = .standard) {
+        guard (defaults.string(forKey: "nickname") ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let name else { return }
+        let value = PersonNameComponentsFormatter.localizedString(from: name, style: .default)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !value.isEmpty { defaults.set(value, forKey: "nickname") }
     }
 
     /// Errors (for example offline access) do not erase a valid local session.
@@ -64,7 +73,12 @@ final class AppleAccount {
         } catch { /* Retain the session until Apple explicitly reports revocation. */ }
     }
 
+    static var canContinueWithoutSignIn: Bool {
+        do { return try owner() == nil } catch { return false }
+    }
+
     static func signOut() {
+        AmbientPlayer.shared.stop()
         GIDSignIn.sharedInstance.signOut()
         UserDefaults.standard.set(false, forKey: "isSignedIn")
         // Keep the owner while their room remains on this device.
@@ -73,8 +87,11 @@ final class AppleAccount {
     static func removeLocalIdentity() throws {
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw StorageError.failed }
-        UserDefaults.standard.removeObject(forKey: "couch.videoLibrary")
-        UserDefaults.standard.removeObject(forKey: "didSeeFurnitureGuideV2")
+        for key in ["cotton.focus.session.v1", "couch.videoLibrary", "didSeeFurnitureGuideV2", "usedFurnitureActions",
+                    "didRestoreBackWallDesk20261124", "nickname", "avatarData"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        URLCache.shared.removeAllCachedResponses()
         signOut()
     }
 

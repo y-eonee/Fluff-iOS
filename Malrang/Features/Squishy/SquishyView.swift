@@ -1,30 +1,6 @@
 import SwiftUI
 import SwiftData
 
-/// 말랑이 체험 화면
-struct SquishyView: View {
-    let doll: DollState
-
-    var body: some View {
-        VStack(spacing: Spacing.l) {
-            Text("\(doll.filling.label.josa("이", "가")) 들어 있어요")
-                .appFont(.footnote)
-                .foregroundStyle(Color.app.inkSecondary)
-            Spacer()
-            SquishyDoll(doll: doll)
-            Spacer()
-            Text("꾹 누르면 조물조물, 문지르면 쓰담쓰담")
-                .appFont(.footnote)
-                .foregroundStyle(Color.app.inkSecondary)
-        }
-        .padding(Spacing.m)
-        .frame(maxWidth: .infinity)
-        .background { AppBackground() }
-        .cozyPageTitle("만지기")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 /// 만질 수 있는 인형. 꾹 누르면 조물조물, 문지르면 쓰담쓰담. 속재료마다 눌림·튕김·햅틱·소리가 다르다.
 /// 처음에는 화살표가 위에서 가리켜서 만져 보게 한다. 춤을 적용한 인형은 춤추면서 눌린다.
 struct SquishyDoll: View {
@@ -45,7 +21,7 @@ struct SquishyDoll: View {
 
     var body: some View {
         VStack(spacing: Spacing.xs) {
-            hint.offset(y: usesProfileLayout ? -20 : 0)
+            hint
             dollImage
                 .scaleEffect(x: 1 + press * 0.15, y: 1 - press * 0.25, anchor: .bottom)
                 .rotationEffect(.degrees(stroke.width * (reduceMotion ? 0.02 : 0.08)), anchor: .bottom)
@@ -66,7 +42,7 @@ struct SquishyDoll: View {
     private var dollImage: some View {
         let image = UIImage(data: doll.imageData) ?? UIImage()
         if let dance = doll.dance {
-            DancingDoll(image: image, move: dance)
+            DancingDoll(image: image, move: dance, preset: doll.preset)
         } else {
             Image(uiImage: image)
                 .resizable()
@@ -75,15 +51,15 @@ struct SquishyDoll: View {
     }
 
     private var hint: some View {
-        VStack(spacing: Spacing.xxs) {
-            Text("↓").pretendard(.medium, 44)
-                .frame(height: 64)
-            Text("만져 보세요")
-                .pretendard(.semiBold, 13)
-        }
-        .foregroundStyle(Color.app.ink)
-        .opacity(hasTouched ? 0 : 1)
-        .accessibilityHidden(true)
+        VStack(spacing: 4) {
+            if usesProfileLayout {
+                Text("만져 보세요").pretendard(.semiBold, 13)
+                Image(systemName: "arrow.down").font(.system(size: 24)).frame(height: 30)
+            } else {
+                Text("↓").pretendard(.medium, 44).frame(height: 64)
+                Text("만져 보세요").pretendard(.semiBold, 13)
+            }
+        }.foregroundStyle(Color.app.ink).opacity(hasTouched ? 0 : 1).accessibilityHidden(true)
     }
 
     private var touch: some Gesture {
@@ -119,6 +95,6 @@ struct SquishyDoll: View {
 
 #Preview {
     NavigationStack {
-        SquishyView(doll: Doll.sample.state)
+        SquishyDoll(doll: Doll.sample.state)
     }
 }

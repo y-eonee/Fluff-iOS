@@ -44,7 +44,7 @@ final class DesignPreviewData {
         }
         draft.shape = route.hasSuffix("rabbit") ? .rabbit : route.hasSuffix("cat") ? .cat : .bear
         draft.preset.shape = draft.shape
-        if route == "create-custom" { draft.shape = .pillow; draft.photo = UIImage(data: Self.cutoutCharacter()); draft.cutout = draft.photo }
+        if ["create-custom", "create-filling-custom"].contains(route) { draft.shape = .pillow; draft.photo = UIImage(data: Self.cutoutCharacter()); draft.cutout = draft.photo }
         if route == "create-name" { draft.name = "귀염둥이" }
         if ["cutout-auto", "cutout-move", "create-ready"].contains(route) {
             let renderer = ImageRenderer(content: CottonArtwork(shape: .bear).frame(width: 240, height: 253))
@@ -92,6 +92,15 @@ final class DesignPreviewData {
                 for _ in 0..<12 { doll.record(.sofa) }
                 for _ in 0..<9 { doll.record(.bed) }
             }
+            if ProcessInfo.processInfo.arguments.contains("--loading-empty-room") { doll.isPlaced = false }
+            if route == "home-ui", ProcessInfo.processInfo.arguments.contains("--morning-exercise-preview") || ProcessInfo.processInfo.arguments.contains("--dance-dance-preview") {
+                doll.dance = ProcessInfo.processInfo.arguments.contains("--dance-dance-preview") ? .danceDance : .morningExercise
+                doll.position = [shape == .cat ? -0.55 : shape == .bear ? 0 : 0.55, 0, 0.65]
+                if shape == .rabbit, ProcessInfo.processInfo.arguments.contains("--exercise-cutout") {
+                    doll.presetConfiguration = nil
+                    doll.imageData = Self.cutoutCharacter()
+                }
+            }
             container.mainContext.insert(doll)
             if shape.rawValue == (focusDoll == "cutout" ? "cat" : String(focusDoll ?? "cat")) { session.select(doll.id) }
         }
@@ -101,7 +110,15 @@ final class DesignPreviewData {
             }
             container.mainContext.insert(item)
         }
-        if route == "home-ui", ProcessInfo.processInfo.arguments.contains("--bed-occupied"),
+        if ProcessInfo.processInfo.arguments.contains("--desk-restoration-preview") {
+            let furniture = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>())) ?? []
+            for item in furniture where item.kind == .desk || item.kind == .lamp {
+                item.x += 0.30; item.z += 0.38
+            }
+            defaults.set(ProcessInfo.processInfo.arguments.contains("--desk-restoration-already-complete"),
+                         forKey: "didRestoreBackWallDesk20261124")
+        }
+        if ["home-ui", "room-loading", "tabs-ui"].contains(route), ProcessInfo.processInfo.arguments.contains("--bed-occupied"),
            let bed = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .bed }),
            let dolls = try? container.mainContext.fetch(FetchDescriptor<Doll>()) {
             if let sleeper = dolls.first(where: { $0.presetConfiguration?.shape == .cat }) {
@@ -121,6 +138,13 @@ final class DesignPreviewData {
             doll.restingBedID = nil
             doll.position = [Float(chair.x), chair.kind.seatHeight ?? 0.227, Float(chair.z)]
         }
+        if let flag = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--attachment-extreme=") }),
+           let mask = Int(flag.split(separator: "=").last ?? "") {
+            for (index, part) in DollPart.allCases.enumerated() {
+                draft.preset.parts[part.rawValue] = .init(width: mask & (1 << index) == 0 ? 0.6 : 1.4,
+                    length: mask & (1 << index) == 0 ? 1.4 : 0.6)
+            }
+        }
         if route == "create-large" {
             for part in DollPart.allCases {
                 var value = draft.preset.part(part)
@@ -137,10 +161,13 @@ final class DesignPreviewData {
             for data in pictures { container.mainContext.insert(DecorPhoto(data: data)) }
             let frames = try? container.mainContext.fetch(FetchDescriptor<RoomItem>())
             frames?.first(where: { $0.kind == (route == "wall-photo" ? .wall : route == "desk-photo" ? .desk : .frame) })?.photoData = pictures[0]
+            if route == "wall-photo", ProcessInfo.processInfo.arguments.contains("--both-wall-photos") {
+                frames?.first(where: { $0.kind == .wall })?.rightWallPhotoData = pictures[1]
+            }
         }
         // The source editor frames show a separately furnished room state.
         // Reproduce that state in the isolated comparison store; never rewrite a saved room.
-        if route.hasPrefix("decorate") || route.hasPrefix("desk-") || route.hasPrefix("wall-photo") {
+        if (route.hasPrefix("decorate") && route != "decorate-shared") || route.hasPrefix("desk-") || route.hasPrefix("wall-photo") {
             let furniture = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>())) ?? []
             for item in furniture where item.kind == .sofa { container.mainContext.delete(item) }
             if let chair = furniture.first(where: { $0.kind == .chair }) {
@@ -169,6 +196,24 @@ final class DesignPreviewData {
             let sample = couch.library.add(YouTubeSource(videoID: "M7lc1UVf-VE", playlistID: nil), title: "YouTube IFrame Player API")
             if ["couch-watch", "couch-mini", "couch-transition"].contains(route) { couch.watch(sample) }
 
+        }
+        if ProcessInfo.processInfo.arguments.contains("--home-drag-audit"),
+           let doll = (try? container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.shapeRaw == DollShape.rabbit.rawValue }) {
+            doll.position = [0.35, 0, 0.72]; doll.restingBedID = nil
+        }
+        if ProcessInfo.processInfo.arguments.contains("--arrival-doll-preview"),
+           let doll = (try? container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.name == "몽글이" }) {
+            doll.isPlaced = false; doll.restingBedID = nil
+            appState.place(doll, newlyCreated: true)
+        }
+        if ProcessInfo.processInfo.arguments.contains("--stored-doll-preview"),
+           let doll = (try? container.mainContext.fetch(FetchDescriptor<Doll>()))?.first { doll.isPlaced = false }
+        if ProcessInfo.processInfo.arguments.contains("--surface-photo-preview") {
+            let items = (try? container.mainContext.fetch(FetchDescriptor<RoomItem>())) ?? []
+            for item in items where [.floor, .rugRound, .bed, .frame].contains(item.kind) {
+                item.photoData = Self.framePhoto(item.kind.label, first: .systemTeal, second: .systemOrange)
+                item.isMirrored = ProcessInfo.processInfo.arguments.contains("--mirror-preview")
+            }
         }
         try? container.mainContext.save()
         if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--qa-capture-id=") }) {
@@ -216,6 +261,8 @@ final class DesignPreviewData {
 
 struct DesignPreview: View {
     @State private var fixture: DesignPreviewData
+    @State private var previewDance: DanceMove?
+    @State private var previewDanceClosed = false
     init(route: String) { _fixture = State(initialValue: DesignPreviewData(route: route)) }
     private var route: String { fixture.route }
     private var draft: DollDraft { fixture.draft }
@@ -236,19 +283,34 @@ struct DesignPreview: View {
             else if ["doll-profile", "doll-history"].contains(route), let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first {
                 DollActionSheet(doll: doll, initiallyShowsHistory: route == "doll-history")
             }
-            else if route == "photo-pick" { creationShell { PhotoPickStep(draft: draft) {}.safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 0) } } }
-            else if ["cutout-auto", "cutout-move"].contains(route) { creationShell { CutoutEditStep(draft: draft, onReselect: {}, onNext: {}).safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 1) } } }
-            else if route == "create-ready" { creationShell { CutoutReadyStep(draft: draft, onEdit: {}, onNext: {}).safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 1) } } }
+            else if route == "ar-dance-panel", let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.name == "몽글이" }) {
+                VStack {
+                    Spacer()
+                    if previewDanceClosed {
+                        Text(doll.dance?.label ?? "선택 없음").accessibilityIdentifier("saved-ar-dance")
+                    } else {
+                        DancePanel(doll:doll,selected:$previewDance) { previewDanceClosed = true }
+                    }
+                }.background(Color.gray.opacity(0.2))
+            }
+            else if route == "photo-pick" { creationShell { PhotoPickStep(draft: draft) {} } }
+            else if ["cutout-auto", "cutout-move"].contains(route) { creationShell { CutoutEditStep(draft: draft, onReselect: {}, onNext: {}) } }
+            else if route == "create-ready" { creationShell { CutoutReadyStep(draft: draft, onEdit: {}, onNext: {}) } }
             else if route == "create-done", let doll = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>()))?.first(where: { $0.presetConfiguration?.shape == .bear }) {
                 NavigationStack { DoneStep(doll: doll, onRestart: {}, onPlace: {}) }
             }
             else if route == "room-loading" { MainTabs(couch: fixture.couch) }
-            else if route == "splash-approved" { SplashView() }
+            else if route == "splash-approved" { BrandSplashView() }
+            else if route == "prelogin-splash" {
+                PreloginSplashView(previewTime: ProcessInfo.processInfo.arguments
+                    .first { $0.hasPrefix("--splash-time=") }
+                    .flatMap { Double($0.replacingOccurrences(of: "--splash-time=", with: "")) })
+            }
             else if route == "profile-create" { NavigationStack { ProfileEditView(isCreating: true) } }
             else if ["tabs-ui", "tabs-dolls", "tabs-profile"].contains(route) { MainTabs(couch: fixture.couch) }
             else if route == "couch-artwork" {
                 VStack(spacing: 24) {
-                    Text("couch time").notCliche(28, relativeTo: .title)
+                    Text("같이 보기").pretendard(.semiBold, 19, tracking: -0.76)
                     CouchCompanionPreview(dolls: fixture.couch.dolls)
                 }.padding(16).frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.mib.bg.screen)
             }
@@ -256,7 +318,7 @@ struct DesignPreview: View {
             else if route == "couch-mini" { VStack { Spacer(); CouchMiniPlayer(session: fixture.couch) {}.frame(width: 300); Spacer() }.frame(maxWidth: .infinity).background(Color.mib.bg.screen) }
             else if route == "couch-choice" {
                 let dolls = (try? fixture.container.mainContext.fetch(FetchDescriptor<Doll>())) ?? []
-                DollChoiceSheet(dolls: dolls, multiple: false, title: "같이 볼 인형", subtitle: "함께 볼 인형 1개를 골라주세요", actionTitle: "다음", maximumSelection: 1) { _ in }
+                DollChoiceSheet(dolls: dolls, multiple: true, title: "같이 볼 인형", subtitle: "소파에는 최대 2명까지 앉을 수 있어요", actionTitle: "다음", maximumSelection: 2, sourceLayout: true) { _ in }
             }
             else if route.hasPrefix("couch-") { CouchFlowView(session: fixture.couch) }
             else if route.hasPrefix("radio-") {
@@ -268,12 +330,12 @@ struct DesignPreview: View {
             else if route == "model-compare" { PresetComparisonView() }
             else if route == "model-side" { PresetComparisonView(cameraYaw: .pi / 4) }
             else if ["create-method", "photo-method", "create-custom"].contains(route) {
-                creationShell { CreateMethodStep(draft: draft, onPreset: {}, onCutout: {}).safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 2) } }
+                creationShell { CreateMethodStep(draft: draft, onPreset: {}, onCutout: {}) }
             }
             else if route == "photo-finish" { CreateFlowView(previewDraft: draft, startAtMaking: true) { _ in } }
             else if route == "photo-flow" { CreateFlowView(previewDraft: draft) { _ in } }
             else if route == "create-entry" { CreateFlowView { _ in } }
-            else if ["create-name", "create-name-empty", "create-parts", "create-large", "create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
+            else if ["create-name", "create-name-empty", "create-filling", "create-filling-custom", "create-parts", "create-large", "create", "rabbit", "bear", "photo-cat", "photo-rabbit", "photo-bear"].contains(route) {
                 creationShell { DollCustomizeStepA(draft: draft) {} }
             } else if ["home-ui", "walking"].contains(route) { NavigationStack { HomeView(couch: fixture.couch) } }
             else if ["window-sky", "window-cutout", "cutout-front"].contains(route) {
@@ -284,14 +346,11 @@ struct DesignPreview: View {
                     WindowCompanionView(dolls: dolls.map(\.state))
                 }
             }
-            else if ["floor-photo", "window-frame"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == (route == "floor-photo" ? .floor : .wall) }) {
-                NavigationStack { FurnitureCustomView(item: item, initialStyle: route == "floor-photo" ? .photo : .color) }
+            else if ["floor-photo", "window-frame"].contains(route) {
+                NavigationStack { DecorateView(category: route == "floor-photo" ? .flooring : .wallpaper, surfacePhotoMode: route == "floor-photo") }
             }
-            else if route == "frame-photo", let frame = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .frame }) {
-                NavigationStack { FurnitureCustomView(item: frame, initialStyle: .photo) }
-            }
-            else if ["desk-color", "desk-photo-empty", "desk-photo"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .desk }) {
-                NavigationStack { FurnitureCustomView(item: item, initialStyle: route == "desk-color" ? .color : .photo) }
+            else if ["frame-photo", "desk-color", "desk-photo-empty", "desk-photo"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == (route == "frame-photo" ? .frame : .desk) }) {
+                NavigationStack { DecorateView(selectedID: item.id, editingItem: item) }
             }
             else if ["decorate-wall", "wall-photo-empty", "wall-photo", "decorate-floor"].contains(route) {
                 NavigationStack { DecorateView(category: route == "decorate-floor" ? .flooring : .wallpaper, surfacePhotoMode: route.hasPrefix("wall-photo")) }
@@ -300,7 +359,7 @@ struct DesignPreview: View {
             else if ["decorate-added", "decorate-exit"].contains(route) {
                 NavigationStack { DecorateView(selectedID: (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.filter { $0.kind == .plant }.max { $0.createdAt < $1.createdAt }?.id, isConfirmingDiscard: route == "decorate-exit") }
             }
-            else if route == "decorate" { NavigationStack { DecorateView() } }
+            else if ["decorate", "decorate-shared"].contains(route) { NavigationStack { DecorateView() } }
             else if route == "decorate-selected" {
                 NavigationStack { DecorateView(selectedID: (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first { $0.kind == .desk }?.id) }
             }

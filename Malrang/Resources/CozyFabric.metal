@@ -172,3 +172,29 @@ kernel void plushCompositeLight(texture2d<float, access::read> source [[texture(
     float3 rgb = c.rgb + bloom.rgb * 0.045 * c.a;
     target.write(float4(rgb, c.a), p);
 }
+
+// Continuous sky evaluated per pixel; changing the time never rebuilds its mesh or texture.
+[[visible]] void windowAtmosphere(realitykit::surface_parameters params) {
+    constexpr sampler lookup(coord::normalized, address::clamp_to_edge, filter::linear);
+    float hour = params.uniforms().custom_parameter().x;
+    float weather = params.uniforms().custom_parameter().y;
+    float u = fract(hour / 24.0);
+    float3 zenith = float3(params.textures().custom().sample(lookup,float2(u,0.125)).rgb);
+    float3 middle = float3(params.textures().custom().sample(lookup,float2(u,0.375)).rgb);
+    float3 horizon = float3(params.textures().custom().sample(lookup,float2(u,0.625)).rgb);
+    float3 cycle = float3(params.textures().custom().sample(lookup,float2(u,0.875)).rgb);
+    float3 ray = normalize(params.geometry().model_position());
+    float elevation = saturate(ray.y / 0.65);
+    float3 color = elevation < 0.36 ? mix(horizon,middle,smoothstep(0.0,0.36,elevation))
+                                    : mix(middle,zenith,smoothstep(0.36,1.0,elevation));
+    float progress = saturate((hour - 5.5) / 14.5);
+    float3 sun = normalize(float3(-0.75 + progress*1.45,0.56 + sin(progress*M_PI_F)*1.43,-3.5) - float3(0,0.68,2.15));
+    float separation = max(0.0,1.0-dot(ray,sun));
+    float glow = (exp(-separation*90.0)*0.22 + exp(-separation*580.0)*0.12) * cycle.x;
+    float3 glowColor = mix(float3(1.0,0.98,0.9),float3(1.0,0.81,0.64),cycle.y);
+    color = mix(color,glowColor,glow*(weather >= 3 ? 0.15 : 1.0));
+    if (weather >= 3) color = mix(color,float3(0.67,0.74,0.79)*mix(0.38,1.0,cycle.x),0.55);
+    // Sub-pixel dithering suppresses visible bands in the broad, smooth gradient.
+    float grain = fract(sin(dot(params.geometry().uv0(),float2(1271.1,3117.7)))*43758.5453)-0.5;
+    params.surface().set_emissive_color(half3(pow(clamp(color + grain/700.0,0.0,1.0),float3(2.2))));
+}

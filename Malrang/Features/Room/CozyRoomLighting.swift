@@ -14,7 +14,10 @@ enum CozyRoomLighting {
   private static var daylightTint: SIMD3<Float>?
 
   static func environmentResource(at date: Date = .now) async -> EnvironmentResource? {
-    let profile = RoomDaylight.at(date)
+    await environmentResource(profile: RoomDaylight.at(date))
+  }
+
+  static func environmentResource(profile: RoomDaylight) async -> EnvironmentResource? {
     if environmentPhase == profile.phase, let environment { return environment }
     let size = CGSize(width: 512, height: 256)
     let format = UIGraphicsImageRendererFormat()
@@ -38,7 +41,8 @@ enum CozyRoomLighting {
     return environment
   }
 
-  static func apply(_ profile: RoomDaylight, to root: Entity, cutaway: Bool = false) async {
+  static func apply(_ profile: RoomDaylight, to root: Entity, cutaway: Bool = false, usesDaylight: Bool = true) async {
+    let daylightStrength: Float = usesDaylight ? profile.strength : 0
     let directTint = cutaway ? simd_mix(profile.tint, SIMD3<Float>(repeating: 1), SIMD3<Float>(repeating: 0.65)) : profile.tint
     let directColor = UIColor(
       red: CGFloat(directTint.x), green: CGFloat(directTint.y), blue: CGFloat(directTint.z),
@@ -70,18 +74,20 @@ enum CozyRoomLighting {
           light.light.color = directColor
           let windowIntensity: Float = cutaway ? 4200 : 2600
           let deskIntensity: Float = cutaway ? 2400 : 1600
-          light.light.intensity = (light.name == "window-sunlight" ? windowIntensity : deskIntensity) * profile.strength
+          light.light.intensity = (light.name == "window-sunlight" ? windowIntensity : deskIntensity) * daylightStrength
         }
       }
       if let lamp = entity as? PointLight, lamp.name == "desk-lamp-light" {
-        lamp.light.intensity = 190 * (1 - profile.strength)
+        lamp.light.intensity = usesDaylight ? 190 * (1 - profile.strength) : 0
       }
       if var model = entity.components[ModelComponent.self] {
         if entity.name == "window.sky", let sky { model.materials = [sky] }
         model.materials = model.materials.map { material in
           guard var custom = material as? CustomMaterial else { return material }
           let isFiber = custom.custom.value.w < 0
-          custom.custom.value.w = isFiber ? -1 - profile.strength : profile.strength
+          custom.custom.value.w = isFiber ? -1 - daylightStrength : daylightStrength
+          // Keep the same fabric/wood shader; suppress only its sun and lamp glow.
+          if !usesDaylight { custom.custom.value.z = max(0, custom.custom.value.z) }
           if let texture { custom.custom.texture = .init(texture) }
           return custom
         }

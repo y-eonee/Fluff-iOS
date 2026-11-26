@@ -12,13 +12,25 @@ final class RoomSceneEntrance {
         let node: String
     }
     private let entrance: RoomEntrance
+    private let loadingPose: RoomLoadingDollPose?
+    private let loadingLighting: RoomLoadingDollLighting?
+    private let loadingDance: DanceMove?
     private var snapshots: [Snapshot] = []
     private var prepared = false
     private var restored = false
+    #if DEBUG
+    private var audited = false
+    private var projectionError: Double?
+    private var observedFurnitureMotion = false
+    #endif
 
-    init(entrance: RoomEntrance, content: Entity, items: [RoomItemState]) {
+    init(entrance: RoomEntrance, content: Entity, items: [RoomItemState],
+         loadingPose: RoomLoadingDollPose? = nil, loadingLighting: RoomLoadingDollLighting? = nil, loadingDance: DanceMove? = nil) {
         self.entrance = entrance
-        let hero = content.children.first { $0.name.hasPrefix("doll|") }
+        self.loadingPose = loadingPose
+        self.loadingLighting = loadingLighting
+        self.loadingDance = loadingDance
+        let hero = entrance.loadingDoll.flatMap { doll in content.children.first { $0.name == "doll|\(doll.id)" } }
         for entity in content.children {
             let node: String
             if entrance.kind == .home {
@@ -37,7 +49,13 @@ final class RoomSceneEntrance {
 
     func update(in view: RoomRenderView, camera: PerspectiveCamera) {
         guard !restored, view.bounds.width > 0, view.bounds.height > 0 else { return }
-        if !prepared { prepared = true; entrance.prepareScene() }
+        if !prepared {
+            // Keep the SwiftUI loading character until a real scene frame exists.
+            guard view.completedFrames > 0 else { return }
+            prepared = true
+            entrance.useSceneDoll(entrance.kind == .home && !UIAccessibility.isReduceMotionEnabled && snapshots.contains { $0.node == "6457" })
+            entrance.prepareScene()
+        }
         entrance.finishIfNeeded()
         if entrance.finished {
             restore()
@@ -47,6 +65,23 @@ final class RoomSceneEntrance {
         }
         view.isUserInteractionEnabled = false
         view.markInteraction()
+        if entrance.kind == .home {
+            loadingLighting?.apply(arrival: entrance.dollArrivalProgress)
+            let node = entrance.loadingDoll == nil ? "1932:6465" : "1904:6845"
+            let opacity = 1 - entrance.timeline.value(node, "opacity", at: entrance.time, fallback: 1)
+            for snapshot in snapshots {
+                snapshot.entity.transform = snapshot.transform
+                let isHero = snapshot.node == "6457"
+                snapshot.entity.components.set(OpacityComponent(opacity: Float(isHero && !UIAccessibility.isReduceMotionEnabled ? min(1, entrance.time / 0.18) : opacity) * (snapshot.opacity?.opacity ?? 1)))
+                if isHero && !UIAccessibility.isReduceMotionEnabled {
+                    animateHomeDoll(snapshot.entity, in: view, camera: camera)
+                }
+            }
+            #if DEBUG
+            auditLanding()
+            #endif
+            return
+        }
         let time = entrance.time
         let motion = entrance.timeline
         let reduceMotion = UIAccessibility.isReduceMotionEnabled
@@ -60,27 +95,7 @@ final class RoomSceneEntrance {
                 : motion.value(snapshot.node, "opacity", at: time, fallback: 1)
             entity.components.set(OpacityComponent(opacity: Float(opacity) * baseOpacity))
             guard !reduceMotion else { continue }
-            if entrance.kind == .home && snapshot.node == "6457" {
-                let bounds = entity.visualBounds(relativeTo: nil)
-                let center = bounds.center
-                guard let landing = view.project(center) else { continue }
-                let remaining = min(1, max(0, motion.value("6457", "--motion-translate-x", at: time) / 94.5))
-                let top = view.project(center + camera.orientation(relativeTo: nil).act([0, bounds.extents.y / 2, 0]))
-                let bottom = view.project(center - camera.orientation(relativeTo: nil).act([0, bounds.extents.y / 2, 0]))
-                let height = max(1, abs((bottom?.y ?? landing.y) - (top?.y ?? landing.y)))
-                let initialScale = Float(135 * pointsScale / height)
-                let size = 1 + (initialScale - 1) * Float(remaining)
-                let sx = Float(motion.value("6457", "--motion-scale-x", at: time, fallback: 1))
-                let sy = Float(motion.value("6457", "--motion-scale-y", at: time, fallback: 1))
-                entity.scale *= SIMD3(size * sx, size * sy, size * sx)
-                // Use the actual current camera projection as the destination, including
-                // raised furniture seats and custom/photo dolls; no fixed image location.
-                let initial = CGPoint(x: view.bounds.midX, y: view.bounds.height * 384.5 / 844)
-                let target = CGPoint(x: landing.x + (initial.x - landing.x) * remaining,
-                                     y: landing.y + (initial.y - landing.y) * remaining
-                                        + motion.value("6457", "--motion-translate-y", at: time) * pointsScale)
-                move(entity, center: entity.visualBounds(relativeTo: nil).center, to: target, in: view, camera: camera)
-            } else if entrance.kind == .editor {
+            if entrance.kind == .editor {
                 // Origin is the base of each model: the source doll squashes at its feet.
                 entity.scale *= SIMD3(Float(motion.value(snapshot.node, "--motion-scale-x", at: time, fallback: 1)),
                                       Float(motion.value(snapshot.node, "--motion-scale-y", at: time, fallback: 1)), 1)
@@ -89,9 +104,92 @@ final class RoomSceneEntrance {
                     let y = motion.value(snapshot.node, "--motion-translate-y", at: time) * pointsScale
                     move(entity, center: origin, to: CGPoint(x: screen.x, y: screen.y + y), in: view, camera: camera)
                 }
+                #if DEBUG
+                if entity.name.hasPrefix("item|"), entrance.start != nil,
+                   entity.transform != snapshot.transform, opacity > 0.05 {
+                    observedFurnitureMotion = true
+                }
+                #endif
             }
         }
     }
+
+    /// Animate the same rendered entity that stays in the room. At the end its
+    /// original transform is restored exactly, so there is no sprite/3D handoff.
+    private func animateHomeDoll(_ entity: Entity, in view: RoomRenderView, camera: PerspectiveCamera) {
+        // Measure the destination in its real activity pose before presenting
+        // this same doll upright. Restore every limb and its eyes on arrival.
+        loadingPose?.restore()
+        let time = entrance.time
+        guard time < 2.95 else { return }
+        let motion = entrance.timeline
+        let ratio = 390.0 / 334.831
+        let screen = view.window?.bounds.size ?? view.bounds.size
+        let pointsScale = min(screen.width / 390, screen.height / 844)
+        let layoutOrigin = CGPoint(x: (screen.width - 390 * pointsScale) / 2,
+                                   y: (screen.height - 844 * pointsScale) / 2)
+        let ty = motion.value("1904:6939", "--motion-translate-y", at: time, fallback: 29.270287)
+        let progress = Double(entrance.dollArrivalProgress)
+        let center = entity.visualBounds(relativeTo: nil).center
+        guard let landing = view.project(center) else { return }
+        // Keep the loading character upright until it is nearly at its saved place.
+        let poseProgress = Float(max(0, min(1, (progress - 0.72) / 0.28)))
+        let easedPose = poseProgress * poseProgress * (3 - 2 * poseProgress)
+        loadingPose?.apply(arrival: easedPose)
+        let bounds = entity.visualBounds(relativeTo: nil)
+        var projected: [CGPoint] = []
+        for x in [bounds.min.x, bounds.max.x] {
+            for y in [bounds.min.y, bounds.max.y] {
+                for z in [bounds.min.z, bounds.max.z] {
+                    if let point = view.project([x, y, z]) { projected.append(point) }
+                }
+            }
+        }
+        let height = max(1, (projected.map(\.y).max() ?? 1) - (projected.map(\.y).min() ?? 0))
+        let initialScale = Float(270 * pointsScale / height)
+        let size = initialScale + (1 - initialScale) * Float(progress)
+        let squashX = time < 2.55 ? 1 : motion.value("1904:6939", "--motion-scale-x", at: time, fallback: 1)
+        let squashY = time < 2.55 ? 1 : motion.value("1904:6939", "--motion-scale-y", at: time, fallback: 1)
+        entity.scale *= SIMD3(size * Float(squashX), size * Float(squashY), size)
+        let initial = view.convert(CGPoint(x: layoutOrigin.x + 195 * pointsScale,
+                                          y: layoutOrigin.y + (285.49 + 57.9515 + ty) * ratio * pointsScale), from: nil)
+        let target = CGPoint(x: initial.x + (landing.x - initial.x) * progress,
+                             y: initial.y + (landing.y - initial.y) * progress)
+        move(entity, center: entity.visualBounds(relativeTo: nil).center, to: target, in: view, camera: camera)
+        #if DEBUG
+        if let actual = view.project(entity.visualBounds(relativeTo: nil).center) {
+            projectionError = hypot(actual.x - target.x, actual.y - target.y)
+        }
+        #endif
+    }
+
+    #if DEBUG
+    private func auditLanding() {
+        guard !audited, entrance.previewTime != nil,
+              ProcessInfo.processInfo.arguments.contains("--loading-landing-audit") else { return }
+        let heroes = snapshots.filter { $0.node == "6457" }
+        var checks: [String: Bool] = [:]
+        checks["exactly_selected_home_entity"] = heroes.count == 1 && heroes.first?.entity.name == entrance.loadingDoll.map { "doll|\($0.id)" }
+        checks["single_scene_character"] = entrance.presentsSceneDoll
+        if entrance.time < 1.95 {
+            checks["awake_loading_pose"] = loadingPose?.hasAwakeParts == true
+            checks["neutral_loading_light"] = loadingLighting?.isNeutral == true
+        }
+        if entrance.time >= 2.95 {
+            checks["exact_original_transform_on_arrival"] = heroes.first.map { $0.entity.transform == $0.transform } ?? false
+            checks["activity_pose_restored"] = loadingPose?.hasRoomPose == true
+            checks["room_lighting_restored"] = loadingLighting?.isRestored == true
+        } else {
+            checks["screen_path_matches_within_one_point"] = (projectionError ?? .infinity) < 1
+        }
+        checks["other_entities_keep_placement"] = snapshots.filter { $0.node != "6457" }.allSatisfy { $0.entity.transform == $0.transform }
+        let report: [String: Any] = ["time": entrance.time, "doll": entrance.loadingDoll?.name ?? "", "passed": checks.values.allSatisfy { $0 }, "checks": checks]
+        if let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: URL.documentsDirectory.appending(path: "loading-landing-audit.json"))
+            audited = true
+        }
+    }
+    #endif
 
     private func move(_ entity: Entity, center: SIMD3<Float>, to point: CGPoint,
                       in view: RoomRenderView, camera: PerspectiveCamera) {
@@ -106,10 +204,25 @@ final class RoomSceneEntrance {
 
     func restore() {
         guard !restored else { return }
+        loadingPose?.restore()
+        loadingLighting?.restore()
         for snapshot in snapshots {
             snapshot.entity.transform = snapshot.transform
             if let opacity = snapshot.opacity { snapshot.entity.components.set(opacity) }
             else { snapshot.entity.components.remove(OpacityComponent.self) }
+        }
+        #if DEBUG
+        if entrance.kind == .editor, entrance.finished,
+           ProcessInfo.processInfo.arguments.contains("--editor-entrance-audit") {
+            let checks = ["visible_furniture_motion": observedFurnitureMotion,
+                          "original_transforms_restored": snapshots.allSatisfy { $0.entity.transform == $0.transform }]
+            if let data = try? JSONSerialization.data(withJSONObject: checks, options: .sortedKeys) {
+                try? data.write(to: URL.documentsDirectory.appending(path: "editor-motion-audit.json"))
+            }
+        }
+        #endif
+        if entrance.finished, let loadingDance, let hero = snapshots.first(where: { $0.node == "6457" }) {
+            SceneFactory.play(loadingDance, on: hero.entity)
         }
         restored = true
         snapshots.removeAll()

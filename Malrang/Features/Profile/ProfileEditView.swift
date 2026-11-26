@@ -16,26 +16,11 @@ struct ProfileEditView: View {
     @State private var draftAvatar = Data()
     @State private var pickerItem: PhotosPickerItem?
     @State private var accountError: String?
-    private let maxLength = 10
 
     private var trimmed: String { draftName.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         VStack(spacing: Spacing.l) {
-            ZStack {
-                Text(isCreating ? "프로필 만들기" : "프로필 편집")
-                    .pretendard(.bold, 18)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("profile-page-title")
-                if !isCreating {
-                    HStack {
-                        Button { dismiss() } label: {
-                            D1Icon(name: "back").frame(width: 44, height: 44).contentShape(Rectangle())
-                        }.buttonStyle(.plain).accessibilityLabel("뒤로가기")
-                        Spacer()
-                    }
-                }
-            }.frame(height: 44)
             if isCreating {
                 Text("내 방에서 사용할 프로필을 정해주세요")
                     .appFont(.footnote)
@@ -49,18 +34,13 @@ struct ProfileEditView: View {
                     TextField("", text: $draftName, prompt: Text("닉네임을 입력해주세요").foregroundStyle(Color.app.inkSecondary.opacity(0.5)))
                         .submitLabel(isCreating ? .go : .done)
                         .onSubmit { if !trimmed.isEmpty { save() } }
-                        .onChange(of: draftName) {
-                            if draftName.count > maxLength { draftName = String(draftName.prefix(maxLength)) }
-                        }
-                    Text("\(draftName.count)/\(maxLength)")
-                        .appFont(.footnote)
-                        .foregroundStyle(Color.app.inkSecondary)
+
                 }
                 .padding(.horizontal, Spacing.m)
                 .frame(minHeight: 52)
                 .background(Color.app.surface, in: RoundedRectangle(cornerRadius: Radius.small, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.small, style: .continuous).stroke(Color.app.ink.opacity(0.15)))
-                Text("내 방에서 사용할 이름이에요 · 최대 \(maxLength)자")
+                Text("내 방에서 사용할 이름이에요")
                     .appFont(.footnote)
                     .foregroundStyle(Color.app.inkSecondary)
             }
@@ -91,6 +71,11 @@ struct ProfileEditView: View {
         .padding(Spacing.m)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background { AppBackground() }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            FlowHeader(title: isCreating ? "프로필 만들기" : "프로필 편집",
+                       backLabel: "뒤로가기", onBack: isCreating ? nil : { dismiss() })
+                .accessibilityIdentifier("profile-page-title")
+        }
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
@@ -151,6 +136,7 @@ struct ProfileEditView: View {
             try AppleAccount.removeLocalIdentity()
             nickname = ""
             avatarData = Data()
+            UserDefaults.standard.set(true, forKey: "showAppleDisconnectHelp")
             isSignedIn = false
             RenderMemory.clearCaches()
         } catch {

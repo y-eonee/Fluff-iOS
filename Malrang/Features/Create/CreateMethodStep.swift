@@ -41,7 +41,7 @@ struct CreateMethodStep: View {
                     if usesPreset {
                         HStack(spacing: 6) {
                             ForEach([DollShape.bear, .cat, .rabbit], id: \.self) { shape in
-                                mode((shape == .bear ? "🐻 " : shape == .cat ? "🐈 " : "🐰 ") + shape.label, selected: configuration.shape == shape) {
+                                mode(shape.label, icon: shape == .bear ? "shape_bear" : shape == .cat ? "shape_cat" : "shape_rabbit", selected: configuration.shape == shape) {
                                     draft.shape = shape; draft.snapshot = nil
                                 }
                             }
@@ -49,18 +49,24 @@ struct CreateMethodStep: View {
                     }
                 }.padding(.horizontal, 18).padding(.top, 8).padding(.bottom, 20)
             }.scrollIndicators(.hidden)
-        }.background { AppBackground() }.foregroundStyle(Color.rep4.c08)
+        }.background(FlowDesign.makingCanvas.ignoresSafeArea()).foregroundStyle(Color.rep4.c08)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 HStack(spacing: 12) {
-                    Button("이전으로") { if let onPrevious { onPrevious() } else { dismiss() } }.buttonStyle(CreationSecondaryButton())
-                    Button("다음으로") { if usesPreset { onPreset() } else { onCutout() } }.buttonStyle(CreationPrimaryButton())
+                    Button("다시 선택") { if let onPrevious { onPrevious() } else { dismiss() } }.buttonStyle(CreationSecondaryButton())
+                    Button("다음") { if usesPreset { onPreset() } else { onCutout() } }.buttonStyle(CreationPrimaryButton())
                 }.padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 16)
             }
-            .cozyPageTitle("making fluff").navigationBarBackButtonHidden()
+            .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: usesPreset ? 2 : 3, skipsShape: !usesPreset) }
+            .onAppear { usesPreset = draft.shape != .pillow }
+            .flowPageTitle("인형 만들기").navigationBarBackButtonHidden()
     }
-    private func mode(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func mode(_ title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text((selected ? "✓ " : "") + title).pretendard(.regular, 12.743, tracking: -0.637)
+            HStack(spacing: 4) {
+                if selected { Image(systemName: "checkmark").font(.system(size: 10)) }
+                Image(icon).resizable().scaledToFit().frame(width: 16, height: 16).accessibilityHidden(true)
+                Text(title).pretendard(.regular, 12.743, tracking: -0.637)
+            }
                 .padding(.horizontal, 12).frame(height: 32.914)
                 .modifier(RepresentativeSelectionSurface(selected: selected, radius: 18.286))
                 .frame(height: 44)
@@ -76,4 +82,4 @@ struct CreateMethodStep: View {
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
-#Preview { NavigationStack { CreateMethodStep(draft: DollDraft(), onPreset: {}, onCutout: {}).safeAreaInset(edge: .top) { CreationProgress(step: 2) } } }
+#Preview { NavigationStack { CreateMethodStep(draft: DollDraft(), onPreset: {}, onCutout: {}) } }

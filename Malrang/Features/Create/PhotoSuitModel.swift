@@ -26,6 +26,20 @@ enum PhotoSuitModel {
             group.scale = [edit.size * edit.width, edit.size * edit.length, edit.size]
             groups[part] = group; root.addChild(group)
         }
+        // Retain old saved photo suits, but resize them at sewn joints too.
+        let body = groups[.torso]!, head = groups[.head]!
+        head.position = body.position + SIMD3<Float>(0, 0.050, 0) * body.scale
+            - SIMD3<Float>(0, -0.085, 0) * head.scale
+        for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
+            let side: Float = part == .leftArm || part == .leftLeg ? -1 : 1
+            let arm = part == .leftArm || part == .rightArm
+            let socket = arm ? SIMD3<Float>(side * 0.045, 0.020, 0) : SIMD3<Float>(side * 0.032, -0.040, 0.008)
+            let seam = arm ? SIMD3<Float>(-side * 0.020, 0.025, 0) : SIMD3<Float>(0, 0.035, 0.008)
+            let limb = groups[part]!
+            limb.position = body.position + socket * body.scale - seam * limb.scale
+        }
+        groups[.ears]!.position = head.position
+        groups[.ears]!.scale *= head.scale
         func color(_ part: DollPart) -> String { configuration.part(part).color ?? "#F7F5F4" }
         func oval(_ name: String, part: DollPart, size: SIMD3<Float>, at: SIMD3<Float> = .zero, tint: String? = nil) -> ModelEntity {
             let entity = ModelEntity(mesh: PresetDollModel.unitSphere(), materials: [material(tint ?? color(part))])
@@ -72,6 +86,15 @@ enum PhotoSuitModel {
             }
             let panel = ModelEntity(mesh: PresetFaceMesh.photo(aspect: Float(cg.width) / Float(cg.height), zoom: configuration.faceScale, offsetX: configuration.faceOffsetX ?? 0, offsetY: configuration.faceOffsetY ?? 0, radiusX: 0.119, radiusY: 0.056), materials: [photoMaterial])
             panel.position = [0, -0.023, 0.010]; panel.name = "face.user-photo"; groups[.head]!.addChild(panel)
+        }
+        let ears = groups[.ears]!
+        let edit = configuration.part(.ears)
+        let earScale = SIMD3<Float>(edit.size * edit.width, edit.size * edit.length, edit.size)
+        for child in Array(ears.children) {
+            let side: Float = child.position.x < 0 ? -1 : 1
+            let seam: SIMD3<Float> = configuration.shape == .rabbit
+                ? [side * 0.115, 0.035, -0.015] : [side * 0.085, 0.065, -0.015]
+            child.position += seam / earScale - seam
         }
         root.generateCollisionShapes(recursive: true)
         return root

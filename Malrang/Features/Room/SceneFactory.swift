@@ -31,7 +31,7 @@ enum SceneFactory {
         // Meshes/textiles are shared by CozyFurniture's bounded set of templates.
         // Count the incremental hierarchy/materials here; reserving those shared
         // buffers again evicted all ten starter-room entries on every revisit.
-        return await furnitureCache.entity(for: key, estimatedCost: 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0)) {
+        return await furnitureCache.entity(for: key, estimatedCost: 1024 * 1024 + (item.photoData == nil ? 0 : 12 * 1024 * 1024) + (item.photoData?.count ?? 0) + (item.rightWallPhotoData == nil ? 0 : 12 * 1024 * 1024) + (item.rightWallPhotoData?.count ?? 0)) {
             await buildFurniture(item, onFloor: onFloor, elevation: elevation, cozy: cozy, cutaway: cutaway)
         }
     }
@@ -48,7 +48,13 @@ enum SceneFactory {
         if let model = models[item.kind] ?? nil {
             entity = model.clone(recursive: true)
         } else if cozy {
-            entity = await CozyFurniture.make(item, photoMaterial: material(item), usesWindowLighting: !onFloor, cutaway: cutaway)
+            var rightWall = item
+            rightWall.photoData = item.rightWallPhotoData
+            rightWall.colorName = item.rightWallColorName
+            rightWall.photoScale = 1; rightWall.photoFit = 0; rightWall.photoFlipped = false
+            rightWall.photoTurns = 0; rightWall.photoOffsetX = 0; rightWall.photoOffsetY = 0
+            let rightMaterial = item.rightWallPhotoData == nil ? nil : await material(rightWall)
+            entity = await CozyFurniture.make(item, photoMaterial: material(item), rightWallPhotoMaterial: rightMaterial, usesWindowLighting: !onFloor, roomOverview: cutaway)
         } else if let illustration = try? await FurnitureIllustration.make(item, photoMaterial: material(item)) {
             entity = illustration
         } else {
@@ -60,9 +66,10 @@ enum SceneFactory {
         entity.name = "item|\(item.id)"
         let hangs = item.kind.hangsOnWall && !onFloor
         let interiorLift: Float = cozy && hangs
-            ? (cutaway ? (item.kind == .frame ? -0.24 : 0) : (item.kind == .shelf ? 0.64 : 0.23)) : 0
-        if cozy && !cutaway && item.kind == .frame { entity.scale = [1.4, 1.55, 1.4] }
+            ? (item.kind == .shelf ? 0.64 : 0.23) : 0
+        if cozy && item.kind == .frame { entity.scale = [1.4, 1.55, 1.4] }
         entity.position = [item.x, hangs ? item.kind.hangingHeight + interiorLift : elevation, item.z]
+        if item.isMirrored { FurnitureSurfaceGeometry.reflect(entity) }
         if item.kind.hangsOnWall {
             let pivot = Entity()
             for child in Array(entity.children) { pivot.addChild(child) }
@@ -74,38 +81,67 @@ enum SceneFactory {
             entity.addChild(centered)
         }
         entity.orientation = simd_quatf(angle: hangs ? RoomLayout.wall(of: item).yaw : (item.kind.hangsOnWall ? 0 : item.yaw), axis: [0, 1, 0])
-        if item.isMirrored {
-            if cozy, item.kind == .bed, (models[item.kind] ?? nil) == nil {
-                // The procedural bed is symmetric. Reflect only its user artwork;
-                // negative scale on the fleece reverses its lighting handedness.
-                entity.findEntity(named: "custom-photo")?.scale.x = -1
-            } else {
-                let visual = Entity()
-                for child in Array(entity.children) { visual.addChild(child) }
-                visual.scale.x = -1
-                entity.addChild(visual)
-            }
+        if cozy && item.kind.isMovable && (item.yaw == 0 || item.kind.category == .rug) {
+            let shadow = entity.findEntity(named: "contact-shadow")
+            let shadowParent = shadow?.parent
+            shadow?.removeFromParent()
+            let bounds = entity.visualBounds(relativeTo: entity)
+            RoomLayout.registerBounds(for: item.kind, mirrored: item.isMirrored,
+                                      min: bounds.min * entity.scale, max: bounds.max * entity.scale)
+            if let shadow, let shadowParent { shadowParent.addChild(shadow) }
+        }
+        if cozy && !onFloor && item.kind.category == .rug {
+            // Legacy rugs can extend beyond the editor's finite floor. Resolve
+            // the same measured footprint in both views, without moving other
+            // furniture or rewriting the saved layout on editor entry.
+            let point = RoomLayout.constrained(item)
+            entity.position.x = point.x
+            entity.position.z = point.y
         }
         // 원본 색상별 메시를 합쳐도 벽 사이의 빈 공간이 충돌 영역이 되지 않게 한다.
         let shapes: [ShapeResource]
         if item.kind == .wall {
-            let height: Float = cozy ? CozyRoomShell.maximumHeight : 1.55
+            let height: Float = cozy ? (cutaway ? CozyRoomShell.overviewHeight(x: 1, z: 1) : CozyRoomShell.maximumHeight) : 1.55
             shapes = [ShapeResource.generateBox(size: [0.04, height, 2]).offsetBy(translation: [-1.02, height / 2, 0]),
                       ShapeResource.generateBox(size: [2, height, 0.04]).offsetBy(translation: [0, height / 2, -1.02])]
         } else if item.kind == .floor {
             shapes = [ShapeResource.generateBox(size: [2, 0.145, 2]).offsetBy(translation: [0, -0.0725, 0])]
         } else {
-            let size = item.kind.size
-            shapes = [ShapeResource.generateBox(size: size).offsetBy(translation: [0, size.y / 2, 0])]
+            let shadow = entity.findEntity(named: "contact-shadow")
+            let shadowParent = shadow?.parent
+            shadow?.removeFromParent()
+            let bounds = entity.visualBounds(relativeTo: entity)
+            if let shadow, let shadowParent { shadowParent.addChild(shadow) }
+            shapes = [ShapeResource.generateBox(size: simd_max(bounds.extents, SIMD3<Float>(repeating: 0.015)))
+                .offsetBy(translation: bounds.center)]
         }
         entity.components.set(CollisionComponent(shapes: shapes))
         return entity
     }
 
+    /// Inverted hulls follow each model's real silhouette, including rotations.
+    /// The front-facing original mesh occludes the enlarged back-facing outline.
+    static func outline(_ furniture: Entity) {
+        var ink = UnlitMaterial(color: Palette.uiColor("#659DDF"))
+        ink.faceCulling = .front
+        func visit(_ node: Entity) {
+            for child in Array(node.children) { visit(child) }
+            guard let model = node.components[ModelComponent.self],
+                  !node.name.contains("shadow"), !node.name.contains(".pile"),
+                  !node.name.contains("glow"), !node.name.contains("light") else { return }
+            let outline = ModelEntity(mesh: model.mesh, materials: model.materials.map { _ in ink })
+            outline.name = "selection-outline"
+            outline.scale = SIMD3(repeating: 1.025)
+            outline.components.set(DynamicLightShadowComponent(castsShadow: false))
+            node.addChild(outline)
+        }
+        visit(furniture)
+    }
+
     static func doll(_ doll: DollState) async -> Entity {
         if let preset = doll.preset {
             let entity = Entity()
-            let visual = await PresetDollModel.make(preset, detail: .room)
+            let visual = await PresetDollModel.make(preset, detail: .full)
             // Edited head/body proportions must not change the doll's world height.
             // Match the room's placement and collision height using the final mesh.
             let bounds = visual.visualBounds(relativeTo: visual)
@@ -161,11 +197,18 @@ enum SceneFactory {
     }
 
     static func play(_ dance: DanceMove, on entity: Entity) {
+        MorningExerciseMotion.stop(on: entity)
+        if let clip = MorningExerciseMotion.Clip(move: dance) {
+            MorningExerciseMotion.play(on: entity, reducedMotion: UIAccessibility.isReduceMotionEnabled,
+                                       clip: clip)
+            return
+        }
         var from = entity.transform
         var to = entity.transform
         let base = entity.orientation
         var duration = 0.4
         switch dance {
+        case .morningExercise, .danceDance, .wiggle, .tapDance: return // Multi-part clips are handled above.
         case .bounce:
             to.translation.y += 0.05
             duration = 0.3
@@ -293,11 +336,23 @@ enum SceneFactory {
         return outline
     }
 
+    static func photoImage(_ image: CGImage, flipped: Bool) -> CGImage? {
+        guard flipped else { return image }
+        let size = CGSize(width: image.width, height: image.height)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { renderer in
+            renderer.cgContext.translateBy(x: size.width, y: 0)
+            renderer.cgContext.scaleBy(x: -1, y: 1)
+            UIImage(cgImage: image).draw(in: CGRect(origin: .zero, size: size))
+        }.cgImage
+    }
+
     private static func material(_ item: RoomItemState, withPhoto: Bool = true) async -> RealityKit.Material {
         var material = UnlitMaterial(applyPostProcessToneMap: false)
         material.faceCulling = .none
         material.color = .init(tint: Palette.uiColor(item.colorName ?? item.kind.defaultColorName))
-        if withPhoto, let data = item.photoData, let cgImage = ImageDownsampling.image(data, maxPixel: 1024)?.cgImage,
+        if withPhoto, let data = item.photoData, let source = ImageDownsampling.image(data, maxPixel: 1024)?.cgImage,
+           let cgImage = photoImage(source, flipped: item.photoFlipped != (item.kind == .wall)),
            let texture = try? await TextureResource(image: cgImage, options: .init(semantic: .color)) {
             // 맞추기에서 사진 밖으로 나가는 부분은 흰 여백으로 보인다.
             let sampler = MTLSamplerDescriptor()
@@ -308,19 +363,8 @@ enum SceneFactory {
             sampler.magFilter = .linear
             material.color = .init(tint: .white, texture: .init(texture, sampler: .init(sampler)))
 
-            // 면의 가운데를 기준으로, 사진이 보이는 비율을 정한다. 90도로 돌리면 사진의 가로세로가 바뀐다.
-            let turned = item.photoTurns % 2 == 1
-            let aspect = item.kind.photoAspect
-            let ratio = Float(cgImage.width) / Float(cgImage.height) / aspect
-            let shown = turned ? 1 / ratio : ratio
-            let isFit = item.photoFit == 1
-            var visible: SIMD2<Float> = shown > 1 ? [isFit ? 1 : 1 / shown, isFit ? shown : 1] : [isFit ? 1 / shown : 1, isFit ? 1 : shown]
-            visible /= item.photoScale
-            let scale = SIMD2<Float>(item.photoFlipped ? -visible.x : visible.x, visible.y)
-            let angle = Float(item.photoTurns) * .pi / 2
-            let half = scale * 0.5
-            let rotated = SIMD2<Float>(cos(angle) * half.x - sin(angle) * half.y, sin(angle) * half.x + cos(angle) * half.y)
-            material.textureCoordinateTransform = .init(offset: SIMD2(0.5 + item.photoOffsetX, 0.5 + item.photoOffsetY) - rotated, scale: scale, rotation: angle)
+            material.textureCoordinateTransform = FurniturePhotoTransform.make(
+                item, imageAspect: Float(cgImage.width) / Float(cgImage.height))
         }
         return material
     }
@@ -357,5 +401,18 @@ enum SceneFactory {
             root.addChild(entity)
         }
         return root
+    }
+}
+
+// Shared by room/AR playback and the actual 3D doll preview.
+extension MorningExerciseMotion.Clip {
+    init?(move: DanceMove) {
+        switch move {
+        case .morningExercise: self = .exercise
+        case .danceDance: self = .danceDance
+        case .wiggle: self = .wiggle
+        case .tapDance: self = .tapDance
+        default: return nil
+        }
     }
 }

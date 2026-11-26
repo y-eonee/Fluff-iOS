@@ -91,7 +91,6 @@ struct CreateFlowView: View {
     var body: some View {
         NavigationStack(path: $path) {
             PhotoPickStep(draft: draft) { path.append(.cutout) }
-                .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 0) }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { exitButton }.sharedBackgroundVisibility(.hidden)
                 }
@@ -102,13 +101,9 @@ struct CreateFlowView: View {
                         .toolbar {
                             if !isDone(step) { ToolbarItem(placement: .topBarLeading) { exitButton }.sharedBackgroundVisibility(.hidden) }
                         }
-                        .safeAreaInset(edge: .top, spacing: 0) {
-                            if step == .cutout || step == .ready || step == .method {
-                                CreationProgress(step: step == .method ? 2 : 1)
-                            }
-                        }
                 }
         }
+        .environment(\.updatedFlowDesign, true)
         .interactiveDismissDisabled()
 
         .accessibilityHidden(confirmingExit)

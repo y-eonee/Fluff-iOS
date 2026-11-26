@@ -26,17 +26,11 @@ struct AmbientSoundView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      HStack {
-        D1IconButton(icon: "back", label: "방으로 돌아가기") { dismiss() }
-        Spacer()
-        Text("cozy sound").notCliche(28, relativeTo: .title).tracking(-1.12)
-        Spacer()
-        Color.clear.frame(width: 44, height: 44)
-      }.padding(.horizontal, 20).padding(.top, 4).padding(.bottom, choosing ? 17 : 24)
+      FlowHeader(title: "배경음 설정", backLabel: "방으로 돌아가기") { dismiss() }
       ScrollViewReader { proxy in
         ScrollView {
           VStack(alignment: .leading, spacing: choosing ? 24 : 16) {
-            RadioCompanionPreview(doll: dolls.first, playing: player.isPlaying)
+            RadioCompanionPreview(doll: dolls.first, playing: player.isPlaying, choosing: choosing)
             if choosing {
               VStack(alignment: .leading, spacing: 12) {
                 Text("듣고 싶은 소리").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
@@ -52,14 +46,17 @@ struct AmbientSoundView: View {
               }.id("custom-time")
             } else { nowPlaying }
             errorMessage
-          }.padding(.horizontal, 16).padding(.bottom, choosing ? 40 : 24).id("radio-content")
+          }.padding(.horizontal, 16).padding(.top, choosing ? 13 : 16).padding(.bottom, choosing ? 40 : 8).id("radio-content")
         }.scrollIndicators(.hidden)
           .onAppear { if initiallyScrolled { proxy.scrollTo("radio-content", anchor: .bottom) } }
       }
-      bottomButton.padding(.horizontal, choosing ? 24 : 22)
-        .padding(.top, 16).padding(.bottom, choosing ? 6 : -12)
-        .background { if choosing { Color(uiColor: Palette.uiColor("#FBF7EF")).ignoresSafeArea(edges: .bottom) } }
-    }.background(Color.mib.bg.screen).foregroundStyle(Color.mib.text.primary)
+      if choosing {
+        bottomButton.padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 6)
+      }
+    }.background {
+      Color(uiColor: Palette.uiColor("#F0F0F0")).overlay { RepresentativeGradientFill(definition: RepresentativeGradients.screenOverlay) }.ignoresSafeArea()
+    }.foregroundStyle(Color.rep4.c08)
+      .environment(\.roomFlowDesign, true)
       .onAppear {
         chosen = player.sound ?? chosen
         sheet = initialSheet
@@ -74,15 +71,16 @@ struct AmbientSoundView: View {
         if let selectedSheet = sheet {
           GeometryReader { geometry in
             ZStack(alignment: .bottom) {
-              Color.rep4.c16.opacity(0.28).ignoresSafeArea()
+              Color.black.opacity(0.28).ignoresSafeArea()
                 .onTapGesture { sheet = nil }
               sheetContent(selectedSheet)
                 .frame(height: selectedSheet == .timer ? 345 : 358)
                 .padding(.bottom, geometry.safeAreaInsets.bottom)
                 .frame(maxWidth: .infinity)
                 .background(Color.rep4.c01, in: UnevenRoundedRectangle(topLeadingRadius: 22, topTrailingRadius: 22))
-                .simultaneousGesture(DragGesture(minimumDistance: 25).onEnded { value in
-                  if value.translation.height > 60 { sheet = nil }
+                .contentShape(Rectangle())
+                .highPriorityGesture(DragGesture(minimumDistance: 25).onEnded { value in
+                  if value.translation.height > 40 || value.predictedEndTranslation.height > 80 { sheet = nil }
                 })
                 .accessibilityAction(.escape) { sheet = nil }
                 .transition(.move(edge: .bottom))
@@ -92,6 +90,7 @@ struct AmbientSoundView: View {
       }
       .onChange(of: sheet) { _, value in if value == nil { player.stopPreview() } }
       .animation(.easeOut(duration: 0.2), value: sheet)
+      .environment(\.roomFlowDesign, true)
 
   }
 
@@ -113,13 +112,15 @@ struct AmbientSoundView: View {
           player.preview(sound)
         } label: {
           VStack(spacing: 8) {
-            D1Icon(name: sound.rawValue).frame(width: 40, height: 40)
+            Image("radio_sound_" + (sound == .noise ? "white" : sound.rawValue)).renderingMode(.template).resizable().scaledToFit()
+              .foregroundStyle(chosen == sound ? Color.rep4.c08 : FlowDesign.blue)
+              .frame(width: soundIconSize(sound).width, height: soundIconSize(sound).height).frame(width: 40, height: 40)
             HStack(spacing: 4) {
               if showCheck && chosen == sound { D1Icon(name: "check").scaleEffect(0.75).frame(width: 12, height: 12) }
               Text(sound.title).pretendard(sheet == nil ? .regular : .medium, sheet == nil ? 14 : 13, tracking: sheet == nil ? -0.7 : 0)
             }.frame(height: 20.3)
           }.frame(maxWidth: .infinity).frame(height: 96)
-            .modifier(RepresentativeSelectionSurface(selected: chosen == sound, radius: 18.29, neutral: sheet == nil ? Color.rep4.c01 : Color(uiColor: Palette.uiColor("#F7F7F7"))))
+            .modifier(RepresentativeSelectionSurface(selected: chosen == sound, radius: 12, neutral: sheet == nil ? Color.rep4.c01 : Color(uiColor: Palette.uiColor("#F7F7F7"))))
         }.buttonStyle(.plain).accessibilityAddTraits(chosen == sound ? .isSelected : [])
           .accessibilityHint("잠깐 미리 들어요")
       }
@@ -157,7 +158,7 @@ struct AmbientSoundView: View {
           .frame(width: 52, height: 52).contentShape(Rectangle())
       }.accessibilityLabel("재생 시간 5분 늘리기").disabled(minutes != nil && customMinutes >= 180)
     }.buttonStyle(.plain).foregroundStyle(Color.mib.action.primary)
-      .background(sheet == nil ? Color.rep4.c01 : Color.rep4.c11, in: RoundedRectangle(cornerRadius: 14))
+      .background(sheet == nil ? Color.rep4.c01 : Color.rep4.c11, in: RoundedRectangle(cornerRadius: 10))
       .accessibilityElement(children: .contain)
       .accessibilityLabel("재생 시간").accessibilityValue(minutes.map { "\($0)분" } ?? "계속")
   }
@@ -166,54 +167,51 @@ struct AmbientSoundView: View {
     minutes = customMinutes
   }
 
+  private func soundIconSize(_ sound: AmbientSound) -> CGSize {
+    switch sound {
+    case .rain: CGSize(width: 34.428, height: 33.823)
+    case .fire: CGSize(width: 20, height: 32)
+    case .wave: CGSize(width: 32.796, height: 25.358)
+    case .forest: CGSize(width: 31.616, height: 30.035)
+    case .cafe: CGSize(width: 27.483, height: 27.483)
+    case .noise: CGSize(width: 32.427, height: 29.185)
+    }
+  }
+
   private var nowPlaying: some View {
-    VStack(spacing: 34.69) {
+    VStack(spacing: 16) {
       TimelineView(.periodic(from: .now, by: 1)) { context in
-        GeometryReader { geometry in
-          let trackWidth = geometry.size.width.isFinite ? max(0, geometry.size.width - 121) : 0
-          ZStack(alignment: .topLeading) {
-            Text("재생중인 소리").pretendard(.regular, 14, tracking: -0.7).frame(height: 20).offset(x: 24, y: 24)
-            Text(player.sound?.title ?? "재생이 끝났어요").pretendard(.bold, 17, tracking: -0.85)
-              .frame(height: 26).offset(x: 24, y: 48)
-            Text(player.elapsedLabel(at: context.date)).pretendard(.bold, 17, tracking: -0.85).monospacedDigit()
-              .frame(height: 26).offset(x: 24, y: 92)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(player.sound?.title ?? "재생이 끝났어요").pretendard(.bold, 17, tracking: -0.85).frame(height: 26)
+          HStack(spacing: 8) {
+            Text(player.elapsedLabel(at: context.date)).pretendard(.regular, 62, tracking: -3.1)
+              .monospacedDigit().minimumScaleFactor(0.7).lineLimit(1).frame(height: 80)
               .accessibilityLabel("누적 재생 시간 \(player.elapsedLabel(at: context.date))")
-            ZStack(alignment: .leading) {
-              Capsule().fill(Color.rep4.c20).frame(height: 7.936)
-                .overlay(Capsule().strokeBorder(Color(uiColor: Palette.uiColor("#7A7A7A")), lineWidth: 0.635))
-              Capsule().fill(Color.rep4.c21).frame(width: trackWidth * player.progress(at: context.date), height: 6.735)
-            }.frame(width: trackWidth, height: 15).offset(x: 24, y: 123.7)
-            HStack {
-              Text("재생시간 · \(player.elapsedLabel(at: context.date))")
-              Spacer()
-              Text("남은 시간 · \(player.timeLabel(at: context.date))")
-            }.pretendard(.regular, 10.5).frame(width: trackWidth, height: 15.225)
-              .offset(x: 24.73, y: 144.4)
+            Spacer(minLength: 0)
             Button { player.toggle() } label: {
               Group {
                 if player.isPlaying {
-                  HStack(spacing: 7.2) {
-                    Capsule().frame(width: 6, height: 23)
-                    Capsule().frame(width: 6, height: 23)
-                  }
+                  HStack(spacing: 8) { Capsule().frame(width: 6, height: 23); Capsule().frame(width: 6, height: 23) }
                 } else { D1PlaybackGlyph(paused: true) }
-              }.frame(width: 64, height: 64)
-                .background(Color.rep4.c30, in: Circle())
-                .overlay(Circle().strokeBorder(Color(uiColor: Palette.uiColor("#BDBDBD")), lineWidth: 1))
+              }.frame(width: 72, height: 72).background(Color.rep4.c11, in: Circle())
             }.buttonStyle(.plain).accessibilityLabel(player.isPlaying ? "일시정지" : "다시 재생")
-              .offset(x: geometry.size.width - 77, y: 92)
           }
-        }.frame(height: 200).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 22))
+          GeometryReader { geometry in
+            RoundedRectangle(cornerRadius: 3).fill(Color(uiColor: Palette.uiColor("#CAE4FE")))
+            RoundedRectangle(cornerRadius: 3).fill(Color.rep4.c03)
+              .frame(width: geometry.size.width * player.progress(at: context.date), height: 6.735)
+          }.frame(height: 7.936).padding(.top, 10)
+            .accessibilityLabel("남은 시간 \(player.timeLabel(at: context.date))")
+        }.padding(24).frame(height: 176).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 22))
       }
       HStack(spacing: 12) {
         Button("타이머 변경") {
           minutes = player.remaining().map { max(5, Int(($0 / 60).rounded(.up))) }
           customMinutes = minutes ?? 30; sheet = .timer
         }.buttonStyle(D1SecondaryStyle())
-        Button("다른 소리") { chosen = player.sound ?? .rain; sheet = .sound }
-          .buttonStyle(D1PrimaryStyle())
+        Button("다른 소리") { chosen = player.sound ?? .rain; sheet = .sound }.buttonStyle(D1PrimaryStyle())
       }
-    }.padding(.top, 14)
+    }
   }
 
   private func sheetContent(_ selectedSheet: Sheet) -> some View {
@@ -256,26 +254,22 @@ struct AmbientSoundView: View {
 private struct RadioCompanionPreview: View {
   let doll: DollState?
   let playing: Bool
+  let choosing: Bool
   var body: some View {
     GeometryReader { geo in
       let scale = geo.size.width / 358
       ZStack(alignment: .topLeading) {
-        Image("radio_backdrop").resizable().frame(width: geo.size.width * 1.3073, height: 312)
+        Image("radio_setup_art").resizable().frame(width: geo.size.width * 1.3073, height: 312)
           .offset(x: -geo.size.width * 0.3073)
         if let doll {
           CompanionScene(dolls: [doll], kind: .radioArtwork(playing: playing))
-            .frame(width: 158 * scale, height: 167)
-            .offset(x: 21 * scale, y: 72)
-            .allowsHitTesting(false)
+            .frame(width: 157.905 * scale, height: 167.193).offset(x: 21.1 * scale, y: 72.4).allowsHitTesting(false)
         }
       }.frame(width: geo.size.width, height: 312, alignment: .topLeading).clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .overlay {
-          RepresentativeGradientFill(definition: RepresentativeGradients.selected)
-            .mask(RoundedRectangle(cornerRadius: 22).strokeBorder(lineWidth: 12))
-        }
-    }.frame(height: 312).accessibilityElement(children: .ignore)
+    }.frame(height: 312).clipShape(RoundedRectangle(cornerRadius: 22))
+      .accessibilityElement(children: .ignore)
       .accessibilityLabel(doll.map { "\($0.name)와 함께 듣는 라디오" } ?? "포근한 라디오")
+      .accessibilityIdentifier("radio-companion-preview")
   }
 }
 

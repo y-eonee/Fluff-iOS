@@ -13,6 +13,14 @@ final class WindowWeather: NSObject, CLLocationManagerDelegate {
     manager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
   }
   func start() {
+    #if DEBUG
+    if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--design-preview=") }) {
+      code = ProcessInfo.processInfo.arguments.first { $0.hasPrefix("--window-weather=") }
+        .flatMap { Int($0.replacingOccurrences(of: "--window-weather=", with: "")) } ?? 0
+      label = code == 0 ? "맑음" : code >= 71 ? "눈" : code >= 51 ? "비" : "흐림"
+      return
+    }
+    #endif
     switch manager.authorizationStatus {
     case .notDetermined: manager.requestWhenInUseAuthorization()
     case .authorizedAlways, .authorizedWhenInUse: manager.requestLocation()

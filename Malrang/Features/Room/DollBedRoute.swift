@@ -9,7 +9,7 @@ enum DollBedRoute {
         let boxes = items.filter(\.kind.blocksFloor).map {
             DollWalkArea.Box(center: [$0.x, $0.z], half: [$0.kind.size.x / 2, $0.kind.size.z / 2], yaw: $0.yaw)
         }
-        let area = DollWalkArea(boundary: .init(center: .zero, half: [1.08, 1.08]), obstacles: boxes, radius: radius)
+        let area = DollWalkArea(boundary: .init(center: RoomLayout.dollFloorCenter, half: RoomLayout.dollFloorHalf), obstacles: boxes, radius: radius)
         let origin = SIMD2(start.x, start.z)
         func world(_ local: SIMD2<Float>) -> SIMD2<Float> {
             let p = simd_act(simd_quatf(angle: bed.yaw, axis: [0, 1, 0]), SIMD3(local.x, 0, local.y))

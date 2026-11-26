@@ -34,8 +34,9 @@ struct PhotoPickStep: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 18).padding(.top, 16).padding(.bottom, 18)
         }
-        .background { AppBackground() }
-        .cozyPageTitle("making fluff")
+        .background(FlowDesign.canvas.ignoresSafeArea())
+        .safeAreaInset(edge: .top, spacing: 0) { CreationProgress(step: 0) }
+        .flowPageTitle("인형 만들기")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: selection) {
             guard let selection else { return }

@@ -1,0 +1,136 @@
+{
+  "fileKey": "y50EtliLp7YMR80gHuJRLb",
+  "screens": {
+    "radio": "1727:23399",
+    "roomEditor": "1727:23773",
+    "icon": "1928:2",
+    "cottonLoading": "1918:7551",
+    "cottonStates": "1927:38",
+    "ownedDollLoading": "1904:6831"
+  },
+  "loadingPolicy": "If any owned doll is placed, choose one owned doll exactly once per home entrance. Otherwise use cotton. Saved placement is unchanged.",
+  "assets": [
+    {
+      "node": "1918-7551",
+      "asset": "imgShadow",
+      "name": "loading_shadow",
+      "file": "7080c.svg"
+    },
+    {
+      "node": "1918-7551",
+      "asset": "imgBody",
+      "name": "loading_body_mongle",
+      "file": "e58a4.svg"
+    },
+    {
+      "node": "1918-7551",
+      "asset": "imgBody1",
+      "name": "loading_body_round",
+      "file": "f1937.svg"
+    },
+    {
+      "node": "1918-7551",
+      "asset": "imgBody2",
+      "name": "loading_body_soft",
+      "file": "1bebf.svg"
+    },
+    {
+      "node": "1918-7551",
+      "asset": "imgBody3",
+      "name": "loading_body_fluffy",
+      "file": "b7fd9.svg"
+    },
+    {
+      "node": "1918-7551",
+      "asset": "imgLidL",
+      "name": "loading_lid_left",
+      "file": "0dfc2.svg"
+    },
+    {
+      "node": "1918-7551",
+      "asset": "imgLidR",
+      "name": "loading_lid_right",
+      "file": "6cc77.svg"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgAi",
+      "name": "radio_setup_art",
+      "file": "d475d.png"
+    },
+    {
+      "node": "1923-6547",
+      "asset": "imgImage1367",
+      "name": "radio_playing_art",
+      "file": "72141.png"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgVector",
+      "name": "radio_sound_rain",
+      "file": "b4dc9.svg"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgVector1",
+      "name": "radio_sound_fire",
+      "file": "a819b.svg"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgVector2",
+      "name": "radio_sound_wave",
+      "file": "1ce0b.svg"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgVector3",
+      "name": "radio_sound_forest",
+      "file": "54259.svg"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgVector4",
+      "name": "radio_sound_cafe",
+      "file": "1109c.svg"
+    },
+    {
+      "node": "1727-23504",
+      "asset": "imgVector5",
+      "name": "radio_sound_white",
+      "file": "28047.svg"
+    }
+  ],
+  "motion": {
+    "CottonLoadingMotion.json": {
+      "source": "1918:7551",
+      "duration": 8.4
+    },
+    "OwnedDollLoadingMotion.json": {
+      "source": "1904:6831",
+      "duration": 3.4
+    }
+  },
+  "preserved": [
+    "floating tools menu",
+    "saved furniture and doll state",
+    "YouTube account identity",
+    "doll menu and etiquette-photo navigation",
+    "audio playback and timer controls"
+  ],
+  "validation": [
+    "Debug iOS Simulator build passed",
+    "All imported asset files exist and are nonempty",
+    "App icon is 1024x1024 RGB PNG",
+    "Owned-doll and empty-room loading UI checks passed",
+    "Room category repetition, furniture edits, photo removal confirmation/undo, timer changes, loading handoff, and unchanged floating-tools menu checks passed",
+    "Radio sound sheet drag dismissal, reopening, and sound change passed",
+    "18 screen/state captures compared with source frames",
+    "Final Debug build passed"
+  ],
+  "notes": [
+    "Room contents, photos, and doll previews reflect user data rather than the fixed sample room.",
+    "The radio playing illustration uses the supplied Figma artwork.",
+    "Loading samples source keyframes in SwiftUI and completes once the real room is ready."
+  ]
+}

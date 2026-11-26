@@ -8,6 +8,9 @@ struct RoomLoadingTimeline: Decodable {
 
     static let shared = load("RoomLoadingMotion", duration: 3.4)
     static let editor = load("RoomEditorMotion", duration: 2)
+    static let cotton = load("CottonLoadingMotion", duration: 8.4)
+    static let ownedDoll = load("OwnedDollLoadingMotion", duration: 3.4)
+    static let prelogin = load("PreloginSplashMotion", duration: 8.4)
 
     private static func load(_ name: String, duration: Double) -> Self {
         guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
@@ -33,9 +36,10 @@ struct RoomLoadingTimeline: Decodable {
     }
 
     enum Curve {
-        case linear, bezier(Double, Double, Double, Double), samples([Double])
+        case linear, stepEnd, bezier(Double, Double, Double, Double), samples([Double])
         init(_ css: String) {
             switch css {
+            case "step-end": self = .stepEnd
             case "ease-in": self = .bezier(0.42, 0, 1, 1)
             case "ease-out": self = .bezier(0, 0, 0.58, 1)
             case "ease-in-out": self = .bezier(0.42, 0, 0.58, 1)
@@ -53,6 +57,7 @@ struct RoomLoadingTimeline: Decodable {
             let x = min(1, max(0, fraction))
             switch self {
             case .linear: return x
+            case .stepEnd: return x < 1 ? 0 : 1
             case let .samples(values):
                 guard values.count > 1 else { return x }
                 let index = x * Double(values.count - 1)

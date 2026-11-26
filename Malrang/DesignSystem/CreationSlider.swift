@@ -49,6 +49,38 @@ struct CreationSlider: UIViewRepresentable {
 }
 
 private final class SourceCreationSlider: UISlider {
+    private var grabOffset: CGFloat = 0
+
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        // Include the outside half of the thumb at both ends of the track.
+        bounds.insetBy(dx: -22, dy: -max(0, (44 - bounds.height) / 2)).contains(point)
+    }
+
+    override func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        guard isEnabled else { return false }
+        let point = touch.location(in: self)
+        let track = trackRect(forBounds: bounds)
+        let thumb = thumbRect(forBounds: bounds, trackRect: track, value: value)
+        // Grabbing near the thumb must not jump the value under the finger.
+        grabOffset = abs(point.x - thumb.midX) <= 22 ? point.x - thumb.midX : 0
+        updateValue(at: point.x)
+        return true
+    }
+
+    override func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        updateValue(at: touch.location(in: self).x)
+        return true
+    }
+
+    private func updateValue(at x: CGFloat) {
+        let track = trackRect(forBounds: bounds)
+        let fraction = min(1, max(0, (x - grabOffset - track.minX) / max(1, track.width)))
+        let next = minimumValue + Float(fraction) * (maximumValue - minimumValue)
+        guard next != value else { return }
+        value = next
+        sendActions(for: .valueChanged)
+    }
+
     override func trackRect(forBounds bounds: CGRect) -> CGRect {
         let track = super.trackRect(forBounds: bounds)
         return CGRect(x: track.minX, y: bounds.midY - 2.5, width: track.width, height: 5)

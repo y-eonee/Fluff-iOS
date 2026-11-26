@@ -1,0 +1,178 @@
+{
+  "configuration" : "Debug",
+  "durationRequested" : 60,
+  "finished" : true,
+  "legacyRenderer" : false,
+  "samples" : [
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 74.510289674554699,
+      "dolls" : 3,
+      "footprintMiB" : 215.53383636474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 21.481785675373271,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3
+      ],
+      "requestedFPS" : [
+        60
+      ],
+      "seconds" : 10.334336416664883,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 32.261038589868292,
+      "dolls" : 3,
+      "footprintMiB" : 238.19008636474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 42.706143248990124,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 20.848046291663195,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 28.65244039581259,
+      "dolls" : 3,
+      "footprintMiB" : 238.25258636474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 30.042867355192111,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 31.066777958330931,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 28.582443096478112,
+      "dolls" : 3,
+      "footprintMiB" : 238.23696136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 29.805277664828846,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 41.33341608333285,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 29.346920444034787,
+      "dolls" : 3,
+      "footprintMiB" : 238.20571136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 30.062201048540025,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 51.844955124994158,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    },
+    {
+      "active" : true,
+      "adaptive" : [
+        true
+      ],
+      "batchedModelReduction" : 33,
+      "cpuPercentOfOneCore" : 29.395647193948122,
+      "dolls" : 3,
+      "footprintMiB" : 238.51821136474609,
+      "furniture" : 10,
+      "instances" : 50,
+      "lowPower" : false,
+      "metalMiB" : 0,
+      "models" : 715,
+      "observedFPS" : 29.976020672336272,
+      "renderErrors" : [
+
+      ],
+      "renderScales" : [
+        3
+      ],
+      "requestedFPS" : [
+        30
+      ],
+      "seconds" : 61.919674624994514,
+      "thermalState" : 0,
+      "visibleRenderers" : 1
+    }
+  ],
+  "scenario" : "Saved room, first 10 seconds of each minute camera pan at 60 FPS, remaining time idle at 30 FPS; no saved data changes.",
+  "unbatchedFurniture" : false
+}

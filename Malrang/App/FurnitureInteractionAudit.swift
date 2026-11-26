@@ -1,4 +1,5 @@
 #if DEBUG
+  import ARKit
   import AVFoundation
   import RealityKit
   import SwiftData
@@ -15,6 +16,7 @@
       let data = image.pngData()!
       let bedID = UUID()
       let frameID = UUID()
+      let wallID = UUID()
       let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
         UUID().uuidString)
       do {
@@ -33,6 +35,14 @@
           frame.photoScale = 1.8; frame.photoFit = 1; frame.photoTurns = 3; frame.photoFlipped = true
           frame.photoOffsetX = 0.2; frame.photoOffsetY = -0.1
           container.mainContext.insert(frame)
+          let wall = RoomItem(kind: .wall); wall.id = wallID
+          wall.photoData = data; wall.rightWallPhotoData = Data(data.reversed())
+          wall.rightWallColorName = "#C3B5DC"
+          let snapshot = wall.state
+          wall.rightWallPhotoData = nil
+          wall.restore(snapshot)
+          checks["right_wall_photo_undo_is_independent"] = wall.rightWallPhotoData == Data(data.reversed()) && wall.photoData == data
+          container.mainContext.insert(wall)
           try container.mainContext.save()
         }
         do {
@@ -42,6 +52,8 @@
           let dolls = try container.mainContext.fetch(FetchDescriptor<Doll>())
           checks["sleep_survives_reload"] = dolls.first?.restingBedID == bedID
           let frame = try container.mainContext.fetch(FetchDescriptor<RoomItem>()).first { $0.id == frameID }
+          let wall = try container.mainContext.fetch(FetchDescriptor<RoomItem>()).first { $0.id == wallID }
+          checks["independent_wall_photos_survive_reload"] = wall?.photoData == data && wall?.rightWallPhotoData == Data(data.reversed()) && wall?.rightWallColorName == "#C3B5DC"
           checks["frame_photo_survives_reload"] = frame?.photoData == data && frame?.photoScale == 1.8 && frame?.photoTurns == 3 && frame?.photoFlipped == true && frame?.photoOffsetX == 0.2 && frame?.photoOffsetY == -0.1
           dolls.first?.restingBedID = nil
           try container.mainContext.save()
@@ -105,6 +117,124 @@
         checks["new_doll_avoids_interactions"] = RoomLayout.canPlaceDoll(
           at: [spot.x, spot.z], in: fullRoom)
       }
+      // Shared home/editor geometry must fit even after rotations and mirroring.
+      for kind in FurnitureKind.allCases where kind.isMovable {
+        let sample = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+        _ = await SceneFactory.furniture(sample, cozy: true, cutaway: true)
+        for yaw: Float in [0, .pi / 4, .pi / 2, .pi] {
+          for mirrored in [false, true] {
+            for corner: SIMD2<Float> in [[-2, -2], [2, 2], [-2, 2], [2, -2]] {
+              var item = sample; item.x = corner.x; item.z = corner.y; item.yaw = yaw; item.isMirrored = mirrored
+              let spot = RoomLayout.constrained(item); item.x = spot.x; item.z = spot.y
+              if !kind.hangsOnWall {
+                let box = RoomLayout.placementFootprint(item)
+                checks["room_bounds_\(kind.rawValue)_\(yaw)_\(mirrored)_\(corner)"] = box.min.x >= -1.001 && box.min.y >= -1.001 && box.max.x <= 1.001 && box.max.y <= 1.001
+              }
+            }
+          }
+        }
+      }
+      let repairedRoom = RoomLayout.repaired(room)
+      checks["repaired_starter_has_no_furniture_overlap"] = repairedRoom.allSatisfy { !RoomLayout.overlaps($0, in: repairedRoom) }
+      checks["repair_is_idempotent"] = RoomLayout.repaired(repairedRoom) == repairedRoom
+      for kind in [FurnitureKind.bed, .sofa, .desk, .chair, .frame, .shelf, .lamp] {
+        let item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+        let home = await SceneFactory.furniture(item, cozy: true)
+        let editor = await SceneFactory.furniture(item, cozy: true, cutaway: true)
+        let a = home.visualBounds(relativeTo: home), b = editor.visualBounds(relativeTo: editor)
+        checks["same_geometry_\(kind.rawValue)"] = simd_distance(a.min, b.min) < 0.001 && simd_distance(a.max, b.max) < 0.001 && home.position == editor.position && home.scale == editor.scale
+      }
+      for kind in [FurnitureKind.bed, .sofa, .desk, .chair, .frame, .rugRound] {
+        let item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0)
+        let model = await SceneFactory.furniture(item, onFloor: true, cozy: true, cutaway: true)
+        func signature(_ root: Entity) -> [SIMD3<Float>] {
+          var values: [SIMD3<Float>] = []
+          func visit(_ node: Entity) {
+            values.append(node.position)
+            if let mesh = node.components[ModelComponent.self]?.mesh {
+              for part in mesh.contents.models.flatMap({ Array($0.parts) }) {
+                let points = part.positions.elements
+                // Mesh generation may merge duplicate vertices; face count and
+                // occupied shape must survive, not the internal vertex layout.
+                values.append(SIMD3(Float(part.triangleIndices?.count ?? 0), 0, 0))
+                values.append(points.reduce(SIMD3<Float>(repeating: .infinity), simd_min))
+                values.append(points.reduce(SIMD3<Float>(repeating: -.infinity), simd_max))
+              }
+            }
+            for child in node.children { visit(child) }
+          }
+          visit(root); return values
+        }
+        let before = signature(model)
+        FurnitureSurfaceGeometry.reflect(model)
+        FurnitureSurfaceGeometry.reflect(model)
+        let after = signature(model)
+        checks["mirror_twice_preserves_every_part_\(kind)"] = before.count == after.count && zip(before, after).allSatisfy { simd_distance($0, $1) < 0.0001 }
+      }
+      for aspect in [0.4, 1.0, 2.5] {
+        let photo = UIGraphicsImageRenderer(size: CGSize(width: 120 * aspect, height: 120)).image { context in
+          UIColor.systemTeal.setFill(); context.fill(CGRect(x: 0, y: 0, width: 120 * aspect, height: 120))
+        }.pngData()!
+        for mirrored in [false, true] { for flipped in [false, true] { for turns in 0..<4 { for zoom: Float in [1, 2] {
+          var item = RoomItemState(id: UUID(), kind: .rugRound, x: 0, z: 0)
+          item.photoData = photo; item.isMirrored = mirrored; item.photoFlipped = flipped; item.photoTurns = turns
+          item.photoScale = zoom; item.photoFit = 1; item.photoOffsetX = 0.9; item.photoOffsetY = -0.9
+          let model = await SceneFactory.furniture(item, onFloor: true, cozy: true, cutaway: true)
+          let key = "rug_photo_\(aspect)_\(mirrored)_\(flipped)_\(turns)_\(zoom)"
+          guard let rug = model.findEntity(named: "rug"), let mesh = rug.components[ModelComponent.self],
+                let material = mesh.materials.first as? UnlitMaterial else { checks[key] = false; continue }
+          let parts = mesh.mesh.contents.models.flatMap { Array($0.parts) }
+          let t = material.textureCoordinateTransform
+          let c = cos(t.rotation), sinA = sin(t.rotation)
+          let uvs = parts.flatMap { $0.textureCoordinates?.elements ?? [] }
+          let filled = uvs.allSatisfy { uv in
+            let p = uv * t.scale
+            let transformed = SIMD2(c * p.x - sinA * p.y, sinA * p.x + c * p.y) + t.offset
+            return transformed.min() >= -0.0001 && transformed.max() <= 1.0001
+          }
+          let topFaces = parts.contains { part in
+            guard let indices = part.triangleIndices?.elements else { return false }
+            let points = part.positions.elements
+            return stride(from: 0, to: indices.count, by: 3).contains { i in
+              let a = points[Int(indices[i])], b = points[Int(indices[i+1])], c = points[Int(indices[i+2])]
+              return simd_cross(b - a, c - a).y > 0.000001
+            }
+          }
+          checks[key] = material.color.texture != nil && !uvs.isEmpty && filled && topFaces
+            && rug.scale.min() > 0 && model.findEntity(named: "custom-photo") == nil
+        } } } }
+      }
+      for kind in [FurnitureKind.bed, .floor] {
+        var item = RoomItemState(id: UUID(), kind: kind, x: 0, z: 0); item.photoData = data
+        let model = await SceneFactory.furniture(item, onFloor: true, cozy: true, cutaway: true)
+        checks["\(kind)_photo_has_no_floating_plane"] = model.findEntity(named: "custom-photo") == nil
+        let name = kind == .bed ? "duvet" : "floor"
+        checks["\(kind)_surface_has_photo"] = (model.findEntity(named: name)?.components[ModelComponent.self]?.materials.first as? UnlitMaterial)?.color.texture != nil
+        if kind == .bed { checks["bed_no_wood_frame"] = model.findEntity(named: "frame") == nil && model.findEntity(named: "headboard") == nil }
+      }
+      for shape in [DollShape.cat, .bear, .rabbit] {
+        var configuration = PresetConfiguration(); configuration.shape = shape
+        let baseline = await PresetDollModel.make(configuration, detail: .room)
+        let head0 = baseline.findEntity(named: "head")!, ears0 = baseline.findEntity(named: "ears")!
+        let relativeEars = (ears0.position - head0.position) / head0.scale
+        for size: Float in [0.6, 1.4] {
+          configuration.parts["head"] = .init(width: size, size: size, length: size, offset: 0.2)
+          configuration.parts["torso"] = .init(width: 2 - size, size: 2 - size, length: 2 - size)
+          for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
+            configuration.parts[part.rawValue] = .init(width: size, size: size, length: size)
+          }
+          let model = await PresetDollModel.make(configuration, detail: .room)
+          let head = model.findEntity(named: "head")!, ears = model.findEntity(named: "ears")!
+          checks["ears_follow_head_\(shape)_\(size)"] = simd_distance(relativeEars, (ears.position - head.position) / head.scale) < 0.0001
+          let torso = model.findEntity(named: "torso")!.visualBounds(relativeTo: model)
+          for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
+            let limb = model.findEntity(named: part.rawValue)!.visualBounds(relativeTo: model)
+            let overlap = simd_min(torso.max, limb.max) - simd_max(torso.min, limb.min)
+            checks["limb_attached_\(shape)_\(part)_\(size)"] = overlap.min() > 0
+          }
+        }
+      }
+      checks["catalog_excludes_flower_cushion"] = !FurnitureKind.catalog.contains(.flowerCushion)
       let day = RoomDaylight.at(hour: 12)
       let night = RoomDaylight.at(hour: 23)
       let sunset = RoomDaylight.at(hour: 18)
@@ -131,7 +261,7 @@
       let couch = CouchSession(library: CouchLibrary(defaults: couchDefaults))
       let secondDoll = Doll(name: "두 번째", shape: .bear, filling: .fluffy, imageData: data)
       couch.dolls = [doll.state, secondDoll.state]
-      checks["couch_keeps_one_companion"] = couch.dolls.map(\.id) == [doll.id]
+      checks["couch_keeps_two_companions"] = couch.dolls.map(\.id) == [doll.id, secondDoll.id]
       couch.dolls = [secondDoll.state]
       checks["couch_replaces_companion"] = couch.dolls.map(\.id) == [secondDoll.id]
       couch.dolls = []
@@ -181,6 +311,7 @@
       let player = AmbientPlayer()
       for sound in AmbientSound.allCases {
         player.start(sound, minutes: 30)
+        await player.waitForPlayback()
         checks["audio_\(sound.rawValue)"] =
           player.isPlaying && player.sound == sound && player.remaining()! > 1790
       }
@@ -188,6 +319,7 @@
       let remaining = player.remaining()
       checks["audio_pause"] = !player.isPlaying && player.sound != nil && remaining != nil
       player.resume()
+      await player.waitForPlayback()
       checks["audio_resume"] = player.isPlaying
       player.setTimer(nil)
       checks["audio_continuous"] = player.remaining() == nil
@@ -197,7 +329,58 @@
       checks["audio_timer_minimum_duration"] = player.isPlaying && (player.remaining() ?? 0) > 59
       player.start(.rain, minutes: 15)
       player.stop()
+      await player.waitForPlayback()
       checks["audio_stop_clears_state"] = player.sound == nil && player.endDate == nil
+      player.start(.rain, minutes: 15)
+      player.start(.fire, minutes: 30)
+      await player.waitForPlayback()
+      checks["audio_latest_request_wins"] = player.sound == .fire && player.isPlaying
+      player.pause()
+      let pausedRemaining = player.remaining()
+      player.changeSound(.wave)
+      await player.waitForPlayback()
+      checks["audio_change_retains_pause_and_timer"] = !player.isPlaying && player.sound == .wave && player.remaining() == pausedRemaining
+      player.start(.forest, minutes: 15)
+      player.stop()
+      try? await Task.sleep(for: .milliseconds(350))
+      checks["audio_pending_start_cannot_resurrect_after_stop"] = player.sound == nil && !player.isPlaying
+      let preferencesName = "feedback-audit-" + UUID().uuidString
+      let preferences = UserDefaults(suiteName: preferencesName)!
+      var appleName = PersonNameComponents(); appleName.givenName = "나연"; appleName.familyName = "이"
+      AppleAccount.setInitialNickname(appleName, defaults: preferences)
+      checks["apple_first_login_uses_supplied_name"] = preferences.string(forKey: "nickname") == PersonNameComponentsFormatter.localizedString(from: appleName, style: .default)
+      preferences.set("내 닉네임", forKey: "nickname")
+      AppleAccount.setInitialNickname(appleName, defaults: preferences)
+      checks["apple_repeat_login_preserves_edited_name"] = preferences.string(forKey: "nickname") == "내 닉네임"
+      preferences.removeObject(forKey: "nickname")
+      AppleAccount.setInitialNickname(nil, defaults: preferences)
+      checks["apple_missing_name_does_not_invent_name"] = preferences.string(forKey: "nickname") == nil
+      preferences.removePersistentDomain(forName: preferencesName)
+      let entrance = RoomEntrance(.home)
+      entrance.beginArrival(of: Doll.sample.state)
+      checks["new_doll_arrival_uses_icon"] = entrance.loadingDoll == nil
+      entrance.chooseLoadingDoll(from: [Doll.sample])
+      checks["existing_dolls_use_icon"] = entrance.loadingDoll == nil
+      checks["ar_rear_disables_light_estimation"] = !ARCaptureConfiguration.make(front: false).isLightEstimationEnabled
+      checks["expanded_floor_accepts_visible_foreground"] = RoomLayout.clampedToFloor([1.75, 1.75]) == SIMD2<Float>(1.75, 1.75)
+      checks["expanded_floor_keeps_back_walls_solid"] = RoomLayout.clampedToFloor([-3, -3]).x >= -0.91
+      checks["expanded_floor_has_outer_boundary"] = RoomLayout.clampedToFloor([8, 8]).x <= 2.01
+      if let originalDesk = room.first(where: { $0.kind == .desk }),
+         let originalLamp = room.first(where: { RoomLayout.lampSupport(for: $0, in: room)?.id == originalDesk.id }) {
+        for (index, angle) in [Float(0), .pi / 2, .pi, -.pi / 2].enumerated() {
+          for mirrored in [false, true] {
+            var moved = originalDesk
+            moved.x += 1.4; moved.z += 1.2; moved.yaw = angle; moved.isMirrored = mirrored
+            let attachments = RoomLayout.carriedItems(from: originalDesk, to: moved, in: room)
+            let candidate = room.map { value in attachments.first { $0.id == value.id } ?? (value.id == moved.id ? moved : value) }
+            let key = "desk_carries_lamp_\(index)_\(mirrored)"
+            let lamp = attachments.first { $0.id == originalLamp.id }
+            checks[key + "_retains_support"] = lamp.map { RoomLayout.lampSupport(for: $0, in: candidate)?.id == moved.id } ?? false
+            let roundtrip = RoomLayout.carriedItems(from: moved, to: originalDesk, in: candidate).first { $0.id == originalLamp.id }
+            checks[key + "_roundtrip_position"] = roundtrip.map { simd_distance(SIMD2($0.x, $0.z), SIMD2(originalLamp.x, originalLamp.z)) < 0.001 } ?? false
+          }
+        }
+      } else { checks["desk_lamp_fixture"] = false }
       let result: [String: Any] = ["passed": checks.values.allSatisfy { $0 }, "checks": checks]
       if let json = try? JSONSerialization.data(
         withJSONObject: result, options: [.prettyPrinted, .sortedKeys])

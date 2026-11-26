@@ -32,7 +32,7 @@ final class RoomDollWander {
             // Sitting companions must not wander into the reserved sleeping area.
             if support?.kind == .bed { continue }
             let elevated = support.flatMap { ($0.kind.seatHeight ?? 0) > 0.02 ? $0 : nil }
-            var boundary = elevated.map(box) ?? .init(center: .zero, half: [1, 1])
+            var boundary = elevated.map(box) ?? .init(center: RoomLayout.dollFloorCenter, half: RoomLayout.dollFloorHalf)
             if let elevated, elevated.kind == .bed || elevated.kind == .chair || elevated.kind == .sofa {
                 // Keep clear of pillows and the backrest as well as the outer edge.
                 let inset: Float = elevated.kind == .bed ? 0.12 : 0.05

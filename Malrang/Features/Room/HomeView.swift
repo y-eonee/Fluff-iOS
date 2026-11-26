@@ -10,12 +10,14 @@ struct HomeView: View {
     @Query(sort: \Doll.createdAt) private var dolls: [Doll]
     @Query(sort: \RoomItem.createdAt) private var items: [RoomItem]
     @State private var isCreating = false
+    #if DEBUG
+    @State private var dragAuditResult = ""
+    #endif
     @State private var isConfirmingPlacementExit = false
     @State private var isFocusing = false
     @State private var deskPoint: CGPoint?
     @State private var focusBackground: UIImage?
     @State private var openingFocus = false
-    @State private var lastLookTranslation = CGSize.zero
     @State private var pendingDoll: Doll?
     @State private var isDecorating = false
     /// 배치 모드일 때 시작 위치. 취소하면 여기로 되돌린다. nil이면 배치 모드가 아니다.
@@ -26,22 +28,32 @@ struct HomeView: View {
     @State private var placementAddedID: UUID?
     @State private var isPlacementSaveFailed = false
     @AppStorage("hapticOn") private var hapticOn = true
+    @AppStorage("didRestoreBackWallDesk20261124") private var didRestoreBackWallDesk = false
     @State private var feelCount = 0
     @State private var hold: RoomSceneView.Hold?
     @State private var removalTargetFrame = CGRect.zero
     @State private var toast: Toast?
-    @State private var isSceneReady = false
+    @State private var sceneReadiness = RoomSceneReadiness()
+    private var isSceneReady: Bool { sceneReadiness.isReady }
     @State private var furnitureRects: [String: CGRect] = [:]
     @State private var furnitureMenu: RoomItem?
+    @State private var dollMenu: Doll?
+    @State private var dancingDoll: Doll?
+    @State private var homeDance: HomeDollDance?
+    @State private var dollPopupAnchor = CGRect.zero
+    @State private var dollARDoll: Doll?
     @State private var travelingDollID: UUID?
     @State private var furnitureChoice: FurnitureChoice?
     @State private var blockedPlacement: FurnitureKind?
+    @State private var blockedDollRect: CGRect?
     @State private var windowSelection: [DollState] = []
     @State private var showingWindow = false
     @State private var showingSound = false
     @State private var couch: CouchSession
     @State private var showingCouch = false
     @State private var pendingCouch = false
+    @State private var pendingSound = false
+    @State private var soundSelection: [DollState] = []
     @Environment(\.scenePhase) private var scenePhase
     @State private var frameARDoll: Doll?
     @State private var frameTarget: RoomItem?
@@ -52,13 +64,38 @@ struct HomeView: View {
     @State private var interactionError: String?
     @AppStorage("didSeeFurnitureGuideV2") private var didSeeFurnitureGuide = false
     @AppStorage("usedFurnitureActions") private var usedFurnitureActions = ""
-    private enum FurnitureChoice: String, Identifiable { case window, sleep, frame, couch; var id: String { rawValue } }
+    private enum FurnitureChoice: String, Identifiable { case window, sleep, frame, couch, rest, sound; var id: String { rawValue } }
     private var sleeper: Doll? { placedDolls.first { $0.restingBedID != nil } }
     private var hintName: String? { ["책상", "창문", "침대", "액자"].first { furnitureRects[$0] != nil && !usedFurnitureActions.split(separator:",").contains(Substring($0)) } }
 
 
     init(couch: CouchSession? = nil) {
         _couch = State(initialValue: couch ?? CouchSession())
+    }
+
+    /// One-time correction requested for an already saved room. Later user edits
+    /// remain untouched; entering the editor never reapplies this restoration.
+    private func restoreBackWallDeskIfNeeded() {
+        guard !didRestoreBackWallDesk, let desk = items.first(where: { $0.kind == .desk }) else { return }
+        let before = items.map(\.state)
+        let oldDesk = desk.state
+        let supportedLamps = items.filter { RoomLayout.lampSupport(for: $0.state, in: before)?.id == desk.id }
+        let oldRotation = simd_quatf(angle: oldDesk.yaw, axis: [0, 1, 0])
+        for lamp in supportedLamps {
+            let local = oldRotation.inverse.act(SIMD3<Float>(Float(lamp.x) - oldDesk.x, 0, Float(lamp.z) - oldDesk.z))
+            lamp.x = 0.25 + Double(local.x)
+            lamp.z = -0.68 + Double(local.z)
+        }
+        desk.x = 0.25; desk.z = -0.68; desk.yaw = 0
+        do {
+            try modelContext.save()
+            didRestoreBackWallDesk = true
+        } catch {
+            for item in items {
+                if let original = before.first(where: { $0.id == item.id }) { item.restore(original) }
+            }
+            interactionError = "책상 위치를 복원하지 못했어요. 다시 시도해 주세요."
+        }
     }
 
     private struct Toast: Equatable {
@@ -69,19 +106,27 @@ struct HomeView: View {
     }
 
     private var placedDolls: [Doll] { dolls.filter(\.isPlaced) }
+    private var showsRoomScene: Bool {
+        scenePhase == .active && appState.tab == .home && !appState.isShowingAR && !isCreating && !isFocusing
+            && !isDecorating && !showingWindow && !showingSound && !showingCouch
+    }
     private var roomDolls: [DollState] {
-        placedDolls.map { doll in
+        let sitting = placementStart == nil && (couch.current != nil || couch.resting)
+        let sofa = items.first { $0.id == couch.sofaID && $0.kind == .sofa }
+        let companions = couch.dolls
+        return placedDolls.map { doll -> DollState in
             var state = doll.state
             if let position = placementPositions[doll.id] { state.position = position }
-            if placementStart == nil, (couch.current != nil || couch.resting), doll.restingBedID == nil,
-               let index = couch.dolls.firstIndex(where: { $0.id == doll.id }),
-               let sofa = items.first(where: { $0.id == couch.sofaID && $0.kind == .sofa }) {
-                let offset = simd_act(simd_quatf(angle: Float(sofa.yaw), axis: [0, 1, 0]),
-                                     SIMD3<Float>((Float(index) - Float(couch.dolls.count - 1) / 2) * 0.22, 0, 0.06))
-                state.position = SIMD3<Float>(Float(sofa.x), sofa.kind.seatHeight ?? 0.16, Float(sofa.z)) + offset
-                state.dance = nil
-                state.couchCompanionScale = 1
-            }
+            if dancingDoll?.id == doll.id { state.dance = homeDance?.move }
+            guard sitting, doll.restingBedID == nil, let sofa,
+                  let index = companions.firstIndex(where: { $0.id == doll.id }) else { return state }
+            let seatX: Float = (Float(index) - Float(companions.count - 1) / 2) * 0.30
+            let rotation = simd_quatf(angle: Float(sofa.yaw), axis: SIMD3<Float>(0, 1, 0))
+            let offset = rotation.act(SIMD3<Float>(seatX, 0, 0.06))
+            let center = SIMD3<Float>(Float(sofa.x), sofa.kind.seatHeight ?? 0.16, Float(sofa.z))
+            state.position = center + offset
+            state.dance = nil
+            state.couchCompanionScale = companions.count > 1 ? Float(0.72) : Float(1)
             return state
         }
     }
@@ -107,6 +152,7 @@ struct HomeView: View {
                 do { try await Task.sleep(for: .seconds(3)) } catch { return }
                 interactionMessage = nil
             }
+            .onChange(of: items.map(\.id), initial: true) { _, _ in restoreBackWallDeskIfNeeded() }
             .task(id: items.map(\.state)) {
                 if !isDecorating { relocateBlockedDolls() }
             }
@@ -122,7 +168,7 @@ struct HomeView: View {
             .toolbar(.hidden, for: .navigationBar)
             .toolbar(.hidden, for: .tabBar)
             .preference(key: AppTabBarHiddenPreference.self,
-                        value: (!didSeeFurnitureGuide && appState.roomEntrance.finished) || showGuide || placementStart != nil || hold != nil || isDecorating)
+                        value: (!didSeeFurnitureGuide && appState.roomEntrance.finished) || showGuide || placementStart != nil || hold != nil || isDecorating || dancingDoll != nil)
             .navigationDestination(isPresented: $isDecorating) {
                 DecorateView()
             }
@@ -135,6 +181,7 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $isCreating, onDismiss: {
                 if let doll = pendingDoll {
                     pendingDoll = nil
+                    appState.newlyCreatedDollID = doll.id
                     place(doll)
                 }
             }) {
@@ -161,6 +208,13 @@ struct HomeView: View {
             .sensoryFeedback(.success, trigger: toast?.message)
             .sensoryFeedback(trigger: feelCount) { _, _ in hapticOn ? .impact(weight: .heavy) : nil }
         }
+        .sheet(isPresented: Binding(get: { dancingDoll != nil }, set: { if !$0 { dismissDollPopup() } }), onDismiss: dismissDollPopup) {
+            HomeDollDancePicker(selection: $homeDance, onClose: dismissDollPopup)
+                .presentationDetents([.height(160)])
+                .presentationDragIndicator(.visible)
+                .presentationBackgroundInteraction(.enabled)
+                .presentationBackground(.white)
+        }
     }
 
     private func sceneReady() async {
@@ -178,6 +232,7 @@ struct HomeView: View {
                         report.append(dolls.allSatisfy(\.isPlaced) ? "PASS: undo restores room membership" : "FAIL: undo")
                     }
                     let text = report.joined(separator: "\n")
+                    dragAuditResult = text
                     print(text)
                     try? text.write(to: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("home-drag-audit.txt"), atomically: true, encoding: .utf8)
                 }
@@ -195,13 +250,18 @@ struct HomeView: View {
                     }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=placement") {
                         showGuide = false; beginPlacement()
-                        if ProcessInfo.processInfo.arguments.contains("--blocked-preview") { blockedPlacement = .desk }
+                        lastMovedID = placedDolls.first(where: { $0.presetConfiguration?.shape == .cat })?.id ?? placedDolls.first?.id
+                        if ProcessInfo.processInfo.arguments.contains("--blocked-preview") {
+                            blockedPlacement = .bed
+                            blockedDollRect = lastMovedID.flatMap { roomPlacement.screenRect(of: $0, bodyOnly: true) }
+                        }
                         if ProcessInfo.processInfo.arguments.contains("--placement-exit-preview") { isConfirmingPlacementExit = true }
                     }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=couch-choice") { showGuide=false; furnitureChoice = .couch }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=sofa") { showGuide=false;furnitureMenu=items.first { $0.kind == .sofa } }
                     else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=focus") { showGuide=false; openFocus() }
-                    else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=sound") { showGuide=false;showingSound=true }
+                    else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=sound-choice") { showGuide=false; furnitureChoice = .sound }
+                    else if ProcessInfo.processInfo.arguments.contains("--furniture-preview=sound") { showGuide=false; soundSelection = Array(placedDolls.prefix(1)).map(\.state); showingSound=true }
                 }
                 #endif
     }
@@ -212,34 +272,38 @@ struct HomeView: View {
             RoomLoadingBackdrop(entrance: appState.roomEntrance)
             Group {
                 // 3D 화면 두 개를 동시에 그리면 위에 뜬 쪽이 그려지지 않아서, AR이나 다른 3D 화면을 쓰는 동안 방을 내린다.
-                if appState.tab != .home || appState.isShowingAR || isCreating || isFocusing || isDecorating || showingWindow || showingSound || showingCouch {
+                if !showsRoomScene {
                     Color.app.background
                 } else {
                     RoomSceneView(
                         items: items.map(\.state),
                         dolls: roomDolls,
                         mode: .home,
+                        onTapDoll: openDollMenu,
                         canMoveDolls: placementStart != nil,
-                        canLongPressDolls: !showGuide && furnitureMenu == nil && travelingDollID == nil,
+                        canLongPressDolls: !showGuide && furnitureMenu == nil && dollMenu == nil && dancingDoll == nil && travelingDollID == nil,
                         dollRemovalTarget: placementStart == nil ? removalTargetFrame : .zero,
                         onDropDoll: dropDoll,
                         onCannotMoveDoll: { interactionMessage = "잠든 인형은 침대에서 깨운 뒤 옮겨 주세요" },
-                        allowsDollWandering: appState.roomEntrance.finished && !openingFocus && furnitureMenu == nil && !showGuide && !appState.roomToolsOpen && !ProcessInfo.processInfo.arguments.contains("--home-drag-audit"),
+                        allowsDollWandering: appState.roomEntrance.finished && !openingFocus && furnitureMenu == nil && dollMenu == nil && dancingDoll == nil && !showGuide && !appState.roomToolsOpen && !ProcessInfo.processInfo.arguments.contains("--home-drag-audit") && !ProcessInfo.processInfo.arguments.contains("--ui-testing"),
                         movingDollID: lastMovedID,
                         placement: roomPlacement,
                         onPickDoll: { lastMovedID = $0 },
                         onHoldDoll: { value in
                             if hold == nil, value != nil {
-                                toast = nil; showFurnitureHint = false
+                                toast = nil; interactionMessage = nil; showFurnitureHint = false
                                 if let value, couch.dolls.contains(where: { $0.id == value.id }) { couch.stop() }
                             }
                             hold = value
-                            if value == nil { blockedPlacement = nil; removalTargetFrame = .zero }
+                            if value == nil {
+                                if placementStart == nil { blockedPlacement = nil; blockedDollRect = nil }
+                                removalTargetFrame = .zero
+                            }
                         },
                         onMoveDoll: moveDoll,
                         onBlockedPlacement: {
                             blockedPlacement = $0
-                            if placementStart == nil, let kind = $0 { interactionMessage = "\(kind.label)에는 이동시킬 수 없어요" }
+                            blockedDollRect = $0 == nil ? nil : lastMovedID.flatMap { roomPlacement.screenRect(of: $0, bodyOnly: true) }
                         },
                         onDoubleTapItem: { id in
                             guard placementStart == nil, let item = items.first(where: { $0.id == id }) else { return }
@@ -259,44 +323,34 @@ struct HomeView: View {
                             travelingDollID = nil
                             if let doll = placedDolls.first(where: { $0.id == id }) { interactionMessage = doll.restingBedID == nil ? "\(doll.name.josa("이", "가")) 자리로 돌아왔어요" : "\(doll.name.josa("이", "가")) 잠들었어요" }
                         },
-                        onSceneReady: { isSceneReady = true },
+                        readiness: sceneReadiness,
                         onDeskScreen: { deskPoint = $0 },
                         onFurnitureScreen: { furnitureRects = $0 },
                         entrance: appState.roomEntrance
                     )
-                    .renderedOnlyWhileVisible(background: .clear)
+                    // showsRoomScene owns this renderer's lifetime. A second onAppear/
+                    // onDisappear gate can retain false when a cached tab returns.
+                    .padding(.bottom, dancingDoll == nil ? 0 : 152)
                 }
             }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 8)
-                    .onChanged { value in
-                        let previous = lastLookTranslation
-                        lastLookTranslation = value.translation
-                        roomPlacement.look(by: CGSize(width: value.translation.width - previous.width,
-                                                      height: value.translation.height - previous.height))
-                    }
-                    .onEnded { _ in lastLookTranslation = .zero },
-                including: placementStart == nil ? .all : .none
-            )
-            .overlay { holdTooltip }
+            .overlay {
+                if placementStart != nil, blockedPlacement != nil, let rect = blockedDollRect {
+                    Ellipse().stroke(Color.red.opacity(0.54), lineWidth: 12)
+                        .blur(radius: 14)
+                        .frame(width: rect.width, height: rect.height)
+                        .position(x: rect.midX, y: rect.midY + 9)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                }
+            }
             .ignoresSafeArea()
         }
-        .overlay(alignment: .top) { if !showGuide { topOverlay.modifier(RoomEntranceMotion(entrance: appState.roomEntrance, node: "6458")) } }
+        .overlay(alignment: .top) { if !showGuide { topOverlay.modifier(RoomEntranceMotion(entrance: appState.roomEntrance, node: appState.roomEntrance.loadingDoll == nil ? "1932:6512" : "1913:7875")) } }
         .overlay {
             ZStack {
-                if !isSceneReady, !appState.isShowingAR, appState.roomEntrance.finished {
-                    VStack(spacing: Spacing.s) {
-                        ProgressView().tint(Color.a.brown)
-                        Text("포근한 방을 준비하고 있어요").appFont(.footnote)
-                    }
-                    .foregroundStyle(Color.a.brown)
-                    .padding(Spacing.l)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.card))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.card).strokeBorder(CozyHomeStyle.glassHighlight))
-                    .modifier(RoomReveal(distance: 4))
-                    .transition(RoomMotion.reveal(reduceMotion: reduceMotion))
+                if showsRoomScene, !isSceneReady, appState.roomEntrance.finished {
+                    RoomLoadingView(entrance: appState.roomEntrance, waitsForScene: true)
                 }
-            }.animation(RoomMotion.response(reduceMotion: reduceMotion), value: isSceneReady)
+            }
         }
         .overlay {
             if appState.roomToolsOpen && placementStart == nil && hold == nil && !showGuide {
@@ -315,13 +369,14 @@ struct HomeView: View {
         }
         .animation(RoomMotion.response(reduceMotion: reduceMotion), value: appState.roomToolsOpen)
         .onChange(of: appState.roomToolsOpen) { _, open in
-            if open { showFurnitureHint = false; showGuide = false; furnitureMenu = nil }
+            if open { showFurnitureHint = false; showGuide = false; furnitureMenu = nil; dismissDollPopup() }
         }
         .onChange(of: placementStart != nil || hold != nil || showGuide) { _, unavailable in
-            if unavailable { appState.roomToolsOpen = false }
+            if unavailable { appState.roomToolsOpen = false; furnitureMenu = nil; dismissDollPopup() }
         }
         .safeAreaInset(edge: .bottom) { bottomBar.accessibilityHidden(showGuide) }
         .overlay { if !appState.roomToolsOpen { furnitureOverlays } }
+        .overlay { dollOverlays }
         .overlay(alignment: .bottom) {
             if showGuide {
                 Button("확인했어요") {
@@ -337,16 +392,22 @@ struct HomeView: View {
         .overlay(alignment: .bottom) { removalTarget }
         .overlay {
             if couch.current != nil, !couch.choosing, !showingCouch, appState.tab == .home, placementStart == nil,
-               !isFocusing, !showingSound, !showingWindow, !isCreating, !isDecorating, !showGuide, !appState.isShowingAR, furnitureChoice == nil {
+               !isFocusing, !showingSound, !showingWindow, !isCreating, !isDecorating, !showGuide, !appState.isShowingAR, furnitureChoice == nil, furnitureMenu == nil, dollMenu == nil, dancingDoll == nil {
                 GeometryReader { geometry in
                     CouchMiniPlayer(session: couch) { showingCouch = true }
-                        .frame(width: 200.034, height: 111.873)
-                        .position(x: geometry.size.width * 238.117 / 390, y: geometry.size.height * 460.7565 / 844)
+                        .frame(width: max(200, geometry.size.width - 44), height: 200)
+                        .position(x: geometry.size.width / 2, y: 294)
                     CouchMiniControls(session: couch) { showingCouch = true }
-                        .frame(width: 171, height: 48).position(x: 107.5, y: 156)
+                        .frame(width: min(geometry.size.width - 44, 286), height: 52)
+                        .position(x: geometry.size.width / 2, y: 156)
                 }.ignoresSafeArea()
             }
         }
+        #if DEBUG
+        .overlay(alignment: .topLeading) {
+            if !dragAuditResult.isEmpty { Text("동작 검사 완료").font(.caption2).accessibilityIdentifier("home-drag-result").accessibilityValue(dragAuditResult) }
+        }
+        #endif
         .allowsHitTesting(!isConfirmingPlacementExit)
         .accessibilityHidden(isConfirmingPlacementExit)
         .overlay {
@@ -366,8 +427,10 @@ struct HomeView: View {
         .onChange(of: showingWindow) { wasShowing, showing in
             if !wasShowing, showing { DollActivityRecorder.record(.window, ids: windowSelection.map(\.id), in: modelContext) }
         }
-        .onChange(of: appState.tab) { _, tab in if tab != .home { couch.player.pause() } }
-        .onChange(of: isFocusing || showingSound || showingWindow || isCreating || isDecorating || appState.isShowingAR || placementStart != nil || furnitureChoice != nil || showGuide) { _, hidden in
+        .onChange(of: appState.tab) { _, tab in
+            if tab != .home { couch.player.pause(); furnitureMenu = nil; dismissDollPopup() }
+        }
+        .onChange(of: isFocusing || showingSound || showingWindow || isCreating || isDecorating || appState.isShowingAR || placementStart != nil || furnitureChoice != nil || showGuide || showingCouch || furnitureMenu != nil || dollMenu != nil || dancingDoll != nil) { _, hidden in
             if hidden { couch.player.pause() }
         }
         .sheet(item: Binding(get: { furnitureChoice == .couch ? nil : furnitureChoice },
@@ -401,14 +464,18 @@ struct HomeView: View {
                 interactionMessage = "촬영한 사진을 액자에 넣었어요"
             })
         }
+        .fullScreenCover(item: $dollARDoll, onDismiss: { appState.isShowingAR = false }) { doll in
+            ARCaptureView(doll: doll)
+        }
         .fullScreenCover(isPresented: $showingSound) {
-            AmbientSoundView(dolls: soundCompanions)
+            AmbientSoundView(dolls: soundSelection)
         }
     }
 
     private func finishFurnitureChoice() {
         if !windowSelection.isEmpty { showingWindow = true }
         if pendingCouch { pendingCouch = false; showingCouch = true }
+        if pendingSound { pendingSound = false; showingSound = true }
         if let doll = pendingFrameDoll {
             pendingFrameDoll = nil
             appState.isShowingAR = true
@@ -417,16 +484,22 @@ struct HomeView: View {
     }
 
     private func furnitureChoiceContent(_ choice: FurnitureChoice) -> some View {
-        let forCouch = choice == .couch
-        return DollChoiceSheet(dolls: choice == .frame ? dolls : ((choice == .window || forCouch) ? placedDolls.filter { $0.restingBedID == nil } : placedDolls), multiple: choice == .window,
-                               title: forCouch ? "같이 볼 인형" : choice == .frame ? "누구와 사진을 찍을까요?" : nil,
-                               subtitle: forCouch ? "함께 볼 인형 1개를 골라주세요" : choice == .frame ? "함께 찍은 사진을 이 액자에 넣어요" : nil,
-                               actionTitle: forCouch ? "다음" : choice == .frame ? "AR 카메라 열기" : nil,
-                               maximumSelection: forCouch ? 1 : nil, sourceLayout: forCouch) { chosen in
+        let forCouch = choice == .couch || choice == .rest
+        let available = choice == .frame || choice == .sound ? dolls : placedDolls.filter { $0.restingBedID == nil }
+        let title = choice == .couch ? "같이 볼 인형" : choice == .rest ? "같이 쉴 인형" : choice == .sound ? "같이 들을 인형" : choice == .frame ? "누구와 사진을 찍을까요?" : nil
+        let subtitle = forCouch ? "소파에는 최대 2명까지 앉을 수 있어요" : choice == .sound ? "함께 ASMR을 들을 인형을 골라 주세요" : choice == .frame ? "함께 찍은 사진을 이 액자에 넣어요" : nil
+        let action = choice == .couch ? "다음" : choice == .rest ? "함께 쉬기" : choice == .sound ? "소리 고르기" : choice == .frame ? "AR 카메라 열기" : nil
+        return DollChoiceSheet(dolls: available, multiple: choice == .window || forCouch,
+                               title: title, subtitle: subtitle, actionTitle: action,
+                               maximumSelection: forCouch ? 2 : nil, sourceLayout: choice == .couch) { chosen in
             if forCouch {
-                couch.stop(); couch.dolls = Array(chosen.prefix(1)).map(\.state)
-                pendingCouch = true
-            } else if choice == .window { windowSelection = chosen.map(\.state) }
+                couch.stop(); couch.dolls = Array(chosen.prefix(2)).map(\.state)
+                if choice == .rest {
+                    couch.resting = true
+                    DollActivityRecorder.record(.sofa, ids: chosen.map(\.id), in: modelContext)
+                } else { pendingCouch = true }
+            } else if choice == .sound { soundSelection = chosen.map(\.state); pendingSound = true }
+            else if choice == .window { windowSelection = chosen.map(\.state) }
             else if choice == .frame { pendingFrameDoll = chosen.first }
             else if let doll = chosen.first { putToBed(doll) }
         }
@@ -473,7 +546,7 @@ struct HomeView: View {
                 HStack(spacing: 10) {
                     Image("home_logo_icon").accessibilityHidden(true)
                     Text("my room").notCliche(25.397, relativeTo: .title).tracking(-1.778)
-                        .foregroundStyle(couch.current == nil ? Color.rep4.c01 : Color.rep4.c10)
+                        .foregroundStyle(Color.white)
                 }.frame(height: 44)
                 AmbientMiniPlayer { showingSound = true }
             }
@@ -484,9 +557,9 @@ struct HomeView: View {
 
     private var roomActions: some View {
         VStack(alignment: .trailing, spacing: 12) {
-            roomAction("인형 만들기", icon: "doll") { isCreating = true }
+            roomAction("인형 만들기", icon: "doll") { if dolls.count < 30 { isCreating = true } else { interactionMessage = "인형은 30개까지 만들 수 있어요" } }
             roomAction("방 꾸미기", icon: "bed") { isDecorating = true }
-            roomAction("ASMR", icon: nil) { showingSound = true }
+            roomAction("ASMR", icon: nil) { furnitureChoice = .sound }
         }.modifier(RoomReveal())
             .transition(RoomMotion.reveal(reduceMotion: reduceMotion, anchor: .bottomTrailing))
             .accessibilityElement(children: .contain)
@@ -520,23 +593,11 @@ struct HomeView: View {
                         .disabled(isConfirmingPlacementExit).accessibilityHidden(isConfirmingPlacementExit)
                     Spacer()
                 }.padding(.horizontal, 23.81)
-                Text(blockedPlacement.map { "\($0.label)에는 이동시킬 수 없어요" } ?? "인형을 끌거나 놓을 자리를 눌러요")
-                    .pretendard(.medium, 13).foregroundStyle(Color.mib.text.onPrimary)
-                    .multilineTextAlignment(.center).frame(width: 280, height: 34)
-                    .background {
-                        Group {
-                            if blockedPlacement == nil {
-                                LinearGradient(colors: [Color(uiColor: Palette.uiColor("#525252")).opacity(0.58), Color(uiColor: Palette.uiColor("#696969")).opacity(0.58)], startPoint: .top, endPoint: .bottom)
-                            } else { Color(uiColor: Palette.uiColor("#AD4141")).opacity(0.77) }
-                        }.clipShape(RoundedRectangle(cornerRadius: 15))
-                    }
-                    .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(blockedPlacement == nil ? Color.clear : Color.white))
-                    .offset(x: 3.9).opacity(isConfirmingPlacementExit ? 0 : 1)
-                    .accessibilityAddTraits(.updatesFrequently)
-            }.padding(.top, 11.73)
+                placementToast.padding(.top, 14)
+                    .opacity(isConfirmingPlacementExit ? 0 : 1)
+            }.padding(.top, 14.73)
         } else if hold != nil {
-            HintCapsule(text: blockedPlacement.map { "\($0.label)에는 이동시킬 수 없어요" } ?? "끌어서 옮기고, 아래 휴지통에 놓으면 보관해요")
-                .padding(.horizontal, 22).padding(.top, 8)
+            placementToast.padding(.top, 8)
         } else if let toast {
             HStack(spacing: Spacing.s) {
                 Text(toast.message)
@@ -552,16 +613,12 @@ struct HomeView: View {
         }
     }
 
-    /// 인형을 든 동안 머리 위를 따라다니며 어디에 놓일지 알려준다.
-    @ViewBuilder
-    private var holdTooltip: some View {
-        if let hold, !hold.isOverRemovalTarget {
-            let seat = RoomLayout.seat(at: [hold.position.x, hold.position.z], in: items.map(\.state)).item
-            HintCapsule(text: blockedPlacement.map { "\($0.label)에는 이동시킬 수 없어요" } ?? "옮기는 중 · \(seat?.kind.label ?? "바닥")")
-                .fixedSize()
-                .position(x: hold.screen.x, y: hold.screen.y)
-                .allowsHitTesting(false)
-        }
+    private var placementToast: some View {
+        Text(blockedPlacement.map { "\($0.label) 위에는 인형을 놓을 수 없어요" } ?? "인형을 끌거나 놓을 자리를 눌러요")
+            .pretendard(.medium, 13).foregroundStyle(.white)
+            .frame(width: 284, height: 32)
+            .background(Color(uiColor: Palette.uiColor(blockedPlacement == nil ? "#181818" : "#B55B6C")), in: RoundedRectangle(cornerRadius: 16))
+            .accessibilityIdentifier("doll-placement-toast")
     }
 
     @ViewBuilder
@@ -569,14 +626,21 @@ struct HomeView: View {
         if placementStart != nil {
             HStack(spacing: 12) {
                 Button("취소", action: cancelPlacement).buttonStyle(CreationSecondaryButton())
-                Button("완료", action: finishPlacement).buttonStyle(CreationPrimaryButton()).disabled(blockedPlacement != nil)
-            }.padding(.horizontal, 18).padding(.bottom, 16)
+                Button("완료", action: finishPlacement).buttonStyle(.plain)
+                    .modifier(RepresentativeActionSurface(primaryFill: LinearGradient(stops: [
+                        .init(color: Color(uiColor: Palette.uiColor("#121212")), location: 0.32171),
+                        .init(color: Color(uiColor: Palette.uiColor("#212226")), location: 0.97364)
+                    ], startPoint: .top, endPoint: .bottom)))
+                    .disabled(blockedPlacement != nil)
+            }.environment(\.updatedFlowDesign, true)
+                .padding(.horizontal, 18).padding(.bottom, 16)
         }
     }
 
     private func beginPlacement() {
         guard placementStart == nil else { return }
         toast = nil
+        blockedPlacement = nil; blockedDollRect = nil
         placementStart = Dictionary(uniqueKeysWithValues: placedDolls.map { ($0.id, $0.position) })
         placementPositions = placementStart ?? [:]
     }
@@ -646,6 +710,7 @@ struct HomeView: View {
         placementStart = nil
         placementPositions = [:]
         hold = nil
+        blockedPlacement = nil; blockedDollRect = nil
         guard let moved = dolls.first(where: { $0.id == lastMovedID }) else { return }
         let seat = RoomLayout.seat(at: [moved.position.x, moved.position.z], in: items.map(\.state)).item
         toast = Toast(message: "\(seat?.kind.label ?? "바닥")에 배치했어요", undo: start, addedID: placementAddedID)
@@ -660,6 +725,7 @@ struct HomeView: View {
         placementStart = nil
         placementPositions = [:]
         hold = nil
+        blockedPlacement = nil; blockedDollRect = nil
         lastMovedID = nil
         try? modelContext.save()
     }
@@ -688,6 +754,10 @@ struct HomeView: View {
             doll.position = spot
             doll.isPlaced = true
         }
+        if appState.newlyCreatedDollID == doll.id {
+            appState.roomEntrance.beginArrival(of: doll.state)
+            appState.newlyCreatedDollID = nil
+        }
         placementPositions[doll.id] = doll.position
         lastMovedID = doll.id
     }
@@ -706,11 +776,13 @@ struct HomeView: View {
 }
 
 extension HomeView {
-    private var soundCompanions: [DollState] { if let doll = sleeper ?? placedDolls.first { return [doll.state] };return [] }
+
     private func markUsed(_ name: String) {
         if !usedFurnitureActions.split(separator:",").contains(Substring(name)) { usedFurnitureActions += (usedFurnitureActions.isEmpty ? "" : ",") + name }
     }
     private func openFurniture(_ item: RoomItem) {
+        guard couch.current == nil || (item.kind != .sofa && item.kind != .chair) else { return }
+        dismissDollPopup()
         showFurnitureHint = false
         switch item.kind {
         case .wall:
@@ -723,7 +795,7 @@ extension HomeView {
         case .sofa: furnitureMenu=item;markUsed("소파")
         case .bed: furnitureMenu=item;markUsed("침대")
         case .frame: furnitureMenu=item;markUsed("액자")
-        case .desk: markUsed("책상"); openFocus()
+        case .desk: furnitureMenu = item; markUsed("책상")
         default: break
         }
     }
@@ -735,17 +807,8 @@ extension HomeView {
         }
         if resting {
             if couch.resting, couch.sofaID == sofa.id { couch.stop(); return }
-            let candidates = placedDolls.filter { $0.restingBedID == nil }.sorted {
-                let center = SIMD3<Float>(Float(sofa.x), 0, Float(sofa.z))
-                return simd_distance(roomPlacement.currentPosition(of: $0.id) ?? $0.position, center)
-                    < simd_distance(roomPlacement.currentPosition(of: $1.id) ?? $1.position, center)
-            }
-            guard let doll = candidates.first(where: {
-                DollBedRoute.plan(from: roomPlacement.currentPosition(of: $0.id) ?? $0.position,
-                                  bed: sofa.state, items: items.map(\.state)) != nil
-            }) else { interactionMessage = "의자까지 갈 길이 없어요. 주변 가구를 조금 옮겨 주세요"; return }
-            couch.stop(); couch.sofaID = sofa.id; couch.dolls = [doll.state]; couch.resting = true
-            DollActivityRecorder.record(.sofa, ids: [doll.id], in: modelContext)
+            couch.sofaID = sofa.id
+            furnitureChoice = .rest
             return
         }
         if couch.current != nil { showingCouch = true; return }
@@ -754,17 +817,10 @@ extension HomeView {
     }
     private func sofaMenuRow(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                Text(selected ? "▶" : "♡").frame(width: 28, height: 28)
-                Text(title); Spacer(minLength: 0)
-            }.pretendard(.regular, 16).foregroundStyle(Color.rep4.c16)
-                .padding(.horizontal, 8).frame(height: 44)
-                .background {
-                    if selected { RepresentativeGradientFill(definition: RepresentativeGradients.selected) }
-                    else { Color.rep4.c11 }
-                }.clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(selected ? Color.rep4.c04 : Color.rep4.c07, lineWidth: 1))
-        }.buttonStyle(.plain)
+            HomePopupLabel(title: title, primary: selected) {
+                Image(systemName: title.hasPrefix("유튜브") ? "play.rectangle" : "sofa").frame(width: 28, height: 28)
+            }
+        }.buttonStyle(HomePopupPressStyle())
     }
     private func putToBed(_ doll: Doll) {
         guard sleeper == nil, let bed=items.first(where:{$0.kind == .bed}) else { return }
@@ -804,11 +860,11 @@ extension HomeView {
     private var furnitureOverlays: some View {
         GeometryReader { geometry in
             ZStack(alignment:.topLeading) {
-                if sleeper != nil, travelingDollID == nil, let rect=furnitureRects["침대"] {
+                if appState.roomEntrance.finished, isSceneReady, sleeper != nil, travelingDollID == nil, let rect=furnitureRects["침대"] {
                     Text("z z Z").pretendard(.bold,17).foregroundStyle(Color.mib.text.primary)
-                        .position(x:rect.midX-24,y:rect.minY-16).allowsHitTesting(false)
+                        .position(x:rect.midX-20,y:rect.minY+22).allowsHitTesting(false)
                 }
-                if placementStart == nil, hold == nil, showFurnitureHint, !showGuide, furnitureMenu == nil, furnitureChoice == nil, couch.current == nil, !couch.resting, let name=hintName, didSeeFurnitureGuide, !placedDolls.isEmpty, let rect=furnitureRects[name] {
+                if placementStart == nil, hold == nil, showFurnitureHint, !showGuide, furnitureMenu == nil, dollMenu == nil, dancingDoll == nil, furnitureChoice == nil, couch.current == nil, !couch.resting, let name=hintName, didSeeFurnitureGuide, !placedDolls.isEmpty, let rect=furnitureRects[name] {
                     RoundedRectangle(cornerRadius:22).stroke(Color.mib.line.selected,style:StrokeStyle(lineWidth:2,dash:[6,4]))
                         .frame(width:rect.width,height:rect.height).position(x:rect.midX,y:rect.midY).allowsHitTesting(false)
                     D1Bubble(text:name == "책상" ? "책상 톡톡! 같이 집중해볼까?" : name == "창문" ? "창문 두 번 톡톡! 같이 구름 보자" : name == "침대" ? "침대 톡톡! 인형을 재워줄래?" : "액자 톡톡 하면 같이 사진 찍을 수 있어")
@@ -816,32 +872,38 @@ extension HomeView {
                 }
                 if let item=furnitureMenu {
                     Color.black.opacity(0.001).contentShape(Rectangle()).onTapGesture{furnitureMenu=nil}
-                    let key=item.kind == .bed ? "침대" : item.kind == .sofa ? "소파" : "액자"
+                    let key=item.kind == .bed ? "침대" : item.kind == .sofa ? "소파" : item.kind == .desk ? "책상" : "액자"
                     let rect=furnitureRects[key] ?? CGRect(x:geometry.size.width/2,y:geometry.size.height/2,width:44,height:44)
-                    VStack(alignment:.leading,spacing:8) {
-                        Text(item.kind == .bed ? (sleeper.map{"침대 · \($0.name.josa("이", "가")) \(travelingDollID == $0.id ? "이동 중" : "자는 중")"} ?? "침대") : key).pretendard(.medium,13).frame(height: 20).foregroundStyle(Color.rep4.c16)
+                    HomePopup(title: item.kind == .bed ? (sleeper.map{"침대 · \($0.name.josa("이", "가")) \(travelingDollID == $0.id ? "이동 중" : "자는 중")"} ?? "침대") : key) {
                         if item.kind == .bed {
-                            furnitureMenuRow(sleeper == nil ? "재우기" : "깨우기",icon:sleeper == nil ? "z" : "↑",selected:true) {
+                            furnitureMenuRow(sleeper == nil ? "재우기" : "깨우기",icon:sleeper == nil ? "z" : "↑",selected:false) {
                                 furnitureMenu=nil
                                 if sleeper != nil { wakeSleeper() }
                                 else if placedDolls.count == 1,let doll=placedDolls.first { putToBed(doll) }
                                 else if placedDolls.isEmpty { interactionMessage="먼저 인형을 만들어 방에 놓아 주세요" }
                                 else { furnitureChoice = .sleep }
                             }
+                        } else if item.kind == .desk {
+                            Button { furnitureMenu = nil; openFocus() } label: {
+                                HomePopupLabel(title: "함께 집중하기") { Image(systemName: "book") }
+                            }.buttonStyle(HomePopupPressStyle())
                         } else if item.kind == .sofa {
-                            sofaMenuRow("유튜브 같이 보기", selected: true) { beginCouch(resting: false, sofa: item) }
+                            sofaMenuRow("유튜브 같이 보기", selected: false) { beginCouch(resting: false, sofa: item) }
                             sofaMenuRow(couch.resting && couch.sofaID == item.id ? "일어나기" : "앉아서 쉬기", selected: false) { beginCouch(resting: true, sofa: item) }
                         } else {
-                            NavigationLink { FurnitureCustomView(item:item) } label: { Text("사진 넣기 · 크기 조절").pretendard(.regular,16).frame(minHeight:44) }.simultaneousGesture(TapGesture().onEnded{furnitureMenu=nil})
-                            Button("AR로 찍어 액자에 넣기") {
+                            NavigationLink { DecorateView(selectedID: item.id, editingItem: item) } label: {
+                                HomePopupLabel(title: "사진 꾸미기", primary: false) { D1Icon(name: "paint") }
+                            }.buttonStyle(HomePopupPressStyle()).accessibilityLabel("사진 넣기 · 크기 조절")
+                                .simultaneousGesture(TapGesture().onEnded{furnitureMenu=nil})
+                            Button {
                                 furnitureMenu = nil
                                 if dolls.isEmpty { interactionMessage = "먼저 함께 찍을 인형을 만들어 주세요" }
                                 else { frameTarget = item; pendingFrameDoll = nil; furnitureChoice = .frame }
-                            }.pretendard(.regular,16).frame(minHeight:44)
+                            } label: {
+                                HomePopupLabel(title: "사진 찍어 넣기") { Image("home_popup_camera") }
+                            }.buttonStyle(HomePopupPressStyle()).accessibilityLabel("AR로 찍어 액자에 넣기")
                         }
-                    }.padding(12).background(Color.white, in: RoundedRectangle(cornerRadius: item.kind == .sofa ? 14 : 22))
-                        .overlay(RoundedRectangle(cornerRadius: item.kind == .sofa ? 14 : 22).strokeBorder(Color(uiColor: Palette.uiColor("#E8DDCB")), lineWidth: 1))
-                        .frame(width: item.kind == .sofa ? 204 : 220)
+                    }
                         .position(x: item.kind == .sofa ? min(max(rect.midX + 70, 122), geometry.size.width - 122) : min(max(rect.midX+70,120),geometry.size.width-120),
                                   y: item.kind == .sofa ? max(180, rect.minY + 13) : max(180,rect.minY-50))
                 }
@@ -880,9 +942,75 @@ extension HomeView {
     }
     private func furnitureMenuRow(_ title:String,icon:String,selected:Bool,action:@escaping()->Void)->some View {
         Button(action:action) {
-            HStack(spacing:12){Text(icon).frame(width:28,height:28);Text(title);Spacer()}
-                .pretendard(.regular,16).padding(.horizontal,8).frame(height:44)
-                .background(selected ? Color.mib.bg.mintSoft : Color.mib.bg.screen,in:RoundedRectangle(cornerRadius:10))
-        }.buttonStyle(.plain)
+            HomePopupLabel(title: title, primary: selected) { Text(icon) }
+        }.buttonStyle(HomePopupPressStyle())
+    }
+}
+
+extension HomeView {
+    private func dismissDollPopup() {
+        dollMenu = nil
+        dancingDoll = nil
+    }
+
+    private func openDollMenu(_ id: UUID) {
+        guard placementStart == nil, hold == nil, !showGuide, appState.roomEntrance.finished,
+              let doll = placedDolls.first(where: { $0.id == id }), doll.restingBedID == nil else { return }
+        furnitureMenu = nil
+        appState.roomToolsOpen = false
+        showFurnitureHint = false
+        dancingDoll = nil
+        dollPopupAnchor = roomPlacement.screenRect(of: id) ?? .zero
+        dollMenu = doll
+    }
+
+    private func takeDollPhoto(_ doll: Doll) {
+        dismissDollPopup()
+        appState.isShowingAR = true
+        Task {
+            // Release the home renderer before presenting the AR camera.
+            await Task.yield()
+            dollARDoll = doll
+        }
+    }
+
+    private func startHomeDance(_ doll: Doll) {
+        guard doll.restingBedID == nil, travelingDollID != doll.id else {
+            dollMenu = nil
+            interactionMessage = "침대에서 인형을 깨운 뒤 함께 춤춰요"
+            return
+        }
+        if couch.dolls.contains(where: { $0.id == doll.id }) { couch.stop() }
+        dollMenu = nil
+        homeDance = nil
+        dancingDoll = doll
+    }
+
+    private var dollOverlays: some View {
+        GeometryReader { geometry in
+            if dollMenu != nil || dancingDoll != nil {
+                let anchor = dollPopupAnchor.isEmpty
+                    ? CGRect(x: geometry.size.width * 0.27, y: geometry.size.height * 0.64, width: 1, height: 1)
+                    : dollPopupAnchor
+                ZStack(alignment: .topLeading) {
+                    Button(action: dismissDollPopup) { Color.clear.contentShape(Rectangle()) }
+                        .buttonStyle(.plain).accessibilityLabel("인형 메뉴 닫기")
+                    if let doll = dollMenu {
+                        HomePopup(title: "인형") {
+                            Button { takeDollPhoto(doll) } label: {
+                                HomePopupLabel(title: "사진 찍기", primary: false) { Image("home_popup_camera") }
+                            }.buttonStyle(HomePopupPressStyle())
+                            Button { startHomeDance(doll) } label: {
+                                HomePopupLabel(title: "춤추기") { Image("home_popup_star") }
+                            }.buttonStyle(HomePopupPressStyle())
+                        }.accessibilityIdentifier("home-doll-menu")
+                            .accessibilityValue(doll.name)
+                            .position(x: min(max(anchor.midX + 116, 128), max(128, geometry.size.width - 128)),
+                                      y: min(max(anchor.minY - 68, geometry.safeAreaInsets.top + 100), max(175, geometry.size.height - 170)))
+                    }
+                }.accessibilityAction(.escape) { dismissDollPopup() }
+            }
+        }.ignoresSafeArea()
+            .animation(.easeOut(duration: 0.22), value: dancingDoll?.id)
     }
 }
