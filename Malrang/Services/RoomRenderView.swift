@@ -136,15 +136,15 @@ final class RoomRenderView: UIView, MTKViewDelegate {
     func configureBloom() { wantsBloom = true; legacy?.configureBloom(); applyBudget() }
 
     private var constrained: Bool {
-        ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+        ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.fair.rawValue
     }
     private func applyBudget() {
         guard let view = metalView else { return }
-        let constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-        // Render above native resolution and let the compositor downsample.
-        // Combined with MSAA this also stabilizes thin fur and distant silhouettes.
+        let constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.fair.rawValue
+        // Native resolution plus 4x MSAA preserves edges without continuously
+        // shading 56% more pixels. Reduce work at the first thermal warning.
         contentScaleFactor = constrained ? min(max(1, traitCollection.displayScale), 1.5)
-            : min(4, max(1, traitCollection.displayScale) * 1.25)
+            : min(3, max(1, traitCollection.displayScale))
         view.drawableSize = CGSize(width: max(1, bounds.width * contentScaleFactor), height: max(1, bounds.height * contentScaleFactor))
         view.isPaused = window == nil || UIApplication.shared.applicationState != .active
         if wantsBloom && !constrained, bloom == nil, let device = view.device { bloom = CozyBloom(device: device) }

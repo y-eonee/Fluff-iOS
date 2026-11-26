@@ -24,6 +24,8 @@ struct ARCaptureView: View {
     @State private var isChoosingDance = false
     @State private var move: DanceMove?
     @State private var hasDoll = false
+    @State private var hasPlacedDoll = false
+    @State private var usesFrontCamera = false
     @State private var removeCount = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hintPulse = false
@@ -86,32 +88,40 @@ struct ARCaptureView: View {
     }
 
     private var camera: some View {
-        ARDollCamera(dollState: doll.state, shutterCount: shutterCount, removeCount: removeCount, dance: isChoosingDance ? move : doll.dance,
-                     onCapture: { photo = $0 }, onFail: { failure = $0 }, onPlaced: { hasDoll = $0 })
+        ARDollCamera(dollState: doll.state, usesFrontCamera: usesFrontCamera, shutterCount: shutterCount, removeCount: removeCount, dance: isChoosingDance ? move : doll.dance,
+                     onCapture: { photo = $0 }, onFail: { failure = $0 }, onPlaced: { hasDoll = $0; if $0 { hasPlacedDoll = true } })
             .ignoresSafeArea(edges: .bottom)
+            .overlay(alignment: .center) {
+                if !isRecording && !hasPlacedDoll {
+                    VStack(spacing: 16) {
+                        Text(usesFrontCamera ? "원하는 곳을 탭해 인형을 놓으세요" : "바닥을 비춘 뒤 원하는 곳을 탭해 인형을 놓으세요")
+                            .pretendard(.medium, 13)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 18).padding(.vertical, 10)
+                            .background(Color(uiColor: Palette.uiColor("#181818")), in: Capsule())
+                        Image(systemName: "hand.tap")
+                            .font(.system(size: 30)).foregroundStyle(.white)
+                            .opacity(reduceMotion || hintPulse ? 1 : 0.35)
+                            .padding(14).background(.black.opacity(0.3), in: Circle())
+                            .onAppear {
+                                withAnimation(reduceMotion ? nil : .easeInOut(duration: 1).repeatForever(autoreverses: true)) { hintPulse = true }
+                            }
+                    }
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("ar-placement-hint")
+                }
+            }
             .overlay(alignment: .top) {
-                if !isRecording {
-                    VStack(spacing: 12) {
-                        HintCapsule(text: hasDoll ? "끌어서 옮기고, 두 손가락으로 크기를 바꿔요" : "바닥을 비춘 뒤 원하는 곳을 탭해 인형을 놓으세요", isLight: true)
-                        if hasDoll {
-                            HStack(spacing: 12) {
-                                Button {
-                                    move = doll.dance.flatMap { DanceMove.selectable.contains($0) ? $0 : nil }
-                                    withAnimation(.spring) { isChoosingDance = true }
-                                } label: { Label("춤추기", systemImage: "music.note") }
-                                Button { removeCount += 1 } label: { Label("인형 삭제", systemImage: "trash") }
-                            }.pretendard(.medium, 14).buttonStyle(.bordered).tint(.white)
-                        } else {
-                            Image(systemName: "hand.tap")
-                                .font(.system(size: 30)).foregroundStyle(.white)
-                                .opacity(reduceMotion || hintPulse ? 1 : 0.35)
-                                .padding(14).background(.black.opacity(0.3), in: Circle())
-                                .allowsHitTesting(false).accessibilityHidden(true)
-                                .onAppear {
-                                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 1).repeatForever(autoreverses: true)) { hintPulse = true }
-                                }
-                        }
-                    }.padding(.top, Spacing.xs)
+                if !isRecording && hasDoll {
+                    HStack(spacing: 12) {
+                        Button {
+                            move = doll.dance.flatMap { DanceMove.selectable.contains($0) ? $0 : nil }
+                            withAnimation(.spring) { isChoosingDance = true }
+                        } label: { Label("춤추기", systemImage: "music.note") }
+                        Button { removeCount += 1 } label: { Label("인형 삭제", systemImage: "trash") }
+                    }
+                    .pretendard(.medium, 14).buttonStyle(.bordered).tint(.white)
+                    .padding(.top, Spacing.xs)
                 }
             }
             .overlay(alignment: .bottom) {
@@ -139,6 +149,20 @@ struct ARCaptureView: View {
                 }
             }
             shutter.frame(maxWidth: .infinity)
+                .overlay(alignment: .trailing) {
+                    if ARFaceTrackingConfiguration.isSupported && !isRecording {
+                        Button { usesFrontCamera.toggle() } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath.camera")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundStyle(.white)
+                                .frame(width: 52, height: 52)
+                                .background(.black.opacity(0.35), in: Circle())
+                        }
+                        .accessibilityLabel(usesFrontCamera ? "후면 카메라로 전환" : "전면 카메라로 전환")
+                        .accessibilityIdentifier("ar-camera-switch")
+                        .padding(.trailing, 34)
+                    }
+                }
         }
         .padding(.bottom, Spacing.xl)
     }
@@ -323,8 +347,24 @@ private enum CaptureLibrary {
 }
 
 /// AR 카메라. 탭한 바닥에 인형을 세우고, shutterCount가 바뀌면 카메라 화면과 인형만 찍는다.
+enum ARCaptureConfiguration {
+    static func make(front: Bool) -> ARConfiguration {
+        if front && ARFaceTrackingConfiguration.isSupported {
+            let configuration = ARFaceTrackingConfiguration()
+            configuration.isLightEstimationEnabled = false
+            return configuration
+        }
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = [.horizontal]
+        configuration.environmentTexturing = .none
+        configuration.isLightEstimationEnabled = false
+        return configuration
+    }
+}
+
 private struct ARDollCamera: UIViewRepresentable {
     let dollState: DollState
+    let usesFrontCamera: Bool
     let shutterCount: Int
     let removeCount: Int
     let dance: DanceMove?
@@ -337,21 +377,12 @@ private struct ARDollCamera: UIViewRepresentable {
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
         view.environment.background = .cameraFeed()
-        let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.horizontal]
         view.session.delegate = context.coordinator
-        view.session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
-
-        let coaching = ARCoachingOverlayView()
-        coaching.session = view.session
-        coaching.goal = .horizontalPlane
-        coaching.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(coaching)
-
         context.coordinator.view = view
         context.coordinator.lastShutter = shutterCount
         context.coordinator.lastRemove = removeCount
         context.coordinator.dance = dance
+        context.coordinator.configure(front: usesFrontCamera)
         view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap)))
         view.addGestureRecognizer(UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan)))
         view.addGestureRecognizer(UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePinch)))
@@ -359,6 +390,7 @@ private struct ARDollCamera: UIViewRepresentable {
     }
 
     func updateUIView(_ view: ARView, context: Context) {
+        context.coordinator.configure(front: usesFrontCamera)
         if removeCount != context.coordinator.lastRemove {
             context.coordinator.lastRemove = removeCount
             context.coordinator.removeDoll()
@@ -367,11 +399,13 @@ private struct ARDollCamera: UIViewRepresentable {
         guard shutterCount != context.coordinator.lastShutter else { return }
         context.coordinator.lastShutter = shutterCount
         view.snapshot(saveToHDR: false) { image in
-            if let image { onCapture(image) }
+            if let image { Task { @MainActor in onCapture(image) } }
         }
     }
 
     static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+        coordinator.stop()
+        view.session.delegate = nil
         view.session.pause()
     }
 
@@ -386,6 +420,10 @@ private struct ARDollCamera: UIViewRepresentable {
         var dance: DanceMove?
         private var bodyRest: Transform?
         private var doll: Entity?
+        private var front: Bool?
+        private var generation = 0
+        private var placement: Task<Void, Never>?
+        private var lighting: Task<Void, Never>?
 
         init(dollState: DollState, onFail: @escaping (String) -> Void, onPlaced: @escaping (Bool) -> Void) {
             self.dollState = dollState
@@ -393,13 +431,40 @@ private struct ARDollCamera: UIViewRepresentable {
             self.onPlaced = onPlaced
         }
 
-        nonisolated func session(_ session: ARSession, didFailWithError error: Error) {
-            let message = (error as NSError).localizedDescription + " (\((error as NSError).code))"
-            Task { @MainActor in onFail(message) }
+        func configure(front: Bool) {
+            guard self.front != front, let view else { return }
+            self.front = front
+            removeDoll()
+            lighting?.cancel()
+            view.session.run(ARCaptureConfiguration.make(front: front), options: [.resetTracking, .removeExistingAnchors])
+            // A neutral studio environment lights only the virtual doll, never the camera feed.
+            lighting = Task { @MainActor [weak self, weak view] in
+                let environment = await CozyRoomLighting.environmentResource(profile: .editor)
+                guard !Task.isCancelled, self != nil else { return }
+                view?.environment.lighting.resource = environment
+                view?.environment.lighting.intensityExponent = 0
+            }
         }
 
-        /// 몸통만 움직여서, 인형을 옮기거나 키워도 춤이 끊기지 않는다.
-        func setDance(_ new: DanceMove?) {
+        func stop() {
+            generation += 1
+            placement?.cancel(); placement = nil
+            lighting?.cancel(); lighting = nil
+            doll?.parent?.removeFromParent()
+            doll = nil
+            view = nil
+        }
+
+        nonisolated func session(_ session: ARSession, didFailWithError error: Error) {
+            let message = (error as NSError).localizedDescription + " (\((error as NSError).code))"
+            Task { @MainActor [weak self] in
+                guard let self, self.view != nil else { return }
+                self.onFail(message)
+            }
+        }
+
+        func setDance(_ new: DanceMove?, force: Bool = false) {
+            guard force || dance != new else { return }
             dance = new
             guard let body = doll?.findEntity(named: "body") else { return }
             MorningExerciseMotion.stop(on: body)
@@ -411,20 +476,42 @@ private struct ARDollCamera: UIViewRepresentable {
         }
 
         func removeDoll() {
+            generation += 1
+            placement?.cancel(); placement = nil
             doll?.parent?.removeFromParent()
             doll = nil
             bodyRest = nil
-            onPlaced(false)
+            let current = generation
+            // updateUIView must not synchronously publish SwiftUI state changes.
+            Task { @MainActor [weak self] in
+                guard let self, self.view != nil, self.generation == current else { return }
+                self.onPlaced(false)
+            }
+        }
+
+        private func placementTransform(at point: CGPoint) -> Transform? {
+            guard let view else { return nil }
+            if front == true {
+                guard let ray = view.ray(through: point) else { return nil }
+                let inverse = view.cameraTransform.matrix.inverse
+                let o = inverse * SIMD4(ray.origin, 1)
+                let origin = SIMD3(o.x, o.y, o.z)
+                let d = inverse * SIMD4(ray.direction, 0)
+                let direction = SIMD3(d.x, d.y, d.z)
+                guard direction.z < -0.001 else { return nil }
+                let position = origin + direction * ((-0.65 - origin.z) / direction.z)
+                return Transform(translation: position)
+            }
+            guard let result = view.raycast(from: point, allowing: .estimatedPlane, alignment: .horizontal).first else { return nil }
+            let position = Transform(matrix: result.worldTransform).translation
+            let toCamera = view.cameraTransform.translation - position
+            return Transform(rotation: simd_quatf(angle: atan2(toCamera.x, toCamera.z), axis: [0, 1, 0]), translation: position)
         }
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-            guard let doll, let view,
-                  let result = view.raycast(from: gesture.location(in: view), allowing: .estimatedPlane, alignment: .horizontal).first
-            else { return }
-            let position = Transform(matrix: result.worldTransform).translation
-            let toCamera = view.cameraTransform.translation - position
-            doll.position = position
-            doll.orientation = simd_quatf(angle: atan2(toCamera.x, toCamera.z), axis: [0, 1, 0])
+            guard let doll, let view, let transform = placementTransform(at: gesture.location(in: view)) else { return }
+            doll.position = transform.translation
+            doll.orientation = transform.rotation
         }
 
         @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
@@ -434,31 +521,32 @@ private struct ARDollCamera: UIViewRepresentable {
         }
 
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let view,
-                  let result = view.raycast(from: gesture.location(in: view), allowing: .estimatedPlane, alignment: .horizontal).first
-            else { return }
-            let position = Transform(matrix: result.worldTransform).translation
-            let toCamera = view.cameraTransform.translation - position
-            let facing = simd_quatf(angle: atan2(toCamera.x, toCamera.z), axis: [0, 1, 0])
+            guard let view, let transform = placementTransform(at: gesture.location(in: view)) else { return }
             if let doll {
-                doll.position = position
-                doll.orientation = facing
+                doll.position = transform.translation
+                doll.orientation = transform.rotation
                 return
             }
-            Task {
-                // Preserve the room's 3D configuration instead of inflating its thumbnail.
-                var state = dollState
-                state.position = position
-                // AR animates the body separately so placement and pinch scale stay intact.
+            generation += 1
+            let current = generation
+            placement?.cancel()
+            placement = Task { @MainActor [weak self, weak view] in
+                guard let self, let view else { return }
+                var state = self.dollState
+                state.position = transform.translation
                 state.dance = nil
                 let doll = await SceneFactory.doll(state)
-                doll.orientation = facing
-                let anchor = AnchorEntity(world: .zero)
+                await CozyRoomLighting.apply(.editor, to: doll, usesDaylight: false)
+                guard !Task.isCancelled, self.generation == current, self.view != nil else { return }
+                doll.orientation = transform.rotation
+                if self.front == true { doll.scale *= 0.5 }
+                let anchor = self.front == true ? AnchorEntity(.camera) : AnchorEntity(world: .zero)
                 anchor.addChild(doll)
                 view.scene.addAnchor(anchor)
                 self.doll = doll
-                setDance(dance)
-                onPlaced(true)
+                self.setDance(self.dance, force: true)
+                self.onPlaced(true)
+                self.placement = nil
             }
         }
     }

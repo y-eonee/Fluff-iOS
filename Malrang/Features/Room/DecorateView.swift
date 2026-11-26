@@ -49,7 +49,7 @@ struct DecorateView: View {
         contentA
         .background(Color.mib.bg.screen)
         .allowsHitTesting(loadingEntrance.finished && entrance.finished)
-        .accessibilityHidden(!loadingEntrance.finished)
+        .accessibilityHidden(!loadingEntrance.finished || !entrance.finished)
         .overlay {
             if !loadingEntrance.finished {
                 RoomLoadingView(entrance: loadingEntrance)
@@ -172,12 +172,15 @@ struct DecorateView: View {
         rotated.yaw = (rotated.yaw + .pi / 2).truncatingRemainder(dividingBy: 2 * .pi)
         let spot = RoomLayout.snapped([rotated.x, rotated.z], for: rotated.kind, yaw: rotated.yaw, isMirrored: rotated.isMirrored)
         (rotated.x, rotated.z) = (spot.x, spot.y)
-        guard RoomLayout.canMove(item.state, to: rotated, among: items.map(\.state)) else {
+        let carried = RoomLayout.carriedItems(from: item.state, to: rotated, in: items.map(\.state))
+        let candidate = items.map(\.state).map { value in carried.first { $0.id == value.id } ?? (value.id == rotated.id ? rotated : value) }
+        guard RoomLayout.canMove(item.state, to: rotated, among: candidate) else {
             rotationFailCount += 1
             isBlocked = true
             return
         }
         withAnimation(reduceMotion ? nil : .spring) {
+            for value in carried { items.first { $0.id == value.id }?.restore(value) }
             item.yaw = Double(rotated.yaw)
             item.x = Double(spot.x)
             item.z = Double(spot.y)
@@ -188,11 +191,14 @@ struct DecorateView: View {
         var mirrored = item.state; mirrored.isMirrored.toggle()
         let spot = RoomLayout.constrained(mirrored)
         mirrored.x = spot.x; mirrored.z = spot.y
-        guard RoomLayout.canMove(item.state, to: mirrored, among: items.map(\.state)) else {
+        let carried = RoomLayout.carriedItems(from: item.state, to: mirrored, in: items.map(\.state))
+        let candidate = items.map(\.state).map { value in carried.first { $0.id == value.id } ?? (value.id == mirrored.id ? mirrored : value) }
+        guard RoomLayout.canMove(item.state, to: mirrored, among: candidate) else {
             rotationFailCount += 1; isBlocked = true; return
         }
         move(item.id, to: spot)
         item.isMirrored = mirrored.isMirrored
+        for value in carried { items.first { $0.id == value.id }?.restore(value) }
     }
 
     func remove(_ item: RoomItem) {

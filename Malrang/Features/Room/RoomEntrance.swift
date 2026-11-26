@@ -22,18 +22,10 @@ final class RoomEntrance {
     func chooseLoadingDoll(from dolls: [Doll]) {
         guard !selectedLoadingDoll else { return }
         selectedLoadingDoll = true
-        // The loading character must have a real landing place in this room.
-        let placed = dolls.filter(\.isPlaced)
-        #if DEBUG
-        if let shape = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--loading-doll=") })?.split(separator: "=").last {
-            loadingDoll = placed.first { $0.shapeRaw == shape }?.state ?? placed.first?.state
-            return
-        }
-        #endif
         loadingDoll = nil
     }
     func beginArrival(of doll: DollState) {
-        loadingDoll = doll
+        loadingDoll = nil
         selectedLoadingDoll = true
         finished = false; start = nil; sceneReady = false; presentsSceneDoll = false
     }

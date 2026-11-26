@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-26",
+  "status": "not_ready_for_submission",
+  "fixed": [
+    "Added app PrivacyInfo.xcprivacy for UserDefaults CA92.1 and SystemBootTime 35F9.1; verified bundled SDK manifests",
+    "Added offline privacy explanation and links to the published policy from login and My Page",
+    "Added local guest entry only when no Apple-owned room exists",
+    "Kept official Apple button at 48pt",
+    "Added account deletion follow-up instructions for manually revoking Apple access",
+    "Reduced 3D pixel workload 36%; respond at fair thermal state instead of serious",
+    "YouTube viewport >=200x200 without downscaling; stop control; pause when obscured; nonpersistent player web data",
+    "Removed unreachable old loading, celebration, furniture customization, notebook tab and sketch views/assets",
+    "Published public privacy policy and support pages with user-confirmed operator name and email",
+    "Privacy-enhanced YouTube iframe, autoplay disabled, external ordinary-page navigation, live video/playlist and isolation checks passed; privacy label recommendations in docs/app-privacy-label-audit.json"
+  ],
+  "code_checks": {
+    "iPhone_only": true,
+    "camera_location_photo_add_usage_strings": true,
+    "arbitrary_transport_exceptions": false,
+    "private_api_calls_found": false,
+    "youtube_audio_extraction_or_downloading": false,
+    "public_user_content_feed": false,
+    "tracking_identifier_usage_found": false,
+    "in_app_account_data_deletion": true
+  },
+  "pending": [
+    {
+      "item": "Apple token lifecycle",
+      "detail": "No authentication backend exists. Current native local-identity flow deletes local data and shows manual revocation help per TN3194 fallback. For new account lifecycle, configure server token exchange/validation/revocation; never put a private key or client_secret in the app."
+    },
+    {
+      "item": "Google OAuth release status",
+      "detail": "docs/YouTube-setup.md last records a testing project with one test user. Production publishing / sensitive youtube.readonly scope verification must be confirmed in Google Cloud before general review."
+    },
+    {
+      "item": "App Store Connect metadata",
+      "detail": "Privacy labels including third-party embedded YouTube and coarse weather location, age rating for external video, working support/privacy URLs, final screenshots and reviewer notes were not accessible in this repository."
+    },
+    {
+      "item": "Physical device verification",
+      "detail": "Temperature, live Apple/Google sign-in and camera permission flows require real-device checks. Simulator FPS does not establish a temperature reduction."
+    },
+    {
+      "item": "YouTube service policies",
+      "detail": "Privacy-enhanced player and external-link isolation implemented and tested. Verify production project terms and Made For Kids handling; this work does not certify the full service-policy review."
+    }
+  ],
+  "sources": [
+    "https://developer.apple.com/app-store/review/guidelines/",
+    "https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple",
+    "https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple",
+    "https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api",
+    "https://developers.google.com/youtube/terms/required-minimum-functionality",
+    "https://developers.google.com/youtube/terms/developer-policies"
+  ],
+  "public_privacy_url": "https://fluff-privacy-support.workspace-945891.chatgpt.site",
+  "support_url": "https://fluff-privacy-support.workspace-945891.chatgpt.site/support/"
+}

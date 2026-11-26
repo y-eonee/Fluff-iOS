@@ -5,6 +5,9 @@ import simd
 enum RoomLayout {
     static let half: Float = 1
     static let grid: Float = 0.1
+    // The interior camera also shows the open floor in front of the furniture.
+    static let dollFloorCenter = SIMD2<Float>(repeating: 0.55)
+    static let dollFloorHalf = SIMD2<Float>(repeating: 1.55)
 
     // Measured from the shared furniture mesh, excluding the soft contact shadow.
     private static var measured: [String: (min: SIMD3<Float>, max: SIMD3<Float>)] = [:]
@@ -117,6 +120,22 @@ enum RoomLayout {
         }
     }
 
+    /// Preserve the local coordinates of objects carried by a desk, even on a
+    /// long drag where the old and new desktop no longer overlap.
+    static func carriedItems(from original: RoomItemState, to moved: RoomItemState, in items: [RoomItemState]) -> [RoomItemState] {
+        guard original.kind == .desk else { return [] }
+        let oldRotation = simd_quatf(angle: original.yaw, axis: [0, 1, 0])
+        let newRotation = simd_quatf(angle: moved.yaw, axis: [0, 1, 0])
+        return items.filter { lampSupport(for: $0, in: items)?.id == original.id }.map { source in
+            var local = oldRotation.inverse.act(SIMD3(source.x - original.x, 0, source.z - original.z))
+            if original.isMirrored != moved.isMirrored { local.x = -local.x }
+            let offset = newRotation.act(local)
+            var result = source; result.x = moved.x + offset.x; result.z = moved.z + offset.z
+            result.yaw += moved.yaw - original.yaw
+            return result
+        }
+    }
+
     static func furnitureHeight(_ item: RoomItemState, in items: [RoomItemState]) -> Float {
         lampSupport(for: item, in: items)?.kind.seatHeight ?? 0
     }
@@ -204,7 +223,7 @@ enum RoomLayout {
     }
 
     static func clampedToFloor(_ point: SIMD2<Float>) -> SIMD2<Float> {
-        simd_clamp(point, SIMD2(repeating: -half + 0.1), SIMD2(repeating: half - 0.1))
+        simd_clamp(point, dollFloorCenter - dollFloorHalf + 0.1, dollFloorCenter + dollFloorHalf - 0.1)
     }
 
     /// 그 자리에서 인형이 올라설 높이와, 올라선 가구

@@ -23,6 +23,11 @@ struct PresetDollView: UIViewRepresentable {
         let view = PresetRenderView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
         view.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain])
         view.environment.background = .color(.clear); view.isOpaque = false
+        view.isAccessibilityElement = true
+        view.accessibilityIdentifier = "preset-doll-preview"
+        view.accessibilityLabel = "인형 미리보기"
+        view.accessibilityTraits = .image
+        view.accessibilityValue = "인형 불러오는 중"
         view.environment.lighting.intensityExponent = -1.0
         view.configureBloom(preset: true)
         let anchor = AnchorEntity(world: .zero)
@@ -144,6 +149,7 @@ struct PresetDollView: UIViewRepresentable {
                 guard !Task.isCancelled else { return }
                 model?.removeFromParent(); model = entity; anchor?.addChild(entity)
                 renderedConfiguration = value
+                view?.accessibilityValue = "인형 표시 완료"
                 fitCamera()
                 if let dance { SceneFactory.play(dance, on: entity) }
                 if let data = value.face { photoAspect = ImageDownsampling.aspectRatio(data) }

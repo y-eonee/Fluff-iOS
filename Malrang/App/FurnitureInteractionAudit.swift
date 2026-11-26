@@ -1,4 +1,5 @@
 #if DEBUG
+  import ARKit
   import AVFoundation
   import RealityKit
   import SwiftData
@@ -310,6 +311,7 @@
       let player = AmbientPlayer()
       for sound in AmbientSound.allCases {
         player.start(sound, minutes: 30)
+        await player.waitForPlayback()
         checks["audio_\(sound.rawValue)"] =
           player.isPlaying && player.sound == sound && player.remaining()! > 1790
       }
@@ -317,6 +319,7 @@
       let remaining = player.remaining()
       checks["audio_pause"] = !player.isPlaying && player.sound != nil && remaining != nil
       player.resume()
+      await player.waitForPlayback()
       checks["audio_resume"] = player.isPlaying
       player.setTimer(nil)
       checks["audio_continuous"] = player.remaining() == nil
@@ -326,7 +329,58 @@
       checks["audio_timer_minimum_duration"] = player.isPlaying && (player.remaining() ?? 0) > 59
       player.start(.rain, minutes: 15)
       player.stop()
+      await player.waitForPlayback()
       checks["audio_stop_clears_state"] = player.sound == nil && player.endDate == nil
+      player.start(.rain, minutes: 15)
+      player.start(.fire, minutes: 30)
+      await player.waitForPlayback()
+      checks["audio_latest_request_wins"] = player.sound == .fire && player.isPlaying
+      player.pause()
+      let pausedRemaining = player.remaining()
+      player.changeSound(.wave)
+      await player.waitForPlayback()
+      checks["audio_change_retains_pause_and_timer"] = !player.isPlaying && player.sound == .wave && player.remaining() == pausedRemaining
+      player.start(.forest, minutes: 15)
+      player.stop()
+      try? await Task.sleep(for: .milliseconds(350))
+      checks["audio_pending_start_cannot_resurrect_after_stop"] = player.sound == nil && !player.isPlaying
+      let preferencesName = "feedback-audit-" + UUID().uuidString
+      let preferences = UserDefaults(suiteName: preferencesName)!
+      var appleName = PersonNameComponents(); appleName.givenName = "나연"; appleName.familyName = "이"
+      AppleAccount.setInitialNickname(appleName, defaults: preferences)
+      checks["apple_first_login_uses_supplied_name"] = preferences.string(forKey: "nickname") == PersonNameComponentsFormatter.localizedString(from: appleName, style: .default)
+      preferences.set("내 닉네임", forKey: "nickname")
+      AppleAccount.setInitialNickname(appleName, defaults: preferences)
+      checks["apple_repeat_login_preserves_edited_name"] = preferences.string(forKey: "nickname") == "내 닉네임"
+      preferences.removeObject(forKey: "nickname")
+      AppleAccount.setInitialNickname(nil, defaults: preferences)
+      checks["apple_missing_name_does_not_invent_name"] = preferences.string(forKey: "nickname") == nil
+      preferences.removePersistentDomain(forName: preferencesName)
+      let entrance = RoomEntrance(.home)
+      entrance.beginArrival(of: Doll.sample.state)
+      checks["new_doll_arrival_uses_icon"] = entrance.loadingDoll == nil
+      entrance.chooseLoadingDoll(from: [Doll.sample])
+      checks["existing_dolls_use_icon"] = entrance.loadingDoll == nil
+      checks["ar_rear_disables_light_estimation"] = !ARCaptureConfiguration.make(front: false).isLightEstimationEnabled
+      checks["expanded_floor_accepts_visible_foreground"] = RoomLayout.clampedToFloor([1.75, 1.75]) == SIMD2<Float>(1.75, 1.75)
+      checks["expanded_floor_keeps_back_walls_solid"] = RoomLayout.clampedToFloor([-3, -3]).x >= -0.91
+      checks["expanded_floor_has_outer_boundary"] = RoomLayout.clampedToFloor([8, 8]).x <= 2.01
+      if let originalDesk = room.first(where: { $0.kind == .desk }),
+         let originalLamp = room.first(where: { RoomLayout.lampSupport(for: $0, in: room)?.id == originalDesk.id }) {
+        for (index, angle) in [Float(0), .pi / 2, .pi, -.pi / 2].enumerated() {
+          for mirrored in [false, true] {
+            var moved = originalDesk
+            moved.x += 1.4; moved.z += 1.2; moved.yaw = angle; moved.isMirrored = mirrored
+            let attachments = RoomLayout.carriedItems(from: originalDesk, to: moved, in: room)
+            let candidate = room.map { value in attachments.first { $0.id == value.id } ?? (value.id == moved.id ? moved : value) }
+            let key = "desk_carries_lamp_\(index)_\(mirrored)"
+            let lamp = attachments.first { $0.id == originalLamp.id }
+            checks[key + "_retains_support"] = lamp.map { RoomLayout.lampSupport(for: $0, in: candidate)?.id == moved.id } ?? false
+            let roundtrip = RoomLayout.carriedItems(from: moved, to: originalDesk, in: candidate).first { $0.id == originalLamp.id }
+            checks[key + "_roundtrip_position"] = roundtrip.map { simd_distance(SIMD2($0.x, $0.z), SIMD2(originalLamp.x, originalLamp.z)) < 0.001 } ?? false
+          }
+        }
+      } else { checks["desk_lamp_fixture"] = false }
       let result: [String: Any] = ["passed": checks.values.allSatisfy { $0 }, "checks": checks]
       if let json = try? JSONSerialization.data(
         withJSONObject: result, options: [.prettyPrinted, .sortedKeys])

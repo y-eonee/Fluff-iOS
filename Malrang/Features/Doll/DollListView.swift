@@ -101,8 +101,10 @@ struct DollListView: View {
                 ZStack {
                     Image(doll.isPlaced ? "rep4_doll_placed_background" : "rep4_doll_stored_background")
                         .resizable().frame(width: 20.3, height: 21)
-                    Image(doll.isPlaced ? "rep4_doll_placed_icon" : "rep4_doll_stored_icon")
-                        .resizable().frame(width: 13.295, height: 11.9)
+                    Image(systemName: "house")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.rep4.c08)
+                        .frame(width: 14, height: 13)
                     if !doll.isPlaced {
                         Image("rep4_doll_stored_slash").resizable().frame(width: 14.845, height: 14.845)
                     }

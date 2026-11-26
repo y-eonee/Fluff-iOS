@@ -1,0 +1,10 @@
+PASS: pausing/stopping an unused player never creates a web view
+PASS: watching and mini-player share one web view
+PASS: ending playback releases the retained web view
+PASS: pausing after stop does not recreate the web view
+PASS: rabbit: all seven editable parts remain selectable
+PASS: rabbit: decorative thread does not allocate collision hulls
+PASS: bear: all seven editable parts remain selectable
+PASS: bear: decorative thread does not allocate collision hulls
+PASS: cat: all seven editable parts remain selectable
+PASS: cat: decorative thread does not allocate collision hulls

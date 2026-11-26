@@ -18,7 +18,7 @@ struct CouchFlowView: View {
         }.foregroundStyle(Color.rep4.c08).background(FlowDesign.canvas.ignoresSafeArea())
             .environment(\.updatedFlowDesign, true)
 
-            .onAppear { selected = session.current }
+            .onAppear { selected = session.current; session.player.pause() }
             .task {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--design-preview=") }) {
@@ -70,18 +70,20 @@ struct CouchFlowView: View {
                     LazyVStack(spacing: 8) { ForEach(candidates) { video in videoRow(video) } }
                 }.scrollIndicators(.hidden)
             }.padding(6).background(Color.rep4.c01, in: RoundedRectangle(cornerRadius: 21)).padding(.horizontal, 16)
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image("rep4_couch_playlist").resizable().frame(width: 18.3, height: 16.25)
-                TextField("", text: $link, prompt: Text("유튜브 플레이리스트 링크 붙여넣기").foregroundColor(Color.rep4.c03))
+                    .accessibilityHidden(true)
+                TextField("", text: $link, prompt: Text("유튜브 플레이리스트 링크 붙여넣기")
+                    .foregroundStyle(Color.mib.text.secondary))
                     .multilineTextAlignment(.center)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).onSubmit(addLink)
-                if link.isEmpty { Color.clear.frame(width: 18.3, height: 16.25) }
+                    .accessibilityLabel("유튜브 플레이리스트 링크 붙여넣기")
                 if !link.isEmpty {
                     Button(action: addLink) { Image(systemName: "plus").frame(width: 44, height: 44) }
                         .accessibilityLabel("링크 추가")
                 }
-            }.pretendard(.medium, 16).padding(.horizontal, 24).frame(height: 60)
+            }.pretendard(.medium, 14).padding(.horizontal, 16).frame(height: 60)
                 .background(.white, in: Capsule()).padding(.horizontal, 22)
             if let linkError { Text(linkError).pretendard(.regular, 12).foregroundStyle(Color.mib.semantic.error) }
             Button("소파에서 같이 보기") {
@@ -224,14 +226,9 @@ struct CouchMiniPlayer: View {
     let session: CouchSession
     let open: () -> Void
     var body: some View {
-        GeometryReader { geometry in
-            // Keep the embedded player's minimum 200-point viewport, then fit
-            // that live surface into the source's compact 200 × 112 slot.
-            let scale = geometry.size.height / 200
-            YouTubePlayerView(player: session.player)
-                .frame(width: geometry.size.width / scale, height: 200)
-                .scaleEffect(scale, anchor: .topLeading)
-        }.overlay {
+        YouTubePlayerView(player: session.player)
+            .frame(minWidth: 200, minHeight: 200)
+            .overlay {
             if !session.player.ready {
                 CouchLoadingArtwork(title: session.current?.title ?? "YouTube", failed: session.player.error != nil)
             }
@@ -263,11 +260,16 @@ struct CouchMiniControls: View {
             }.accessibilityLabel("영상 선택하기")
             Button { session.player.toggle() } label: {
                 D1PlaybackGlyph(paused: !session.player.playing).scaleEffect(0.43)
-                    .frame(width: 33, height: 33).background(FlowDesign.blue, in: RoundedRectangle(cornerRadius: 14))
+                    .frame(width: 44, height: 44).background(FlowDesign.selected, in: RoundedRectangle(cornerRadius: 12))
             }.disabled(!session.player.ready).accessibilityLabel(session.player.playing ? "일시정지" : "재생")
+            Button { session.stop() } label: {
+                Image(systemName: "stop.fill").font(.system(size: 14, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .background(FlowDesign.selected, in: RoundedRectangle(cornerRadius: 12))
+            }.accessibilityLabel("그만 보기").accessibilityIdentifier("couch-stop")
         }.buttonStyle(.plain).padding(.leading, 12).padding(.trailing, 4)
-            .frame(height: 48).background(Color.white, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color(uiColor: Palette.uiColor("#E8DDCB")), lineWidth: 1))
+            .frame(height: 52).foregroundStyle(Color.mib.text.primary)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 14))
             .contextMenu {
                 Button("이전 영상", systemImage: "backward.end.fill") { session.player.previous() }
                     .disabled(session.player.count < 2 || !session.player.ready)

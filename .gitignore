@@ -66,3 +66,6 @@ fastlane/test_output
 
 # 재배포가 허용되지 않는 글꼴(스스로넷 NotCliche). 로컬에서만 쓴다.
 Malrang/Resources/NotCliche.otf
+
+# Independently versioned public policy site (source is pushed to Sites).
+/docs/privacy-site/

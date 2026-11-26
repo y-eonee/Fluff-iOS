@@ -43,6 +43,22 @@ struct MyPageView: View {
                                 }.frame(minHeight: 52).contentShape(Rectangle())
                             }.buttonStyle(.plain)
                             separator
+                            NavigationLink { PrivacyPolicyView() } label: {
+                                HStack {
+                                    Text("개인정보처리방침")
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium))
+                                }.frame(minHeight: 52).contentShape(Rectangle())
+                            }.buttonStyle(.plain)
+                            separator
+                            Link(destination: URL(string: "https://fluff-privacy-support.workspace-945891.chatgpt.site/support/")!) {
+                                HStack {
+                                    Text("문의하기")
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .medium))
+                                }.frame(minHeight: 52).contentShape(Rectangle())
+                            }.buttonStyle(.plain)
+                            separator
                             HStack {
                                 Text("앱 버전")
                                 Spacer()

@@ -81,7 +81,9 @@ struct MalrangApp: App {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("--data-reset-audit") { try? DesignDataReset.audit() }
                 if ProcessInfo.processInfo.arguments.contains("--activity-audit") { DollActivityAudit.run() }
+                if ProcessInfo.processInfo.arguments.contains("--doll-attachment-audit") { await DollAttachmentAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--render-resource-audit") { await RenderResourceAudit.run() }
+                if ProcessInfo.processInfo.arguments.contains("--youtube-privacy-audit") { await YouTubePrivacyAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--furniture-audit") { await FurnitureInteractionAudit.run() }
                 if ProcessInfo.processInfo.arguments.contains("--furniture-matrix-audit") { await FurnitureMatrixAudit.run() }
                 await PresetModelExporter.exportIfRequested()

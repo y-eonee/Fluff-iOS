@@ -296,56 +296,12 @@ enum PresetDollModel {
         }
         let limbPile = detail == .full ? roundPile() : nil
         var groups: [DollPart: Entity] = [:]
-        let armX: Float = configuration.shape == .cat ? 0.062 : 0.075
-        let armY: Float = configuration.shape == .cat ? 0.087 : 0.112
-        let bodyScale = configuration.shape == .bear ? SIMD3<Float>(0.64, 0.64, 0.64) : SIMD3<Float>(repeating: 0.70)
-        let headCenter: Float = configuration.shape == .cat ? 0.199 : configuration.shape == .bear ? 0.193 : 0.210
-        let previousHead: Float = configuration.shape == .cat ? 0.228 : configuration.shape == .bear ? 0.251 : 0.248
-        let origins: [DollPart: SIMD3<Float>] = [.head: [0, configuration.shape == .cat ? 0.228 : configuration.shape == .bear ? 0.251 : 0.248, 0], .torso: [0, configuration.shape == .cat ? 0.112 : 0.122, 0], .leftArm: [-armX, armY, 0.045], .rightArm: [armX, armY, 0.045], .leftLeg: [-0.042, 0.037, 0.020], .rightLeg: [0.042, 0.037, 0.020], .ears: [0, 0.245, 0]]
+        let transforms = PresetAttachmentLayout.transforms(configuration, happy: happy)
         for part in DollPart.allCases {
-            let p = configuration.part(part)
             let group = Entity(); group.name = part.rawValue
-            var origin = origins[part]!
-            if part == .head { origin.y = headCenter }
-            else if part == .ears { origin.y -= previousHead - headCenter }
-            else { origin *= bodyScale }
-            group.position = origin + SIMD3<Float>(0, p.offset * 0.05, 0)
-            group.scale = [p.size * p.width, p.size * p.length, p.size]
-            if part != .head && part != .ears { group.scale *= bodyScale }
-            if part == .head && configuration.shape == .rabbit { group.scale.y *= 0.97 }
-            if configuration.shape == .bear {
-                if part == .head { group.scale.y *= 1.06 }
-                if part == .ears { group.position.y += 0.010 }
-            }
-            if part == .torso { group.scale.x *= configuration.shape == .cat ? 0.88 : 1.08 }
-            if configuration.shape == .cat && (part == .head || part == .ears) {
-                group.orientation = simd_quatf(angle: -0.045, axis: [0, 0, 1])
-            }
+            group.transform = transforms[part]!
             root.addChild(group); groups[part] = group
         }
-        let torsoPart = configuration.part(.torso)
-        let torsoScale = SIMD3<Float>(torsoPart.size * torsoPart.width, torsoPart.size * torsoPart.length, torsoPart.size)
-        let torsoOrigin = origins[.torso]! * bodyScale
-        for part in [DollPart.leftArm, .rightArm, .leftLeg, .rightLeg] {
-            let group = groups[part]!
-            let side: Float = part == .leftArm || part == .leftLeg ? -1 : 1
-            let joint: SIMD3<Float> = part == .leftArm || part == .rightArm ? [-side * 0.025, 0.038, -0.020] : [0, 0.025, -0.005]
-            let defaultPosition = origins[part]! * bodyScale
-            let attachment = defaultPosition + joint * bodyScale
-            group.position = torsoOrigin + (attachment - torsoOrigin) * torsoScale
-                + SIMD3<Float>(0, torsoPart.offset * 0.05 + configuration.part(part).offset * 0.05, 0)
-                - joint * group.scale
-        }
-        let headGroup = groups[.head]!, ears = groups[.ears]!
-        let headPart = configuration.part(.head)
-        let headScale = SIMD3<Float>(headPart.size * headPart.width, headPart.size * headPart.length, headPart.size)
-        let neck: SIMD3<Float> = [0, -0.083, 0]
-        let defaultHead = SIMD3<Float>(0, headCenter, 0)
-        let attachment = defaultHead + neck
-        headGroup.position += (attachment - torsoOrigin) * (torsoScale - SIMD3<Float>(repeating: 1))
-            + SIMD3<Float>(0, torsoPart.offset * 0.05, 0) + neck * (SIMD3<Float>(repeating: 1) - headScale)
-        ears.position = headGroup.position + (ears.position - defaultHead) * headScale
-        ears.scale *= headScale
         func ball(_ name: String, _ part: DollPart, _ size: SIMD3<Float>, _ position: SIMD3<Float>, _ color: String, cloth: Bool = true) -> ModelEntity {
             let mesh: MeshResource = name == "foot"
                 ? footMesh()
@@ -417,19 +373,26 @@ enum PresetDollModel {
         for part in [DollPart.leftArm, .rightArm] {
             let arm = PresetArmMesh.make(side: part == .leftArm ? -1 : 1, material: material(color(part, fur)), includePile: detail == .full)
             groups[part]!.addChild(arm)
-            if happy { groups[part]!.position.y += 0.06 }
         }
         for part in [DollPart.leftLeg, .rightLeg] { _ = ball("foot", part, [0.083, 0.065, 0.092], .zero, color(part, fur)) }
         for side: Float in [-1, 1] {
+            let ear = Entity(); ear.name = side < 0 ? "ear.left" : "ear.right"
+            ear.transform = PresetAttachmentLayout.earTransform(configuration, side: side)
+            let container = groups[.ears]!
+            // ball() writes to the current part; collect each ear under its own
+            // seam pivot so changing ear width never pushes it off the head.
+            groups[.ears] = ear
             if configuration.shape == .bear {
                 _ = ball("round-ear", .ears, [0.087, 0.09, 0.065], [side * 0.104, 0.083, -0.018], color(.ears, fur))
                 _ = ball("ear-lining", .ears, [0.039, 0.044, 0.012], [side * 0.104, 0.083, 0.015], "#CCA5A5")
             } else {
-                for ear in PresetEarMesh.make(shape: configuration.shape, side: side,
+                for mesh in PresetEarMesh.make(shape: configuration.shape, side: side,
                                                fur: material(color(.ears, fur)), lining: material("#E8B4B5")) {
-                    groups[.ears]!.addChild(ear)
+                    ear.addChild(mesh)
                 }
             }
+            groups[.ears] = container
+            container.addChild(ear)
         }
         if let data = configuration.face, let uiImage = ImageDownsampling.image(data, maxPixel: detail == .full ? 1024 : 512), let image = uiImage.cgImage,
            let texture = try? await TextureResource(image: image, options: .init(semantic: .color)) {

@@ -1,0 +1,255 @@
+{
+  "date": "2026-11-26",
+  "scope": "Privacy-enhanced build implemented 2026-11-26; current local source, not previous TestFlight builds",
+  "data_collection_answer": "yes",
+  "google_sign_in_declared_types": [
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeName",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeEmailAddress",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePhoneNumber",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherDataTypes",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAppFunctionality",
+        "NSPrivacyCollectedDataTypePurposeAnalytics"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeCoarseLocation",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeUserID",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAppFunctionality",
+        "NSPrivacyCollectedDataTypePurposeAnalytics"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeDeviceID",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAnalytics"
+      ]
+    },
+    {
+      "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypeOtherUsageData",
+      "NSPrivacyCollectedDataTypeLinked": true,
+      "NSPrivacyCollectedDataTypeTracking": false,
+      "NSPrivacyCollectedDataTypePurposes": [
+        "NSPrivacyCollectedDataTypePurposeAnalytics"
+      ]
+    }
+  ],
+  "weather": {
+    "data_type": "CoarseLocation",
+    "purpose": "AppFunctionality",
+    "linked_by_weather_provider": false,
+    "coordinates_decimals": 2,
+    "server_log_retention_days": 90,
+    "source": "https://open-meteo.com/en/terms"
+  },
+  "youtube": {
+    "mode": "Explicit HTTPS youtube-nocookie.com iframe with IFrame API; autoplay=0; ephemeral WKWebView; no host user/account/OAuth token passed",
+    "navigation": "User links/new windows open in system apps. Automatic navigation to ordinary YouTube/account pages is cancelled; no standard embed fallback.",
+    "collection": "Google describes server-side request/session, video/ad event, performance and error processing. Privacy-enhanced does not mean no collection.",
+    "tracking_recommendation": false,
+    "tracking_basis": "Provider states isolated embed-session identifiers are not joined to other Google properties or third-party data for personalized advertising or cross-site measurement. This is a classification from current implementation and public provider statements, not an observation of Google server internals.",
+    "linked_recommendation": true,
+    "linked_basis": "Transient session/device identifiers can associate raw events with a device within a viewing session before server aggregation; anonymous does not mean unlinked under Apple definitions.",
+    "sources": [
+      "https://support.google.com/youtube/answer/171780",
+      "https://issuetracker.google.com/issues/571927087",
+      "https://developers.google.com/youtube/terms/developer-policies"
+    ],
+    "live_test": {
+      "video_played": true,
+      "playlist_played": true,
+      "playlist_items": 10,
+      "autoplay": false,
+      "outbound_navigation_checks_passed": true
+    }
+  },
+  "local_only": [
+    "doll photos and generated models",
+    "room and furniture settings",
+    "Apple name/user identifier stored locally"
+  ],
+  "sources": [
+    "https://raw.githubusercontent.com/google/GoogleSignIn-iOS/10.1.0/GoogleSignIn/Sources/Resources/PrivacyInfo.xcprivacy",
+    "https://developer.apple.com/app-store/app-privacy-details/"
+  ],
+  "publication_status": "Recommended answers for the changed build prepared; not entered or published in App Store Connect. Google/OAuth release and other submission checks remain separate.",
+  "recommended_app_store_answers": [
+    {
+      "category": "연락처 정보",
+      "label": "이름",
+      "type": "Name",
+      "purposes": [
+        "AppFunctionality"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest"
+    },
+    {
+      "category": "연락처 정보",
+      "label": "이메일 주소",
+      "type": "EmailAddress",
+      "purposes": [
+        "AppFunctionality"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest"
+    },
+    {
+      "category": "연락처 정보",
+      "label": "전화번호",
+      "type": "PhoneNumber",
+      "purposes": [
+        "AppFunctionality"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest; not a Fluff phone-number input"
+    },
+    {
+      "category": "위치",
+      "label": "대략적인 위치",
+      "type": "CoarseLocation",
+      "purposes": [
+        "AppFunctionality"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest and Open-Meteo requests/logs"
+    },
+    {
+      "category": "식별자",
+      "label": "사용자 ID",
+      "type": "UserID",
+      "purposes": [
+        "AppFunctionality",
+        "Analytics"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest"
+    },
+    {
+      "category": "식별자",
+      "label": "기기 ID",
+      "type": "DeviceID",
+      "purposes": [
+        "AppFunctionality",
+        "Analytics",
+        "ThirdPartyAdvertising"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "SDK manifest plus isolated embed-session identifiers for delivery, anti-fraud and aggregate ad measurement"
+    },
+    {
+      "category": "사용 데이터",
+      "label": "제품 상호 작용",
+      "type": "ProductInteraction",
+      "purposes": [
+        "AppFunctionality",
+        "Analytics",
+        "ThirdPartyAdvertising"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Playback context/video interaction telemetry for delivery, analytics and non-personalized in-player advertising; no cross-app advertising profiles"
+    },
+    {
+      "category": "사용 데이터",
+      "label": "광고 데이터",
+      "type": "AdvertisingData",
+      "purposes": [
+        "ThirdPartyAdvertising",
+        "Analytics"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Non-personalized ad impressions/clicks and measurement"
+    },
+    {
+      "category": "사용 데이터",
+      "label": "기타 사용 데이터",
+      "type": "OtherUsageData",
+      "purposes": [
+        "Analytics"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest"
+    },
+    {
+      "category": "진단",
+      "label": "실적 데이터",
+      "type": "PerformanceData",
+      "purposes": [
+        "AppFunctionality",
+        "Analytics"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Embedded video playback performance telemetry"
+    },
+    {
+      "category": "진단",
+      "label": "기타 진단 데이터",
+      "type": "OtherDiagnosticData",
+      "purposes": [
+        "AppFunctionality",
+        "Analytics"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Embedded player error and reliability telemetry; no separate crash report SDK"
+    },
+    {
+      "category": "기타 데이터",
+      "label": "기타 데이터 유형",
+      "type": "OtherDataTypes",
+      "purposes": [
+        "AppFunctionality",
+        "Analytics"
+      ],
+      "linked_to_user": true,
+      "used_for_tracking": false,
+      "basis": "Google Sign-In manifest and operational request metadata"
+    }
+  ]
+}

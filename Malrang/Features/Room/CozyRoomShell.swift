@@ -3,7 +3,7 @@ import RealityKit
 /// Full-height interior and the lower dollhouse view share the same floor plan.
 /// Keeping the shell independent of furniture preserves saved placements.
 enum CozyRoomShell {
-    static let cornerHeight: Float = 2.60
+    static let cornerHeight: Float = 3.15
     static let riseX: Float = 0
     static let riseZ: Float = 0
     static let maximumHeight = cornerHeight + 2 * (riseX + riseZ)

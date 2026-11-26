@@ -226,7 +226,7 @@ enum CozyFurniture {
             root.addChild(model)
             ball("leg.foot", [0.064, 0.05, 0.064], [x, 0.025, z], color)
         }
-        let baked = useBakedModels && !(roomOverview && item.kind == .wall) && item.kind != .lamp && !(item.kind == .sofa && !cutaway) ? await bakedModel(for: item.kind) : nil
+        let baked = useBakedModels && item.kind != .wall && item.kind != .lamp && !(item.kind == .sofa && !cutaway) ? await bakedModel(for: item.kind) : nil
         if let baked {
             func restoreMaterials(_ entity: Entity) {
                 if var model = entity.components[ModelComponent.self], let source = model.materials.first as? PhysicallyBasedMaterial {

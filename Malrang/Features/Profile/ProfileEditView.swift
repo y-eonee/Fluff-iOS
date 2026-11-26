@@ -136,6 +136,7 @@ struct ProfileEditView: View {
             try AppleAccount.removeLocalIdentity()
             nickname = ""
             avatarData = Data()
+            UserDefaults.standard.set(true, forKey: "showAppleDisconnectHelp")
             isSignedIn = false
             RenderMemory.clearCaches()
         } catch {

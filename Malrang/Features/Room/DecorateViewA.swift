@@ -95,7 +95,7 @@ extension DecorateView {
             if let item = editingItem, item.id == selectedID {
                 VStack(spacing: 12) {
                     HStack {
-                        Button { editingItem = nil } label: { Label("가구 편집", systemImage: "chevron.left") }
+                        Button { editingItem = nil } label: { Label("가구 편집", systemImage: "chevron.left").pretendard(.medium, 14) }
                         Spacer()
                         Text(item.kind.label).pretendard(.bold, 16)
                     }.frame(height: 40)
@@ -108,7 +108,7 @@ extension DecorateView {
                 categoryTabs.padding(.horizontal, 6)
                 catalogPanel.frame(height: 200, alignment: .top)
             }
-        }.padding(.horizontal, 18).padding(.top, selectedItem == nil ? 2 : 0).padding(.bottom, selectedItem == nil ? 10 : 16)
+        }.padding(.horizontal, 18).padding(.top, selectedItem == nil ? 2 : 14).padding(.bottom, selectedItem == nil ? 10 : 16)
             .frame(maxWidth: .infinity, minHeight: 266, alignment: .top)
             .background { Color.rep4.c01.clipShape(UnevenRoundedRectangle(topLeadingRadius: 14, topTrailingRadius: 14)).ignoresSafeArea(edges: .bottom) }
     }
@@ -213,12 +213,16 @@ extension DecorateView {
     func undo() {
         guard let previous = undoStack.popLast() else { return }
         editFeedbackCount += 1
-        redoStack.append(items.map(\.state)); selectedID = nil; apply(previous)
+        redoStack.append(items.map(\.state))
+        if !previous.contains(where: { $0.id == selectedID }) { selectedID = nil }
+        apply(previous)
     }
     func redo() {
         guard let next = redoStack.popLast() else { return }
         editFeedbackCount += 1
-        undoStack.append(items.map(\.state)); selectedID = nil; apply(next)
+        undoStack.append(items.map(\.state))
+        if !next.contains(where: { $0.id == selectedID }) { selectedID = nil }
+        apply(next)
     }
     func reset() {
         editFeedbackCount += 1

@@ -44,14 +44,14 @@ class EfficientARView: ARView {
     }
 
     private func applyRenderBudget() {
-        var constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+        var constrained = ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.fair.rawValue
         #if DEBUG
         // Compare resource changes at one conservative budget even if the phone
         // crosses a thermal threshold during consecutive profiling runs.
         if ProcessInfo.processInfo.arguments.contains("--render-comparison") { constrained = true }
         #endif
         let scale = constrained ? min(max(1, traitCollection.displayScale), 1.5)
-            : min(4, max(1, traitCollection.displayScale) * 1.25)
+            : min(3, max(1, traitCollection.displayScale))
         if contentScaleFactor != scale { contentScaleFactor = scale }
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--render-audit") {

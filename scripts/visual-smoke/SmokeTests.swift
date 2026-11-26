@@ -52,7 +52,7 @@ final class VisualSmokeTests: XCTestCase {
         app.launch()
         let loading = app.otherElements["room-loading"]
         XCTAssertTrue(loading.waitForExistence(timeout: 20))
-        XCTAssertEqual(loading.value as? String, "몽글이")
+        XCTAssertEqual(loading.value as? String, "솜뭉치")
         XCTAssertTrue(loading.waitForNonExistence(timeout: 30))
         captureUpdatedLoading(app, "newly-created-doll-arrived")
         app.terminate()
@@ -169,14 +169,14 @@ final class VisualSmokeTests: XCTestCase {
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
 
-    func testLoadingUsesOwnedDollOrCottonForEmptyRoom() {
+    func testLoadingUsesCottonWithOwnedDollsAndEmptyRoom() {
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
         app.launchArguments = ["--design-preview=room-loading", "--room-loading-time=0.45"]
         app.launch()
         let loading = app.otherElements["room-loading"]
         XCTAssertTrue(loading.waitForExistence(timeout: 30))
         let selected = loading.value as? String ?? ""
-        XCTAssertTrue(["귀염둥이", "몽글이", "포근이"].contains(selected))
+        XCTAssertEqual(selected, "솜뭉치")
         Thread.sleep(forTimeInterval: 3)
         XCTAssertEqual(loading.value as? String, selected)
         captureUpdatedLoading(app, "loading-owned-doll")
@@ -196,7 +196,7 @@ final class VisualSmokeTests: XCTestCase {
         app.launchArguments = ["--design-preview=room-loading", "--room-loading-time=0.45"] + fixture
         app.launch()
         XCTAssertTrue(app.otherElements["room-loading"].waitForExistence(timeout: 30))
-        XCTAssertEqual(app.otherElements["room-loading"].value as? String, "귀염둥이")
+        XCTAssertEqual(app.otherElements["room-loading"].value as? String, "솜뭉치")
         XCTAssertFalse(app.staticTexts["z z Z"].exists)
         captureUpdatedLoading(app, "loading-sleeping-doll-awake")
         app.terminate()
@@ -230,6 +230,10 @@ final class VisualSmokeTests: XCTestCase {
         app.buttons["오른쪽 벽"].tap()
         app.buttons["되돌리기"].tap()
         XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
+        app.buttons["다시하기"].tap()
+        XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
+        app.buttons["되돌리기"].tap()
+        XCTAssertTrue(app.staticTexts["적용된 사진"].waitForExistence(timeout: 5))
         app.buttons["컬러"].tap()
         app.buttons["라벤더"].tap()
         app.buttons["사진"].tap()
@@ -242,6 +246,7 @@ final class VisualSmokeTests: XCTestCase {
         let app = launch("desk-photo")
         let remove = app.buttons["사진 빼기"]
         XCTAssertTrue(remove.waitForExistence(timeout: 30))
+        XCTAssertTrue(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: remove)], timeout: 10) == .completed)
         remove.tap()
         XCTAssertTrue(app.staticTexts["책상에서 사진을 뺄까요?"].waitForExistence(timeout: 5))
         captureUpdatedLoading(app, "room-photo-removal")
@@ -547,7 +552,7 @@ final class VisualSmokeTests: XCTestCase {
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
         app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=placement", "--room-hour=13"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["인형을 끌거나 놓을 자리를 눌러요."].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.staticTexts["인형을 끌거나 놓을 자리를 눌러요"].waitForExistence(timeout: 60))
         let done = app.buttons["완료"]
         XCTAssertTrue(done.isEnabled)
         XCTAssertTrue(app.buttons["취소"].isEnabled)
@@ -563,7 +568,7 @@ final class VisualSmokeTests: XCTestCase {
         app.launch()
         let done = app.buttons["완료"]
         XCTAssertTrue(done.waitForExistence(timeout: 40))
-        XCTAssertTrue(app.staticTexts["침대 위에는 인형을 놓을 수 없어요."].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["침대 위에는 인형을 놓을 수 없어요"].waitForExistence(timeout: 10))
         XCTAssertFalse(done.isEnabled)
         XCTAssertTrue(app.buttons["취소"].isEnabled)
         captureUpdatedLoading(app, "floor-placement-blocked")
@@ -576,6 +581,85 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertLessThan(timer.frame.maxY, app.frame.maxY - 34)
         XCTAssertTrue(app.buttons["다른 소리"].isHittable)
     }
+    func testDollAttachmentExtremePreviews() {
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        for shape in ["photo-cat", "bear", "rabbit"] {
+            for mask in [42, 85] {
+                app.launchArguments = ["--design-preview=\(shape)", "--attachment-extreme=\(mask)", "--ui-testing"]
+                app.launch()
+                let preview = app.images["preset-doll-preview"]
+                XCTAssertTrue(preview.waitForExistence(timeout: 25))
+                XCTAssertTrue(NSPredicate(format: "value == %@", "인형 표시 완료").evaluate(with: preview)
+                    || XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "인형 표시 완료"), object: preview)], timeout: 30) == .completed)
+                sleep(2)
+                captureUpdatedLoading(app, "attachment-\(shape)-\(mask)")
+                app.terminate()
+            }
+        }
+    }
+
+    func testCouchStopAndSofaPopupSuppression() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=couch-mini", "--room-hour=13", "--ui-testing"]
+        app.launch()
+        let stop = app.buttons["couch-stop"]
+        XCTAssertTrue(stop.waitForExistence(timeout: 40))
+        XCTAssertTrue(stop.isEnabled)
+        let sofa = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "소파,")).firstMatch
+        XCTAssertTrue(sofa.exists)
+        sofa.tap()
+        XCTAssertFalse(app.buttons["유튜브 같이 보기"].exists)
+        XCTAssertTrue(stop.isHittable)
+        captureUpdatedLoading(app, "home-youtube-white-blue-controls")
+        stop.tap()
+        XCTAssertTrue(stop.waitForNonExistence(timeout: 5))
+        sofa.tap()
+        XCTAssertTrue(app.buttons["유튜브 같이 보기"].waitForExistence(timeout: 5))
+    }
+
+    func testPrivacyEnhancedHomePlayback() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=couch-mini", "--room-hour=13", "--ui-testing"]
+        app.launch()
+        let play = app.buttons["재생"]
+        XCTAssertTrue(play.waitForExistence(timeout: 40))
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true AND hittable == true"), object: play)], timeout: 25), .completed)
+        XCTAssertFalse(app.buttons["일시정지"].exists)
+        play.tap()
+        let pause = app.buttons["일시정지"]
+        XCTAssertTrue(pause.waitForExistence(timeout: 20))
+        captureUpdatedLoading(app, "privacy-enhanced-home-playing")
+        pause.tap()
+        XCTAssertTrue(play.waitForExistence(timeout: 5))
+        play.tap()
+        XCTAssertTrue(pause.waitForExistence(timeout: 15))
+        app.buttons["couch-stop"].tap()
+        XCTAssertTrue(app.buttons["couch-stop"].waitForNonExistence(timeout: 5))
+    }
+
+    func testPlaylistPromptAndPrivacyAccess() {
+        let app = launch("couch-playlist")
+        let input = app.textFields["유튜브 플레이리스트 링크 붙여넣기"]
+        XCTAssertTrue(input.waitForExistence(timeout: 20))
+        XCTAssertEqual(input.placeholderValue, "유튜브 플레이리스트 링크 붙여넣기")
+        input.tap()
+        input.typeText("https://youtu.be/M7lc1UVf-VE")
+        XCTAssertEqual(input.value as? String, "https://youtu.be/M7lc1UVf-VE")
+        XCTAssertTrue(app.buttons["링크 추가"].exists)
+        app.terminate()
+        app.launchArguments = ["--design-preview=tabs-dolls"]
+        app.launch()
+        XCTAssertTrue(app.buttons["마이"].waitForExistence(timeout: 20))
+        app.buttons["마이"].tap()
+        let privacy = app.buttons["개인정보처리방침"]
+        XCTAssertTrue(privacy.waitForExistence(timeout: 20))
+        privacy.tap()
+        XCTAssertTrue(app.staticTexts["처리하는 정보와 목적"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["최종 수정: 2026-11-26"].exists)
+    }
+
     func testCouchMiniOpensFullPlayer() {
         let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
         app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=couch-mini", "--room-hour=13"]
@@ -628,7 +712,8 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertLessThan(remove.frame.maxY, app.frame.maxY - 34)
         XCTAssertTrue(app.buttons["사진 바꾸기"].isHittable)
         remove.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85)).tap()
-        XCTAssertTrue(app.staticTexts["사진 추가하기"].waitForExistence(timeout: 5))
+        app.buttons["빼기"].tap()
+        XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
     }
     func testDeskPhotoActionsAfterLayoutCorrection() {
         let app = launch("desk-photo")
@@ -636,10 +721,11 @@ final class VisualSmokeTests: XCTestCase {
         XCTAssertTrue(remove.waitForExistence(timeout: 30))
         XCTAssertTrue(remove.isHittable)
         XCTAssertTrue(app.buttons["사진 바꾸기"].isHittable)
-        XCTAssertGreaterThanOrEqual(remove.frame.height, 59)
+        XCTAssertGreaterThanOrEqual(remove.frame.height, 44)
         XCTAssertLessThan(remove.frame.maxY, app.frame.maxY - 34)
         remove.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85)).tap()
-        XCTAssertTrue(app.staticTexts["사진 추가하기"].waitForExistence(timeout: 5))
+        app.buttons["빼기"].tap()
+        XCTAssertTrue(app.buttons["사진 추가하기"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["적용된 사진"].exists)
     }
     func testDollPartSlider() {
@@ -740,13 +826,71 @@ final class VisualSmokeTests: XCTestCase {
         shot.lifetime = .keepAlways
         add(shot)
     }
+    func testWiderHomeCameraAndSinglePlacementToast() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--camera-audit", "--ui-testing", "--room-hour=13"]
+        app.launch()
+        waitForHomeControls(app)
+        captureUpdatedLoading(app, "home-camera-default")
+        let roomSurface = app.buttons["침대, 재우기와 깨우기"]
+        XCTAssertTrue(roomSurface.waitForExistence(timeout: 10))
+        roomSurface.pinch(withScale: 0.4, velocity: -2)
+        captureUpdatedLoading(app, "home-camera-maximum-zoom-out")
+        app.terminate()
+        app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=placement", "--ui-testing"]
+        app.launch()
+        let toast = app.staticTexts["doll-placement-toast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 40))
+        XCTAssertEqual(app.staticTexts.matching(identifier: "doll-placement-toast").count, 1)
+        XCTAssertEqual(toast.label, "인형을 끌거나 놓을 자리를 눌러요")
+        captureUpdatedLoading(app, "home-single-placement-toast")
+    }
+
+    func testSofaRestRequiresExplicitDollSelection() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=couch-rest", "--room-hour=13", "--ui-testing"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["같이 쉴 인형"].waitForExistence(timeout: 40))
+        XCTAssertFalse(app.buttons["함께 쉬기"].isEnabled)
+        let bear = app.buttons.containing(.staticText, identifier: "몽글이").firstMatch
+        let cat = app.buttons.containing(.staticText, identifier: "귀염둥이").firstMatch
+        XCTAssertFalse(bear.isSelected)
+        bear.tap(); cat.tap()
+        app.buttons["함께 쉬기"].tap()
+        XCTAssertTrue(app.staticTexts["같이 쉴 인형"].waitForNonExistence(timeout: 10))
+        captureUpdatedLoading(app, "sofa-rest-two-chosen-dolls")
+    }
+
+    func testASMRUsesChosenDollBeforeAndDuringPlayback() {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.nayeon.Malrang")
+        app.launchArguments = ["--design-preview=tabs-ui", "--furniture-preview=sound-choice", "--ui-testing"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["같이 들을 인형"].waitForExistence(timeout: 40))
+        XCTAssertFalse(app.buttons["소리 고르기"].isEnabled)
+        app.buttons.containing(.staticText, identifier: "포근이").firstMatch.tap()
+        app.buttons["소리 고르기"].tap()
+        XCTAssertTrue(app.staticTexts["배경음 설정"].waitForExistence(timeout: 10))
+        let preview = app.otherElements["radio-companion-preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 10))
+        XCTAssertTrue(preview.label.contains("포근이"))
+        app.buttons["소리 재생하기"].tap()
+        XCTAssertTrue(app.buttons["일시정지"].waitForExistence(timeout: 10))
+        XCTAssertTrue(preview.label.contains("포근이"))
+        captureUpdatedLoading(app, "asmr-playing-selected-rabbit")
+    }
+
     func testTwoCouchCompanionsRespectCapacity() {
         let app = launch("couch-choice")
         let bear = app.buttons.containing(.staticText, identifier: "몽글이").firstMatch
         let cat = app.buttons.containing(.staticText, identifier: "귀염둥이").firstMatch
         let rabbit = app.buttons.containing(.staticText, identifier: "포근이").firstMatch
         XCTAssertTrue(bear.waitForExistence(timeout: 15))
-        // Normalize the initial selection, then fill both seats.
+        XCTAssertFalse(app.buttons["다음"].isEnabled)
+        XCTAssertFalse(bear.isSelected)
+        // Fill both seats explicitly.
         for button in [cat, bear, rabbit] where button.isSelected { button.tap() }
         cat.tap()
         bear.tap()

@@ -138,6 +138,13 @@ final class DesignPreviewData {
             doll.restingBedID = nil
             doll.position = [Float(chair.x), chair.kind.seatHeight ?? 0.227, Float(chair.z)]
         }
+        if let flag = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--attachment-extreme=") }),
+           let mask = Int(flag.split(separator: "=").last ?? "") {
+            for (index, part) in DollPart.allCases.enumerated() {
+                draft.preset.parts[part.rawValue] = .init(width: mask & (1 << index) == 0 ? 0.6 : 1.4,
+                    length: mask & (1 << index) == 0 ? 1.4 : 0.6)
+            }
+        }
         if route == "create-large" {
             for part in DollPart.allCases {
                 var value = draft.preset.part(part)
@@ -339,14 +346,11 @@ struct DesignPreview: View {
                     WindowCompanionView(dolls: dolls.map(\.state))
                 }
             }
-            else if ["floor-photo", "window-frame"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == (route == "floor-photo" ? .floor : .wall) }) {
-                NavigationStack { FurnitureCustomView(item: item, initialStyle: route == "floor-photo" ? .photo : .color) }
+            else if ["floor-photo", "window-frame"].contains(route) {
+                NavigationStack { DecorateView(category: route == "floor-photo" ? .flooring : .wallpaper, surfacePhotoMode: route == "floor-photo") }
             }
-            else if route == "frame-photo", let frame = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .frame }) {
-                NavigationStack { FurnitureCustomView(item: frame, initialStyle: .photo) }
-            }
-            else if ["desk-color", "desk-photo-empty", "desk-photo"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == .desk }) {
-                NavigationStack { FurnitureCustomView(item: item, initialStyle: route == "desk-color" ? .color : .photo) }
+            else if ["frame-photo", "desk-color", "desk-photo-empty", "desk-photo"].contains(route), let item = (try? fixture.container.mainContext.fetch(FetchDescriptor<RoomItem>()))?.first(where: { $0.kind == (route == "frame-photo" ? .frame : .desk) }) {
+                NavigationStack { DecorateView(selectedID: item.id, editingItem: item) }
             }
             else if ["decorate-wall", "wall-photo-empty", "wall-photo", "decorate-floor"].contains(route) {
                 NavigationStack { DecorateView(category: route == "decorate-floor" ? .flooring : .wallpaper, surfacePhotoMode: route.hasPrefix("wall-photo")) }

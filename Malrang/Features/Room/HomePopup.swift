@@ -10,7 +10,7 @@ struct HomePopup<Content: View>: View {
             Text(title).pretendard(.medium, 14).foregroundStyle(Color.rep4.c16)
                 .frame(height: 20).lineLimit(1)
             content
-        }.padding(13).frame(width: 232)
+        }.buttonStyle(HomePopupPressStyle()).padding(13).frame(width: 232)
             .background(.white, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(HomePopupStyle.border, lineWidth: 1))
             .accessibilityElement(children: .contain)
@@ -35,6 +35,7 @@ struct HomePopupLabel<Icon: View>: View {
     let title: String
     var primary = false
     @ViewBuilder var icon: Icon
+    @Environment(\.homePopupPressed) private var pressed
 
     var body: some View {
         HStack(spacing: 12) {
@@ -43,10 +44,10 @@ struct HomePopupLabel<Icon: View>: View {
             Spacer(minLength: 0)
         }.foregroundStyle(Color.rep4.c08).padding(.horizontal, 9).frame(height: 50)
             .background {
-                if primary { RepresentativeGradientFill(definition: HomePopupStyle.selected) }
+                if primary || pressed { RepresentativeGradientFill(definition: HomePopupStyle.selected) }
                 else { Color.white }
             }.clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(primary ? HomePopupStyle.selectedBorder : HomePopupStyle.border, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder((primary || pressed) ? HomePopupStyle.selectedBorder : HomePopupStyle.border, lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: 10))
     }
 }
@@ -83,5 +84,18 @@ struct HomeDollDancePicker: View {
         .background(Color.white, ignoresSafeAreaEdges: [])
         .accessibilityElement(children:.contain)
         .accessibilityIdentifier("home-doll-dance-picker")
+    }
+}
+
+private struct HomePopupPressedKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    var homePopupPressed: Bool {
+        get { self[HomePopupPressedKey.self] }
+        set { self[HomePopupPressedKey.self] = newValue }
+    }
+}
+struct HomePopupPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.environment(\.homePopupPressed, configuration.isPressed)
     }
 }

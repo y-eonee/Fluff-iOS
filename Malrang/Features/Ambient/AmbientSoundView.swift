@@ -256,27 +256,20 @@ private struct RadioCompanionPreview: View {
   let playing: Bool
   let choosing: Bool
   var body: some View {
-    Group {
-      if choosing {
-        GeometryReader { geo in
-          let scale = geo.size.width / 358
-          ZStack(alignment: .topLeading) {
-            Image("radio_setup_art").resizable().frame(width: geo.size.width * 1.3073, height: 312)
-              .offset(x: -geo.size.width * 0.3073)
-            if let doll {
-              CompanionScene(dolls: [doll], kind: .radioArtwork(playing: playing))
-                .frame(width: 157.905 * scale, height: 167.193).offset(x: 21.1 * scale, y: 72.4).allowsHitTesting(false)
-            }
-          }.frame(width: geo.size.width, height: 312, alignment: .topLeading).clipped()
-        }.frame(height: 312)
-      } else {
-        GeometryReader { geometry in
-          Image("radio_playing_art").resizable().scaledToFill()
-            .frame(width: geometry.size.width, height: 411).clipped()
-        }.frame(height: 411)
-      }
-    }.clipShape(RoundedRectangle(cornerRadius: 22)).accessibilityElement(children: .ignore)
-      .accessibilityLabel(choosing ? (doll.map { "\($0.name)와 함께 듣는 라디오" } ?? "포근한 라디오") : "포근한 방에서 라디오 듣기")
+    GeometryReader { geo in
+      let scale = geo.size.width / 358
+      ZStack(alignment: .topLeading) {
+        Image("radio_setup_art").resizable().frame(width: geo.size.width * 1.3073, height: 312)
+          .offset(x: -geo.size.width * 0.3073)
+        if let doll {
+          CompanionScene(dolls: [doll], kind: .radioArtwork(playing: playing))
+            .frame(width: 157.905 * scale, height: 167.193).offset(x: 21.1 * scale, y: 72.4).allowsHitTesting(false)
+        }
+      }.frame(width: geo.size.width, height: 312, alignment: .topLeading).clipped()
+    }.frame(height: 312).clipShape(RoundedRectangle(cornerRadius: 22))
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(doll.map { "\($0.name)와 함께 듣는 라디오" } ?? "포근한 라디오")
+      .accessibilityIdentifier("radio-companion-preview")
   }
 }
 

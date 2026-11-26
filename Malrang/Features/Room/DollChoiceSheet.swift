@@ -62,7 +62,7 @@ struct DollChoiceSheet: View {
     .environment(\.updatedFlowDesign, sourceLayout)
     .presentationDetents([.height(489), .large]).presentationDragIndicator(.hidden)
       .presentationCornerRadius(22)
-    .onAppear { if let first = dolls.first { selection = [first.id] } }
+
   }
 }
 

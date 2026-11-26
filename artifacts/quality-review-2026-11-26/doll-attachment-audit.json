@@ -1,0 +1,8 @@
+{
+  "checks" : 551181,
+  "coverage" : "cat\/bear\/rabbit; every parent-child combination of min\/mid\/max width, height, legacy size and offset; neutral and happy; 236196 configurations. Each seam depends only on its two connected parts, so unrelated edits cannot detach it. Continuous values share invariant interior anchors.",
+  "failures" : [
+
+  ],
+  "passed" : true
+}

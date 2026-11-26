@@ -1,0 +1,81 @@
+{
+  "checks" : [
+    {
+      "name" : "isolated nonpersistent browser",
+      "passed" : true
+    },
+    {
+      "name" : "same-frame link opens externally once",
+      "passed" : true
+    },
+    {
+      "name" : "same-frame link preserves wrapper",
+      "passed" : true
+    },
+    {
+      "name" : "new-window link opens externally once",
+      "passed" : true
+    },
+    {
+      "name" : "new-window link preserves wrapper",
+      "passed" : true
+    },
+    {
+      "name" : "child-frame account link opens externally once",
+      "passed" : true
+    },
+    {
+      "name" : "child-frame account link preserves wrapper",
+      "passed" : true
+    },
+    {
+      "name" : "actual iframe uses privacy host: video:M7lc1UVf-VE",
+      "passed" : true
+    },
+    {
+      "name" : "actual iframe uses privacy host: playlist:PLBCF2DAC6FFB574DE",
+      "passed" : true
+    },
+    {
+      "name" : "stop releases player after external navigation and source changes",
+      "passed" : true
+    }
+  ],
+  "isolationPassed" : true,
+  "livePlayback" : [
+    {
+      "autoplay" : false,
+      "diagnostics" : "{\"api\":\"object\",\"loaded\":1,\"player\":\"object\",\"errors\":[],\"resources\":[{\"host\":\"www.youtube.com\",\"type\":\"script\",\"duration\":338},{\"host\":\"www.youtube-nocookie.com\",\"type\":\"iframe\",\"duration\":459},{\"host\":\"www.youtube.com\",\"type\":\"script\",\"duration\":55}]}",
+      "error" : "",
+      "playlistCount" : 0,
+      "ready" : true,
+      "source" : "video:M7lc1UVf-VE",
+      "timeAdvanced" : true
+    },
+    {
+      "autoplay" : false,
+      "diagnostics" : "{\"api\":\"object\",\"loaded\":1,\"player\":\"object\",\"errors\":[],\"resources\":[{\"host\":\"www.youtube.com\",\"type\":\"script\",\"duration\":92},{\"host\":\"www.youtube-nocookie.com\",\"type\":\"iframe\",\"duration\":192},{\"host\":\"www.youtube.com\",\"type\":\"script\",\"duration\":0}]}",
+      "error" : "",
+      "playlistCount" : 10,
+      "ready" : true,
+      "source" : "playlist:PLBCF2DAC6FFB574DE",
+      "timeAdvanced" : true
+    }
+  ],
+  "livePlaybackPassed" : true,
+  "navigations" : [
+    "allow host=com.nayeon.malrang main=true type=-1",
+    "external host=www.youtube.com main=true type=0",
+    "allow host=com.nayeon.malrang main=true type=-1",
+    "external host=www.youtube.com main=false type=0",
+    "allow host=com.nayeon.malrang main=true type=-1",
+    "allow host=local main=false type=-1",
+    "external host=accounts.google.com main=false type=0",
+    "allow host=com.nayeon.malrang main=true type=-1",
+    "allow host=www.youtube-nocookie.com main=false type=-1",
+    "allow host=local main=false type=-1",
+    "allow host=com.nayeon.malrang main=true type=-1",
+    "allow host=www.youtube-nocookie.com main=false type=-1",
+    "allow host=local main=false type=-1"
+  ]
+}

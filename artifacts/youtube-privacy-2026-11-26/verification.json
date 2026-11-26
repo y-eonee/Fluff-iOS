@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-26",
+  "builds": {
+    "Debug": "passed",
+    "Release": "passed"
+  },
+  "url_navigation_checks": 65,
+  "webview_isolation_checks": 10,
+  "live_video_playback": true,
+  "live_playlist_playback": true,
+  "playlist_items": 10,
+  "automatic_playback": false,
+  "ui_tests_passed": [
+    "testCouchMiniOpensFullPlayer",
+    "testCouchStopAndSofaPopupSuppression",
+    "testPlaylistPromptAndPrivacyAccess",
+    "testPrivacyEnhancedHomePlayback"
+  ],
+  "result_bundle": "/tmp/MalrangPrivacyEnhancedUI.xcresult",
+  "sofa_capacity_changed": false,
+  "public_policy": "https://fluff-privacy-support.workspace-945891.chatgpt.site",
+  "privacy_answers": "docs/app-privacy-label-audit.json",
+  "limits": [
+    "Physical device playback/temperature not measured in this task",
+    "Network tests use public sample video and playlist; restricted or deleted videos may not play",
+    "Provider server-side data use is assessed from public documentation, not directly observable by local tests"
+  ],
+  "initial_test_failure": "An inline player JavaScript syntax error prevented ready events; fixed, then actual video/playlist playback and home controls passed."
+}
